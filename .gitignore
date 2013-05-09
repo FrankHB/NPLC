@@ -8,3 +8,11 @@
 *.o
 
 *.layout
+
+/NBuilder/debug/YBase.dll
+/NBuilder/debug/YFramework.dll
+/NBuilder/release/YBase.dll
+/NBuilder/release/YFramework.dll
+
+/NBuilder/debug/NBuilder.exe
+/NBuilder/release/NBuilder.exe
