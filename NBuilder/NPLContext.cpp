@@ -193,9 +193,26 @@ NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
 	return make_pair(b, cur_off);
 }
 
+void
+NPLContext::ReduceS(size_t depth, ValueNode ctx, ValueNode& sema)
+{
+
+}
+
 TokenList&
 NPLContext::Perform(const string& unit)
 {
+#if 1
+	if(unit.empty())
+		throw LoggedEvent("Empty token list found;", 0x20);
+
+	auto sema(SContext::Analyze(Session(unit)));
+
+	ReduceS(0, Root, sema);
+
+// return ConvTokens(sema);
+	return token_list;
+#else
 	Session session(unit);
 
 	if((token_list = session.GetTokenList()).size() == 1)
@@ -211,6 +228,7 @@ NPLContext::Perform(const string& unit)
 	yassume(res.first == token_list.end());
 
 	return token_list;
+#endif
 }
 
 YSL_END_NAMESPACE(NPL)

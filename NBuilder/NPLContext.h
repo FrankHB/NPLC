@@ -97,6 +97,9 @@ private:
 	Reduce(size_t depth, TLIter b, TLIter e, bool eval = true);
 
 public:
+	void
+	ReduceS(size_t, ValueNode, ValueNode&);
+
 	TokenList&
 	Perform(const string& unit);
 };
