@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r1832
+\version r1833
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2013-05-09 11:19 +0800
+	2013-05-09 17:32 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,7 +29,6 @@
 #define INC_NPL_NBuilder_h_
 
 #include "NPLContext.h"
-#include <YCLib/NativeAPI.h>
 #include <YSLib/Adaptor/ycont.h>
 #include <YSLib/Core/ystring.h>
 

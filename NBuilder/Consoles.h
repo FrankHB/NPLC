@@ -12,12 +12,12 @@
 \ingroup NBuilder
 \brief 控制台。
 \version r82
-\author FrankHB<frankhb1989@gmail.com>
+\author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 11:01:12 +0800
 \par 修改时间:
-	2013-05-09 11:15: +0800
+	2013-05-09 17:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:

@@ -47,6 +47,8 @@
 		</Compiler>
 		<Unit filename="Consoles.cpp" />
 		<Unit filename="Consoles.h" />
+		<Unit filename="Interpreter.cpp" />
+		<Unit filename="Interpreter.h" />
 		<Unit filename="NBuilder.cpp" />
 		<Unit filename="NBuilder.h" />
 		<Unit filename="NPL.txt" />

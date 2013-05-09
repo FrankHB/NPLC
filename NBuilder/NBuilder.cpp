@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r3742
+\version r3853
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2013-05-09 11:19 +0800
+	2013-05-09 17:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -33,7 +33,8 @@
 #include "NPL/Configuration.h"
 #include <Helper/Initialization.h>
 #include <YCLib/debug.h>
-#include "Consoles.h"
+#include <YCLib/NativeAPI.h>
+#include "Interpreter.h"
 
 using namespace NPL;
 using namespace YSLib;
@@ -151,10 +152,7 @@ YSL_END_NAMESPACE(NPL)
 namespace
 {
 
-///334
-list<string> g_path;
-
-///403
+/// 403
 const ValueNode&
 GetNodeFromPath(const ValueNode& root, list<string> path)
 {
@@ -165,11 +163,11 @@ GetNodeFromPath(const ValueNode& root, list<string> path)
 	return *p;
 }
 
-///403
+/// 403
 const ValueNode&
 GetCurrentNode()
 {
-	return GetNodeFromPath(GlobalRoot, g_path);
+	return GetNodeFromPath(GlobalRoot, GlobalPath);
 }
 
 /// 327
@@ -307,14 +305,6 @@ SearchName(ValueNode& root, const string& arg)
 } // unnamed namespace;
 
 
-#define NPL_NAME "NPL console"
-#define NPL_VER "b30xx"
-#define NPL_PLATFORM "[MinGW32]"
-yconstexpr auto prompt("> ");
-yconstexpr auto title(NPL_NAME" " NPL_VER" @ (" __DATE__", " __TIME__") "
-	NPL_PLATFORM);
-
-
 /// 328
 void
 LoadFunctions(NPLContext& context)
@@ -326,9 +316,9 @@ LoadFunctions(NPLContext& context)
 	context.Insert("cd", [](const string& arg){
 		if(arg == "..")
 		{
-			if(g_path.empty())
+			if(GlobalPath.empty())
 				throw LoggedEvent("No parent node found.", 0x80);
-			g_path.pop_back();
+			GlobalPath.pop_back();
 		}
 		else
 		{
@@ -342,7 +332,7 @@ LoadFunctions(NPLContext& context)
 			{
 				throw LoggedEvent("No node found.", 0x80);
 			}
-			g_path.push_back(arg);
+			GlobalPath.push_back(arg);
 		}
 	});
 	context.Insert("add", [](const string& arg){
@@ -429,122 +419,6 @@ LoadFunctions(NPLContext& context)
 
 
 /// 304
-class Interpreter
-{
-private:
-	Consoles::WConsole wc;
-	LoggedEvent::LevelType err_threshold;
-	string line;
-	NPLContext context;
-
-public:
-	Interpreter()
-		: wc(), err_threshold(0x10), line(), context()
-	{
-		using namespace std;
-		using namespace Consoles;
-
-		wc.SetColor(TitleColor);
-		cout << title << endl << "Initializing...";
-		YSLib::InitializeInstalled();
-		LoadFunctions(context);
-		cout << "NPLC initialization OK!" << endl << endl;
-		wc.SetColor(InfoColor);
-		cout << "Type \"exit\" to exit,"
-			" \"cls\" to clear screen, \"help\", \"about\", or \"license\""
-			" for more information." << endl << endl;
-	}
-
-	void
-	HandleSignal(SSignal e)
-	{
-		using namespace std;
-
-		static yconstexpr auto not_impl("Sorry, not implemented: ");
-
-		switch(e)
-		{
-		case SSignal::ClearScreen:
-			wc.Clear();
-			break;
-		case SSignal::About:
-			cout << not_impl << "About" << endl;
-			break;
-		case SSignal::Help:
-			cout << not_impl << "Help" << endl;
-			break;
-		case SSignal::License:
-			cout << "See license file of the YSLib project." << endl;
-			break;
-		default:
-			YAssert(false, "Wrong command!");
-		}
-	}
-
-	bool
-	Process()
-	{
-		using namespace Consoles;
-
-		if(line.empty())
-			return true;
-		wc.SetColor(SideEffectColor);
-		try
-		{
-			auto& unreduced(context.Translate(line));
-
-			if(!unreduced.empty())
-			{
-				using namespace std;
-				using namespace Consoles;
-
-			//	wc.PrintError("Bad command.");
-			//	wc.SetColor(InfoColor);
-			//	cout << "Unrecognized reduced token list:" << endl;
-				wc.SetColor(ReducedColor);
-				for_each(unreduced.cbegin(), unreduced.cend(),
-					[](const string& token){
-				//	cout << token << endl;
-					cout << token << ' ';
-				});
-				cout << endl;
-			}
-		}
-		catch(SSignal e)
-		{
-			if(e == SSignal::Exit)
-				return false;
-			wc.SetColor(SignalColor);
-			HandleSignal(e);
-		}
-		catch(LoggedEvent& e)
-		{
-			auto l(e.GetLevel());
-
-			if(l < err_threshold)
-				throw;
-			wc.PrintError(e);
-		}
-		return true;
-	}
-
-	std::istream&
-	WaitForLine()
-	{
-		using namespace std;
-		using namespace Consoles;
-
-		wc.SetColor(PromptColor);
-		for(const auto& n : g_path)
-			cout << n << ' ';
-		cout << prompt;
-		wc.SetColor();
-		return getline(cin, line);
-	}
-};
-
-
-/// 304
 int
 main(int argc, char* argv[])
 {
@@ -553,7 +427,7 @@ main(int argc, char* argv[])
 	platform::YDebugSetStatus(true);
 	try
 	{
-		Interpreter intp;
+		Interpreter intp(LoadFunctions);
 
 		while(intp.WaitForLine() && intp.Process())
 			;
