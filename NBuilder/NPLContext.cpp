@@ -97,7 +97,7 @@ void
 NPLContext::Eval(const string& arg)
 {
 	if(CheckLiteral(arg) == '\'')
-		NPLContext(fmap).Translate(ystdex::get_mid(arg));
+		NPLContext(fmap).Perform(ystdex::get_mid(arg));
 #if 0
 	{
 		NPLContext new_context(*this, MangleToken(ystdex::get_mid(arg)));
@@ -132,7 +132,7 @@ NPLContext::HandleIntrinsic(const string& cmd)
 
 /// 327
 /// \pre b and e shall be iterator in or one-past-end of token_list.
-/// \pre b shall be dereferancable when e is dereferancable.
+/// \pre b shall be dereferanceable when e is dereferanceable.
 pair<TLIter, size_t>
 NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
 {
@@ -198,7 +198,7 @@ NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
 }
 
 TokenList&
-NPLContext::Translate(const string& unit)
+NPLContext::Perform(const string& unit)
 {
 	Session session(unit);
 

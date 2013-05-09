@@ -93,13 +93,13 @@ private:
 
 	/// 327
 	/// \pre b and e shall be iterator in or one-past-end of token_list.
-	/// \pre b shall be dereferancable when e is dereferancable.
+	/// \pre b shall be dereferanceable when e is dereferanceable.
 	pair<TLIter, size_t>
 	Reduce(size_t depth, TLIter b, TLIter e, bool eval = true);
 
 public:
 	TokenList&
-	Translate(const string& unit);
+	Perform(const string& unit);
 };
 
 YSL_END_NAMESPACE(NPL)
