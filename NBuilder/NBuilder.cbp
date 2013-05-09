@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="NBuilder" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="debug">
+				<Option output="debug\NBuilder" prefix_auto="1" extension_auto="1" />
+				<Option object_output="debug\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="-DDEBUG" />
+					<Add option="-D_GLIBCXX_DEBUG" />
+				</Compiler>
+				<Linker>
+					<Add library="F:\Programing\NPLC\NBuilder\debug\YBase.dll" />
+					<Add library="F:\Programing\NPLC\NBuilder\debug\YFramework.dll" />
+				</Linker>
+			</Target>
+			<Target title="release">
+				<Option output="release\NBuilder" prefix_auto="1" extension_auto="1" />
+				<Option object_output="release\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-DNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="F:\Programing\NPLC\NBuilder\release\YBase.dll" />
+					<Add library="F:\Programing\NPLC\NBuilder\release\YFramework.dll" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+			<Add option="-DYSL_DLL" />
+			<Add directory="F:\Programing\NDS\YSTest\YFramework\include" />
+			<Add directory="F:\Programing\NDS\YSTest\YBase\include" />
+			<Add directory="." />
+		</Compiler>
+		<Unit filename="NBuilder.cpp" />
+		<Unit filename="NBuilder.h" />
+		<Unit filename="NPL.txt" />
+		<Unit filename="NPLContext.cpp" />
+		<Unit filename="NPLContext.h" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
