@@ -73,11 +73,11 @@ NPLContext::Call(TLIter b, TLIter e, size_t& cur_off)
 			it->second(arg);
 		else
 			goto match_fail;
-		cur_off -= /*std::*/distance(ib, e) - 1;
+		cur_off -= std::distance(ib, e) - 1;
 		return token_list.erase(ib, e);
 	}
 match_fail:
-	return /*std::*/next(ib, 1);
+	return std::next(ib, 1);
 //	throw LoggedEvent("No matching function found.", 0xC0);
 }
 

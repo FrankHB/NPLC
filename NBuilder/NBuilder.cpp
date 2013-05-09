@@ -332,6 +332,10 @@ LoadFunctions(NPLContext& context)
 			{
 				throw LoggedEvent("No node found.", 0x80);
 			}
+			catch(ystdex::bad_any_cast&)
+			{
+				throw LoggedEvent("Node is empty.", 0x80);
+			}
 			GlobalPath.push_back(arg);
 		}
 	});
