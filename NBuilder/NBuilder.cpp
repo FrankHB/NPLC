@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright (C) by Franksoft 2011 - 2012.
+	Copyright by FrankHB 2011 - 2013.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,28 +11,29 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r3724;
+\version r3742
 \author FrankHB<frankhb1989@gmail.com>
-\since YSLib build 301 。
+\since YSLib build 301
 \par 创建时间:
-	2011-07-02 07:26:21 +0800;
+	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2012-09-30 11:24 +0800;
+	2013-05-09 11:19 +0800
 \par 文本编码:
-	UTF-8;
+	UTF-8
 \par 模块名称:
-	NBuilder::NBuilder;
+	NBuilder::NBuilder
 */
 
 
+#include "NBuilder.h"
 #include <streambuf>
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#include "NBuilder.h"
 #include "NPL/Configuration.h"
 #include <Helper/Initialization.h>
 #include <YCLib/debug.h>
+#include "Consoles.h"
 
 using namespace NPL;
 using namespace YSLib;
@@ -41,10 +42,16 @@ using platform_ex::UTF8ToMBCS;
 ValueNode GlobalRoot;
 
 string
-SToMBCS(String s, int cp)
+SToMBCS(String str, int cp)
 {
-	return platform_ex::WCSToMBCS(reinterpret_cast<const wchar_t*>(s.c_str()),
-		s.length(), cp);
+	return platform_ex::WCSToMBCS(reinterpret_cast<const wchar_t*>(str.c_str()),
+		str.length(), cp);
+}
+
+string
+UTF8ToGBK(string str)
+{
+	return SToMBCS(str, 936);
 }
 
 namespace
@@ -190,8 +197,7 @@ void ParseOutput(LexicalAnalyzer& lex)
 	{
 	//	cout << str << endl;
 	//	cout << String(str).GetMBCS(Text::CharSet::GBK) << endl;
-		cout << SToMBCS(str, 936) << endl;
-	//	cout << UTF8ToGBK(str) << endl;
+		cout << UTF8ToGBK(str) << endl;
 		cout << "~----: u8 length: " << str.size() << endl;
 	}
 	cout << rlst.size() << " token(s) parsed." <<endl;
@@ -299,47 +305,6 @@ SearchName(ValueNode& root, const string& arg)
 }
 
 } // unnamed namespace;
-
-
-/// 304
-namespace Consoles
-{
-
-WConsole::WConsole()
-	: hConsole(::GetStdHandle(STD_OUTPUT_HANDLE))
-{
-	YAssert(hConsole && hConsole != INVALID_HANDLE_VALUE,
-		"Wrong handle found;");
-}
-WConsole::~WConsole()
-{
-	SetColor();
-}
-
-void
-WConsole::SetSystemColor(std::uint8_t color)
-{
-	char cmd[9];
-
-	std::sprintf(cmd, "COLOR %02x", int(color));
-	std::system(cmd);
-}
-
-void
-WConsole::PrintError(const char* s)
-{
-	SetColor(ErrorColor);
-	std::cerr << s << std::endl;
-}
-void
-WConsole::PrintError(const LoggedEvent& e)
-{
-	SetColor(ErrorColor);
-	std::cerr << "Error<" << unsigned(e.GetLevel()) << ">: "
-		<< e.what() << std::endl;
-}
-
-} // namespace Consoles;
 
 
 #define NPL_NAME "NPL console"
