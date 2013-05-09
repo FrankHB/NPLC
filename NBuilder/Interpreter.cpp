@@ -99,7 +99,7 @@ Interpreter::Process()
 	wc.SetColor(SideEffectColor);
 	try
 	{
-		auto& unreduced(context.Translate(line));
+		auto& unreduced(context.Perform(line));
 
 		if(!unreduced.empty())
 		{
@@ -110,11 +110,11 @@ Interpreter::Process()
 		//	wc.SetColor(InfoColor);
 		//	cout << "Unrecognized reduced token list:" << endl;
 			wc.SetColor(ReducedColor);
-			for_each(unreduced.cbegin(), unreduced.cend(),
-				[](const string& token){
+			for(const auto& token : unreduced)
+			{
 			//	cout << token << endl;
 				cout << token << ' ';
-			});
+			}
 			cout << endl;
 		}
 	}
@@ -127,7 +127,7 @@ Interpreter::Process()
 	}
 	catch(LoggedEvent& e)
 	{
-		auto l(e.GetLevel());
+		const auto l(e.GetLevel());
 
 		if(l < err_threshold)
 			throw;
