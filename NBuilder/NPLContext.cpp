@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright (C) by Franksoft 2012.
+	Copyright by FrankHB 2012 - 2013.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,17 +11,17 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1261;
-\author FrankHB<frankhb1989@gmail.com>
+\version r1279
+\author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
-	2012-08-03 19:55:29 +0800;
+	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2012-09-02 19:40 +0800;
+	2013-05-09 21:47 +0800
 \par 文本编码:
-	UTF-8;
+	UTF-8
 \par 模块名称:
-	NPL::NPLContext;
+	NPL::NPLContext
 */
 
 
@@ -32,17 +32,13 @@
 YSL_BEGIN_NAMESPACE(NPL)
 
 NPLContext::NPLContext(const FunctionMap& fproto)
-	: Root(), fmap(fproto), token_list(), sem()
+	: Root(), Map(fproto), token_list(), sem()
 {}
+#if 0
 NPLContext::NPLContext(const NPLContext& proto, TokenList new_token_list)
-	: Root(), fmap(proto.fmap), token_list(new_token_list), sem()
+	: Root(), Map(proto.Map), token_list(new_token_list), sem()
 {}
-
-void
-NPLContext::Insert(const string& name, Function func)
-{
-	fmap.insert(make_pair(name, func));
-}
+#endif
 
 TLIter
 NPLContext::Call(TLIter b, TLIter e, size_t& cur_off)
@@ -67,9 +63,9 @@ NPLContext::Call(TLIter b, TLIter e, size_t& cur_off)
 	}
 	else
 	{
-		const auto it(fmap.find(fn));
+		const auto it(Map.find(fn));
 
-		if(it != fmap.end())
+		if(it != Map.end())
 			it->second(arg);
 		else
 			goto match_fail;
@@ -97,7 +93,7 @@ void
 NPLContext::Eval(const string& arg)
 {
 	if(CheckLiteral(arg) == '\'')
-		NPLContext(fmap).Perform(ystdex::get_mid(arg));
+		NPLContext(Map).Perform(ystdex::get_mid(arg));
 #if 0
 	{
 		NPLContext new_context(*this, MangleToken(ystdex::get_mid(arg)));

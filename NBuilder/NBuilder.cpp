@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r3853
+\version r3882
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2013-05-09 17:57 +0800
+	2013-05-09 21:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -311,9 +311,12 @@ LoadFunctions(NPLContext& context)
 {
 //	LoadFunctions(root);
 //	root.Add(ValueNode("parse", string("parse")));
-	context.Insert("parse", ParseFile);
-	context.Insert("print", PrintFile);
-	context.Insert("cd", [](const string& arg){
+
+	auto& m(context.Map);
+
+	m.insert({"parse", ParseFile});
+	m.insert({"print", PrintFile});
+	m.insert({"cd", [](const string& arg){
 		if(arg == "..")
 		{
 			if(GlobalPath.empty())
@@ -338,13 +341,13 @@ LoadFunctions(NPLContext& context)
 			}
 			GlobalPath.push_back(arg);
 		}
-	});
-	context.Insert("add", [](const string& arg){
+	}});
+	m.insert({"add", [](const string& arg){
 		if(arg == "..")
 			throw LoggedEvent("Invalid node name found.", 0x80);
 		GetCurrentNode() += {0, arg};
-	});
-	context.Insert("set", [](const string& arg){
+	}});
+	m.insert({"set", [](const string& arg){
 		auto& node(GetCurrentNode());
 
 		if(!node)
@@ -358,8 +361,8 @@ LoadFunctions(NPLContext& context)
 			{
 				throw LoggedEvent("Wrong type found.", 0x80);
 			}
-	});
-	context.Insert("get", [](const string&){
+	}});
+	m.insert({"get", [](const string&){
 		auto& node(GetCurrentNode());
 
 		try
@@ -370,31 +373,31 @@ LoadFunctions(NPLContext& context)
 		{
 			throw LoggedEvent("Wrong type found.", 0x80);
 		}
-	});
-	context.Insert("mangle", [](const string& arg){
+	}});
+	m.insert({"mangle", [](const string& arg){
 		if(CheckLiteral(arg) == '"')
 			ParseString(ystdex::get_mid(arg));
 		else
 			std::cout << "Please use a string literal as argument."
 				<< std::endl;
-	});
-	context.Insert("system", [](const string& arg){
+	}});
+	m.insert({"system", [](const string& arg){
 		std::system(arg.c_str());
-	});
-	context.Insert("echo", [](const string& arg){
+	}});
+	m.insert({"echo", [](const string& arg){
 		if(CheckLiteral(arg) != 0)
 			std::cout << ystdex::get_mid(arg) << std::endl;
-	});
-	context.Insert("search", [&](const string& arg){
+	}});
+	m.insert({"search", [&](const string& arg){
 		SearchName(context.Root, arg);
-	});
-	context.Insert("eval",
-		std::bind(&NPLContext::Eval, &context, std::placeholders::_1));
-	context.Insert("evals", [](const string& arg){
+	}});
+	m.insert({"eval",
+		std::bind(&NPLContext::Eval, &context, std::placeholders::_1)});
+	m.insert({"evals", [](const string& arg){
 		if(CheckLiteral(arg) == '\'')
 			EvalS(ystdex::get_mid(arg));
-	});
-	context.Insert("evalf", [](const string& path_gbk){
+	}});
+	m.insert({"evalf", [](const string& path_gbk){
 		if(TextFile tf{String(path_gbk, CHRLib::CharSet::GBK).GetMBCS()})
 		{
 			Configuration conf;
@@ -415,10 +418,10 @@ LoadFunctions(NPLContext& context)
 		}
 		else
 			throw LoggedEvent("Invalid file: \"" + path_gbk + "\".", 0x80);
-	});
-	context.Insert("$+", [&](const string& arg){
+	}});
+	m.insert({"$+", [&](const string& arg){
 		context.sem = "$__+" + arg;
-	});
+	}});
 }
 
 

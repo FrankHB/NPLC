@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright (C) by Franksoft 2012.
+	Copyright by FrankHB 2012 - 2013.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,22 +11,22 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1118;
-\author FrankHB<frankhb1989@gmail.com>
-\since YSLib build 304 。
+\version r1134
+\author FrankHB <frankhb1989@gmail.com>
+\since YSLib build 304
 \par 创建时间:
-	2012-08-03 19:55:41 +0800;
+	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2012-09-02 19:39 +0800;
+	2013-05-09 21:48 +0800
 \par 文本编码:
-	UTF-8;
+	UTF-8
 \par 模块名称:
-	NPL::NPLContext;
+	NPL::NPLContext
 */
 
 
-#ifndef YSL_INC_NPL_NPLCONTEXT_H_
-#define YSL_INC_NPL_NPLCONTEXT_H_
+#ifndef INC_NPL_NPLContext_h_
+#define INC_NPL_NPLContext_h_
 
 #include "NPL/SContext.h"
 
@@ -49,13 +49,15 @@ enum class SSignal
 struct NPLContext : private noncopyable
 {
 public:
+	/// 403
 	typedef std::function<void(const string&)> Function;
 	typedef map<string, Function> FunctionMap;
 
 	ValueNode Root;
+	/// 403
+	FunctionMap Map;
 
 private:
-	FunctionMap fmap;
 	TokenList token_list;
 	// TODO: use TLCIter instead of TLIter for C++11 comforming implementations;
 
@@ -68,13 +70,10 @@ public:
 private:
 	///329
 	NPLContext(const FunctionMap&);
+#if 0
 	NPLContext(const NPLContext&, TokenList);
+#endif
 
-public:
-	void
-	Insert(const string&, Function);
-
-private:
 	/// 327
 	TLIter
 	Call(TLIter b, TLIter e, size_t& cur_off);
