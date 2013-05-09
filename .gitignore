@@ -1,0 +1,10 @@
+.hg
+
+*.hgignore
+*.cscope_file_list
+
+*.depend
+
+*.o
+
+*.layout
