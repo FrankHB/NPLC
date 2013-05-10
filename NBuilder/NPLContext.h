@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1134
+\version r?1134
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2013-05-09 21:48 +0800
+	2013-05-10 18:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -42,6 +42,16 @@ enum class SSignal
 	About,
 	Help,
 	License
+};
+
+
+/*!
+\brief 值记号：节点中的值的占位符。
+\since YSLib build 403
+*/
+enum class ValueToken
+{
+	Null
 };
 
 
@@ -97,8 +107,9 @@ private:
 	Reduce(size_t depth, TLIter b, TLIter e, bool eval = true);
 
 public:
+	/// 403
 	void
-	ReduceS(size_t, ValueNode, ValueNode&);
+	ReduceS(size_t, ValueNode, const ValueNode&);
 
 	TokenList&
 	Perform(const string& unit);

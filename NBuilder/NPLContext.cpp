@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1279
+\version r?1279
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2013-05-09 21:47 +0800
+	2013-05-10 19:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -193,9 +193,123 @@ NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
 	return make_pair(b, cur_off);
 }
 
+
 void
-NPLContext::ReduceS(size_t depth, ValueNode ctx, ValueNode& sema)
+NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 {
+	++depth;
+	if(auto p = sema.GetContainerPtr())
+	{
+		const auto n(p->size());
+
+		if(n == 0)
+			//空表。
+			sema.Value = ValueToken::Null;
+		else if(n == 1)
+		{
+			//单元素表化简。
+			sema.Value = std::move(p->begin()->Value);
+			ReduceS(depth, std::move(ctx), sema);
+		}
+		else
+		{
+			//表应用。
+			for(auto& term : sema)
+				ReduceS(depth, ctx, term);
+			//函数匹配。
+			try
+			{
+				auto i(p->begin());
+				const auto fn(i->Value.Access<string>());
+
+				++i;
+				if(n == 3 && fn == "+")
+				{
+					const auto e1(std::stoi(i->Value.Access<string>()));
+					++i;
+					const auto e2(std::stoi(i->Value.Access<string>()));
+					++i;
+
+					sema.Value = to_string(e1 + e2);
+					return;
+				}
+			//	else
+				//	throw LoggedEvent("No matching functions found.", 0x80);
+				return;
+			}
+			catch(ystdex::bad_any_cast&)
+			{}
+			throw LoggedEvent("Mismatched types found.", 0x80);
+		}
+	}
+	else
+	{
+
+	}
+}
+
+namespace
+{
+
+inline std::ostream&
+WritePrefix(std::ostream& f, size_t n = 1, char c = '\t')
+{
+	while(n--)
+		f << c;
+	return f;
+}
+
+string
+EscapeNodeString(const string& str)
+{
+	const char c(CheckLiteral(str));
+	auto content(MakeEscape(c == char() ? str : ystdex::get_mid(str)));
+
+	return c == char() ? std::move(content) : c + content + c;
+}
+
+std::ostream&
+WriteNodeC(std::ostream& f, const ValueNode& node, size_t depth)
+{
+	WritePrefix(f, depth);
+	f << node.GetName();
+	if(node)
+	{
+		try
+		{
+			const auto& s(Access<string>(node));
+
+			f << ' ' << '"' << EscapeNodeString(s) << '"' << '\n';
+			return f;
+		}
+		catch(ystdex::bad_any_cast&)
+		{}
+		f << '\n';
+		for(const auto& n : node)
+		{
+			WritePrefix(f, depth);
+			f << '(' << '\n';
+			try
+			{
+				WriteNodeC(f, n, depth + 1);
+			}
+			catch(std::out_of_range&)
+			{}
+			WritePrefix(f, depth);
+			f << ')' << '\n';
+		}
+	}
+	return f;
+}
+
+void
+ConvTokens(const ValueNode& sema)
+{
+	using namespace std;
+
+	WriteNodeC(cout, sema, 0);
+	cout << endl;
+}
 
 }
 
@@ -210,7 +324,7 @@ NPLContext::Perform(const string& unit)
 
 	ReduceS(0, Root, sema);
 
-// return ConvTokens(sema);
+	ConvTokens(sema);
 	return token_list;
 #else
 	Session session(unit);
