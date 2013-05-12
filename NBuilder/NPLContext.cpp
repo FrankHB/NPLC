@@ -17,7 +17,7 @@
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2013-05-10 19:06 +0800
+	2013-05-12 19:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -27,6 +27,7 @@
 
 #include "NPLContext.h"
 #include "NPL/SContext.h"
+#include <ystdex/container.hpp>
 #include <iostream>
 
 YSL_BEGIN_NAMESPACE(NPL)
@@ -216,6 +217,10 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 			//表应用。
 			for(auto& term : sema)
 				ReduceS(depth, ctx, term);
+			ystdex::erase_all_if(*p, p->begin(), p->end(),
+				[](const ValueNode& term){
+					return !term;
+			});
 			//函数匹配。
 			try
 			{
@@ -242,9 +247,17 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 			throw LoggedEvent("Mismatched types found.", 0x80);
 		}
 	}
-	else
+	else if(sema.Value.AccessPtr<ValueToken>())
+		;
+	else if(auto p = sema.Value.AccessPtr<string>())
 	{
+		if(*p == "," || *p == ";")
+			sema.Value.Clear();
+		else
+		{
+			HandleIntrinsic(*p);
 
+		}
 	}
 }
 
