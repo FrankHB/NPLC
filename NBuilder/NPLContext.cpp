@@ -110,6 +110,15 @@ NPLContext::Eval(const string& arg)
 #endif
 }
 
+ValueObject
+NPLContext::FetchValue(const ValueNode& ctx, const string& name)
+{
+	static_cast<void>(ctx);
+	static_cast<void>(name);
+
+	return ValueObject();
+}
+
 void
 NPLContext::HandleIntrinsic(const string& cmd)
 {
@@ -194,7 +203,6 @@ NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
 	return make_pair(b, cur_off);
 }
 
-
 void
 NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 {
@@ -215,7 +223,7 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 		else
 		{
 			//表应用。
-			for(auto& term : sema)
+			for(auto& term : *p)
 				ReduceS(depth, ctx, term);
 			ystdex::erase_all_if(*p, p->begin(), p->end(),
 				[](const ValueNode& term){
@@ -228,7 +236,11 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 				const auto fn(i->Value.Access<string>());
 
 				++i;
-				if(n == 3 && fn == "+")
+				if(fn == "$lambda")
+				{
+					std::cout << "lambda with param.n=:" << n << std::endl;
+				}
+				else if(n == 3 && fn == "+")
 				{
 					const auto e1(std::stoi(i->Value.Access<string>()));
 					++i;
@@ -256,7 +268,12 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 		else
 		{
 			HandleIntrinsic(*p);
-
+			//值重写。
+			if(auto v = FetchValue(ctx, *p))
+				sema.Value = std::move(v);
+		//	else
+		//		throw LoggedEvent((string("Unknown name found: '")
+		//			+ *p + "'.").c_str(), 0x80);
 		}
 	}
 }

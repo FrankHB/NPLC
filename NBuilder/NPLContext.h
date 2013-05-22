@@ -96,6 +96,10 @@ public:
 	void
 	Eval(const string& arg);
 
+	/// 407
+	ValueObject
+	FetchValue(const ValueNode&, const string&);
+
 private:
 	static void
 	HandleIntrinsic(const string& cmd);
