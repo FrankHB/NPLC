@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright by FrankHB 2013.
+	© 2013 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Consoles.h
 \ingroup NBuilder
 \brief 控制台。
-\version r82
+\version r89
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 11:01:12 +0800
 \par 修改时间:
-	2013-05-09 17:25 +0800
+	2013-12-27 10:28 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -28,12 +28,15 @@
 #ifndef INC_NPL_Consoles_h_
 #define INC_NPL_Consoles_h_
 
-#include "YCLib/Video.h"
-#include "YSLib/Core/yexcept.h"
+#include <YCLib/YModules.h>
+#include <YSLib/Core/YModules.h>
+#include YFM_YCLib_Video
+#include YFM_YSLib_Core_YException
 #include <windows.h>
 
 /// 304
-YSL_BEGIN_NAMESPACE(Consoles)
+namespace Consoles
+{
 
 using namespace platform::Consoles;
 
@@ -79,7 +82,7 @@ public:
 	PrintError(const YSLib::LoggedEvent&);
 };
 
-YSL_END_NAMESPACE(Consoles)
+} // namespace Consoles;
 
 #endif
 

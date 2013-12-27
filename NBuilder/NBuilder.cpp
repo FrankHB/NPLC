@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright by FrankHB 2011 - 2013.
+	© 2011-2013 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r3882
+\version r3905
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2013-05-09 21:59 +0800
+	2013-12-27 10:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -30,10 +30,11 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#include "NPL/Configuration.h"
-#include <Helper/Initialization.h>
-#include <YCLib/debug.h>
-#include <YCLib/NativeAPI.h>
+#include <Helper/YModules.h>
+#include YFM_NPL_Configuration
+#include YFM_Helper_Initialization
+#include YFM_YCLib_Debug
+#include YFM_MinGW32_YCLib_MinGW32
 #include "Interpreter.h"
 
 using namespace NPL;
@@ -130,7 +131,8 @@ PrintNodeN(const ValueNode& node)
 
 } // unnamed namespace;
 
-YSL_BEGIN_NAMESPACE(NPL)
+namespace NPL
+{
 
 void
 EvalS(const ValueNode& root)
@@ -142,11 +144,11 @@ EvalS(const ValueNode& root)
 	}
 	catch(ystdex::bad_any_cast&)
 	{
-		throw LoggedEvent("Bad configuration found.", 0x80);
+		throw LoggedEvent("Bad configuration found.", Warning);
 	}
 }
 
-YSL_END_NAMESPACE(NPL)
+} // namespace NPL;
 
 
 namespace
@@ -159,7 +161,7 @@ GetNodeFromPath(const ValueNode& root, list<string> path)
 	auto p(&root);
 
 	for(const auto& n : path)
-		p = &p->GetNode(n);
+		p = &p->at(n);
 	return *p;
 }
 
@@ -209,14 +211,14 @@ ParseFileImpl(LexicalAnalyzer& lex, const string& path_gbk)
 	TextFile tf(path.c_str());
 
 	if(!tf)
-		throw LoggedEvent("Invalid file: \"" + path_gbk + "\".", 0x80);
+		throw LoggedEvent("Invalid file: \"" + path_gbk + "\".", Warning);
 	{
-		ystdex::ifile_iterator i(*tf.GetPtr());
+		ystdex::ifile_iterator i(tf.GetPtr());
 
 		while(!tf.CheckEOF())
 		{
 			if(YB_UNLIKELY(is_undereferenceable(i)))
-				throw LoggedEvent("Bad Source!", 0x40);
+				throw LoggedEvent("Bad Source!", Critical);
 			lex.ParseByte(*i);
 			++i;
 		}
@@ -285,7 +287,7 @@ SearchName(ValueNode& root, const string& arg)
 
 		cout << "Searching... " << name << endl;
 
-		auto& node(root.GetNode(name));
+		auto& node(root.at(name));
 
 		cout << "Found: " << name << " = ";
 
@@ -320,7 +322,7 @@ LoadFunctions(NPLContext& context)
 		if(arg == "..")
 		{
 			if(GlobalPath.empty())
-				throw LoggedEvent("No parent node found.", 0x80);
+				throw LoggedEvent("No parent node found.", Warning);
 			GlobalPath.pop_back();
 		}
 		else
@@ -329,22 +331,22 @@ LoadFunctions(NPLContext& context)
 
 			try
 			{
-				node.GetNode(arg);
+				node.at(arg);
 			}
 			catch(std::out_of_range&)
 			{
-				throw LoggedEvent("No node found.", 0x80);
+				throw LoggedEvent("No node found.", Warning);
 			}
 			catch(ystdex::bad_any_cast&)
 			{
-				throw LoggedEvent("Node is empty.", 0x80);
+				throw LoggedEvent("Node is empty.", Warning);
 			}
 			GlobalPath.push_back(arg);
 		}
 	}});
 	m.insert({"add", [](const string& arg){
 		if(arg == "..")
-			throw LoggedEvent("Invalid node name found.", 0x80);
+			throw LoggedEvent("Invalid node name found.", Warning);
 		GetCurrentNode() += {0, arg};
 	}});
 	m.insert({"set", [](const string& arg){
@@ -359,7 +361,7 @@ LoadFunctions(NPLContext& context)
 			}
 			catch(ystdex::bad_any_cast&)
 			{
-				throw LoggedEvent("Wrong type found.", 0x80);
+				throw LoggedEvent("Wrong type found.", Warning);
 			}
 	}});
 	m.insert({"get", [](const string&){
@@ -371,7 +373,7 @@ LoadFunctions(NPLContext& context)
 		}
 		catch(ystdex::bad_any_cast&)
 		{
-			throw LoggedEvent("Wrong type found.", 0x80);
+			throw LoggedEvent("Wrong type found.", Warning);
 		}
 	}});
 	m.insert({"mangle", [](const string& arg){
@@ -413,11 +415,11 @@ LoadFunctions(NPLContext& context)
 				// TODO: Avoid memory allocation.
 				throw LoggedEvent(ystdex::sfmt(
 					">Bad configuration found: cast failed from [%s] to [%s] .",
-					e.from(), e.to()), 0x80);
+					e.from(), e.to()), Warning);
 			}
 		}
 		else
-			throw LoggedEvent("Invalid file: \"" + path_gbk + "\".", 0x80);
+			throw LoggedEvent("Invalid file: \"" + path_gbk + "\".", Warning);
 	}});
 	m.insert({"$+", [&](const string& arg){
 		context.sem = "$__+" + arg;
