@@ -13,12 +13,10 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
-					<Add option="-DDEBUG" />
-					<Add option="-D_GLIBCXX_DEBUG" />
 				</Compiler>
 				<Linker>
-					<Add library="F:\Programing\NPLC\NBuilder\debug\YBase.dll" />
-					<Add library="F:\Programing\NPLC\NBuilder\debug\YFramework.dll" />
+					<Add library="YFrameworkd" />
+					<Add library="YBased" />
 				</Linker>
 			</Target>
 			<Target title="release">
@@ -32,8 +30,8 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="F:\Programing\NPLC\NBuilder\release\YBase.dll" />
-					<Add library="F:\Programing\NPLC\NBuilder\release\YFramework.dll" />
+					<Add library="YFramework" />
+					<Add library="YBase" />
 				</Linker>
 			</Target>
 		</Build>
@@ -41,9 +39,10 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 			<Add option="-DYSL_DLL" />
-			<Add directory="F:/Programing/NDS/YSTest/YFramework/include" />
-			<Add directory="F:/Programing/NDS/YSTest/YBase/include" />
-			<Add directory="." />
+			<Add directory="F:/Programing/YSLib/YFramework/MinGW32/include" />
+			<Add directory="F:/Programing/YSLib/YFramework/include" />
+			<Add directory="F:/Programing/YSLib/YBase/include" />
+			<Add directory="F:/Programing/YSLib/3rdparty/include" />
 		</Compiler>
 		<Unit filename="Consoles.cpp" />
 		<Unit filename="Consoles.h" />
