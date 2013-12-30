@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright by FrankHB 2012 - 2013.
+	© 2012-2013 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,14 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r?1134
+\version r?1139
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2013-05-10 18:35 +0800
+	2013-12-27 10:31 +0800
+	2013-12-28 13:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -28,9 +29,11 @@
 #ifndef INC_NPL_NPLContext_h_
 #define INC_NPL_NPLContext_h_
 
-#include "NPL/SContext.h"
+#include <NPL/YModules.h>
+#include YFM_NPL_SContext
 
-YSL_BEGIN_NAMESPACE(NPL)
+namespace NPL
+{
 
 using namespace YSLib;
 
@@ -119,7 +122,7 @@ public:
 	Perform(const string& unit);
 };
 
-YSL_END_NAMESPACE(NPL)
+} // namespace NPL;
 
 #endif
 

@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright by FrankHB 2012 - 2013.
+	© 2012-2013 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,14 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r?1279
+\version r?1289
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2013-05-12 19:11 +0800
+	2013-12-27 10:42 +0800
+	2013-12-30 11:05 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -26,11 +27,12 @@
 
 
 #include "NPLContext.h"
-#include "NPL/SContext.h"
+#include YFM_NPL_SContext
 #include <ystdex/container.hpp>
 #include <iostream>
 
-YSL_BEGIN_NAMESPACE(NPL)
+namespace NPL
+{
 
 NPLContext::NPLContext(const FunctionMap& fproto)
 	: Root(), Map(fproto), token_list(), sem()
@@ -153,7 +155,7 @@ NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
 			auto res(Reduce(depth + 1, ++b, e, eval));
 
 			if(res.first == e || *res.first != ")")
-				throw LoggedEvent("Redundant '(' found.", 0x20);
+				throw LoggedEvent("Redundant '(' found.", Alert);
 			if(res.second < 2)
 			{
 				token_list.erase(res.first);
@@ -251,12 +253,12 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 					return;
 				}
 			//	else
-				//	throw LoggedEvent("No matching functions found.", 0x80);
+				//	throw LoggedEvent("No matching functions found.", Warning);
 				return;
 			}
 			catch(ystdex::bad_any_cast&)
 			{}
-			throw LoggedEvent("Mismatched types found.", 0x80);
+			throw LoggedEvent("Mismatched types found.", Warning);
 		}
 	}
 	else if(sema.Value.AccessPtr<ValueToken>())
@@ -273,7 +275,7 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 				sema.Value = std::move(v);
 		//	else
 		//		throw LoggedEvent((string("Unknown name found: '")
-		//			+ *p + "'.").c_str(), 0x80);
+		//			+ *p + "'.").c_str(), Warning);
 		}
 	}
 }
@@ -348,7 +350,7 @@ NPLContext::Perform(const string& unit)
 {
 #if 1
 	if(unit.empty())
-		throw LoggedEvent("Empty token list found;", 0x20);
+		throw LoggedEvent("Empty token list found;", Alert);
 
 	auto sema(SContext::Analyze(Session(unit)));
 
@@ -362,10 +364,10 @@ NPLContext::Perform(const string& unit)
 	if((token_list = session.GetTokenList()).size() == 1)
 		HandleIntrinsic(token_list.front());
 	if(token_list.empty())
-		throw LoggedEvent("Empty token list found;", 0x20);
+		throw LoggedEvent("Empty token list found;", Alert);
 	if(Reduce(0, token_list.begin(), token_list.end(), false).first
 		!= token_list.end())
-		throw LoggedEvent("Redundant ')' found.", 0x20);
+		throw LoggedEvent("Redundant ')' found.", Alert);
 
 	const auto res(Reduce(0, token_list.begin(), token_list.end(), true));
 
@@ -375,5 +377,5 @@ NPLContext::Perform(const string& unit)
 #endif
 }
 
-YSL_END_NAMESPACE(NPL)
+} // namespace NPL;
 

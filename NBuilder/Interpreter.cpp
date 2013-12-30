@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright by FrankHB 2013.
+	© 2013 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r153
+\version r161
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2013-05-09 17:55 +0800
+	2013-12-27 10:39 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -26,13 +26,16 @@
 
 
 #include "Interpreter.h"
+#include <Helper/YModules.h>
 #include <iostream>
-#include <Helper/Initialization.h>
+#include YFM_YCLib_YCommon
+#include YFM_Helper_Initialization
 
 using namespace NPL;
 using YSLib::LoggedEvent;
 
-YSL_BEGIN_NAMESPACE(NPL)
+namespace NPL
+{
 
 /// 403
 list<string> GlobalPath;
@@ -47,7 +50,7 @@ yconstexpr auto title(NPL_NAME" " NPL_VER" @ (" __DATE__", " __TIME__") "
 
 
 Interpreter::Interpreter(std::function<void(NPLContext&)> loader)
-	: wc(), err_threshold(0x10), line(), context()
+	: wc(), err_threshold(RecordLevel(0x10)), line(), context()
 {
 	using namespace std;
 	using namespace Consoles;
@@ -150,5 +153,5 @@ Interpreter::WaitForLine()
 	return getline(cin, line);
 }
 
-YSL_END_NAMESPACE(NPL)
+} // namespace NPL;
 
