@@ -11,14 +11,14 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1154
+\version r1159
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
 	2013-12-27 10:31 +0800
-	2014-04-25 13:33 +0800
+	2014-04-25 18:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -103,6 +103,10 @@ public:
 	ValueObject
 	FetchValue(const ValueNode&, const string&);
 
+	/// 495
+	static const ValueNode*
+	LookupName(const ValueNode&, const string&);
+
 private:
 	static void
 	HandleIntrinsic(const string& cmd);
@@ -114,9 +118,9 @@ private:
 	Reduce(size_t depth, TLIter b, TLIter e, bool eval = true);
 
 public:
-	/// 403
+	/// 495
 	void
-	ReduceS(size_t, ValueNode, const ValueNode&);
+	ReduceS(size_t, const ValueNode&, const ValueNode&);
 
 	TokenList&
 	Perform(const string& unit);

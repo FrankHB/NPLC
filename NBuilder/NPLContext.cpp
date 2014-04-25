@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1430
+\version r1493
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2014-04-25 13:32 +0800
+	2014-04-25 18:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -114,10 +114,34 @@ NPLContext::Eval(const string& arg)
 ValueObject
 NPLContext::FetchValue(const ValueNode& ctx, const string& name)
 {
-	static_cast<void>(ctx);
-	static_cast<void>(name);
-
+	if(auto p_id = LookupName(ctx, name))
+		return p_id->Value;
 	return ValueObject();
+}
+
+const ValueNode*
+NPLContext::LookupName(const ValueNode& ctx, const string& id)
+{
+	try
+	{
+		if(id != "$parent")
+			try
+			{
+				 return &ctx.at(id);
+			}
+			catch(std::out_of_range&)
+			{}
+		try
+		{
+			if(const auto p = AccessChild<ValueNode*>(ctx, "$parent"))
+				return LookupName(*p, id);
+		}
+		catch(std::out_of_range&)
+		{}
+	}
+	catch(ystdex::bad_any_cast&)
+	{}
+	return {};
 }
 
 void
@@ -205,8 +229,10 @@ NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
 }
 
 void
-NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
+NPLContext::ReduceS(size_t depth, const ValueNode& ctx, const ValueNode& sema)
 {
+	std::clog << "Depth = " << depth << ", Context = " << &ctx
+		<< ", Semantics = " << &sema << std::endl;
 	++depth;
 	if(auto p = sema.GetContainerPtr())
 	{
@@ -219,13 +245,14 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 		{
 			//单元素表化简。
 			sema.Value = std::move(p->begin()->Value);
-			ReduceS(depth, std::move(ctx), sema);
+			ReduceS(depth, ctx, sema);
 		}
 		else
 		{
 			//表应用。
 			for(auto& term : *p)
-				ReduceS(depth, ctx, term);
+				ReduceS(depth, PackNodes(sema.GetName(),
+					ValueNode(0, "$parent", &ctx)), term);
 			ystdex::erase_all_if(*p, p->begin(), p->end(),
 				[](const ValueNode& term){
 					return !term;
@@ -234,12 +261,35 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 			try
 			{
 				auto i(p->begin());
-				const auto fn(i->Value.Access<string>());
+				const auto& fn(i->Value.Access<string>());
 
 				++i;
 				if(fn == "$lambda")
 				{
-					std::cout << "lambda with param.n=:" << n << std::endl;
+					std::clog << "Found lambda abstraction: fn = " << fn
+						<< " param.n = " << n - 1 << std::endl;
+				}
+				else if(fn == "$decl")
+				{
+					std::clog << "Found form: fn = " << fn
+						<< " param.n = " << n - 1 << std::endl;
+					if(n < 3)
+						throw LoggedEvent("Missing declarator.", Warning);
+					try
+					{
+						auto& id(Access<string>(*i));
+
+						if(!ctx.Add({0, id, Access<string>(*++i)}))
+							throw LoggedEvent("Duplicate name found.", Warning);
+					}
+					catch(LoggedEvent&)
+					{
+						throw;
+					}
+					catch(...)
+					{
+						throw LoggedEvent("Bad declaration found.", Warning);
+					}
 				}
 				else if(n == 3 && fn == "+")
 				{
@@ -249,7 +299,6 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 					++i;
 
 					sema.Value = to_string(e1 + e2);
-					return;
 				}
 			//	else
 				//	throw LoggedEvent("No matching functions found.", Warning);
@@ -264,17 +313,21 @@ NPLContext::ReduceS(size_t depth, ValueNode ctx, const ValueNode& sema)
 		;
 	else if(auto p = sema.Value.AccessPtr<string>())
 	{
-		if(*p == "," || *p == ";")
+		auto& id(*p);
+
+		if(id == "," || id == ";")
 			sema.Value.Clear();
 		else
 		{
-			HandleIntrinsic(*p);
+			HandleIntrinsic(id);
 			//值重写。
 			if(auto v = FetchValue(ctx, *p))
 				sema.Value = std::move(v);
 		//	else
 		//		throw LoggedEvent((string("Unknown name found: '")
-		//			+ *p + "'.").c_str(), Warning);
+		//			+ id + "'.").c_str(), Warning);
+		//	throw LoggedEvent((string("Undeclared name found: '")
+		//		+ id + "'.").c_str(), Warning);
 		}
 	}
 }
@@ -355,6 +408,7 @@ NPLContext::Perform(const string& unit)
 
 	ReduceS(0, Root, sema);
 
+	// TODO: Merge result to 'Root'.
 	ConvTokens(sema);
 	return token_list;
 #else
