@@ -1,5 +1,5 @@
 ﻿/*
-	© 2011-2013 FrankHB.
+	© 2011-2014 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r3905
+\version r3908
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2013-12-27 10:45 +0800
+	2014-04-25 11:42 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -39,7 +39,7 @@
 
 using namespace NPL;
 using namespace YSLib;
-using platform_ex::UTF8ToMBCS;
+using platform_ex::MBCSToMBCS;
 
 ValueNode GlobalRoot;
 
@@ -140,7 +140,7 @@ EvalS(const ValueNode& root)
 	PrintNodeN(root);
 	try
 	{
-		PrintNodeN(TransformConfiguration(root));
+		PrintNodeN(TransformNPLA1(root));
 	}
 	catch(ystdex::bad_any_cast&)
 	{
