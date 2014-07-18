@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013 FrankHB.
+	© 2013-2014 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Consoles.h
 \ingroup NBuilder
 \brief 控制台。
-\version r89
+\version r95
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 11:01:12 +0800
 \par 修改时间:
-	2013-12-27 10:28 +0800
+	2014-07-19 07:51 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -31,7 +31,6 @@
 #include <YCLib/YModules.h>
 #include <YSLib/Core/YModules.h>
 #include YFM_YCLib_Video
-#include YFM_YSLib_Core_YException
 #include <windows.h>
 
 /// 304
@@ -75,11 +74,6 @@ public:
 	{
 		std::system("CLS");
 	}
-
-	void
-	PrintError(const char*);
-	void
-	PrintError(const YSLib::LoggedEvent&);
 };
 
 } // namespace Consoles;
