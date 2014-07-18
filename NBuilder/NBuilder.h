@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2013 FrankHB.
+	© 2012-2014 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r1839
+\version r1842
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2013-12-27 10:32 +0800
+	2014-07-18 18:48 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -38,9 +38,6 @@ extern NPL::ValueNode GlobalRoot;
 
 YSLib::string
 SToMBCS(YSLib::Text::String, int);
-
-YSLib::string
-UTF8ToGBK(YSLib::string);
 
 namespace NPL
 {

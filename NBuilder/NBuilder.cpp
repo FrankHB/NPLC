@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r3908
+\version r3922
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2014-04-25 11:42 +0800
+	2014-07-18 18:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -44,16 +44,10 @@ using platform_ex::MBCSToMBCS;
 ValueNode GlobalRoot;
 
 string
-SToMBCS(String str, int cp)
+SToMBCS(const String& str, int cp = CP_ACP)
 {
 	return platform_ex::WCSToMBCS(reinterpret_cast<const wchar_t*>(str.c_str()),
 		str.length(), cp);
-}
-
-string
-UTF8ToGBK(string str)
-{
-	return SToMBCS(str, 936);
 }
 
 namespace
@@ -197,7 +191,7 @@ void ParseOutput(LexicalAnalyzer& lex)
 	{
 	//	cout << str << endl;
 	//	cout << String(str).GetMBCS(Text::CharSet::GBK) << endl;
-		cout << UTF8ToGBK(str) << endl;
+		cout << MBCSToMBCS(str) << endl;
 		cout << "~----: u8 length: " << str.size() << endl;
 	}
 	cout << rlst.size() << " token(s) parsed." <<endl;
@@ -207,7 +201,7 @@ void ParseOutput(LexicalAnalyzer& lex)
 void
 ParseFileImpl(LexicalAnalyzer& lex, const string& path_gbk)
 {
-	const string& path(String(path_gbk, CHRLib::CharSet::GBK).GetMBCS());
+	const auto& path(MBCSToMBCS(path_gbk));
 	TextFile tf(path.c_str());
 
 	if(!tf)
@@ -241,7 +235,7 @@ ParseFile(const string& path_gbk)
 void
 PrintFile(const string& path_gbk)
 {
-	const string& path(String(path_gbk, CHRLib::CharSet::GBK).GetMBCS());
+	const auto& path(MBCSToMBCS(path_gbk));
 	size_t bom;
 	{
 		TextFile tf(path);
@@ -257,7 +251,7 @@ PrintFile(const string& path_gbk)
 	while(fin)
 	{
 		std::getline(fin, str);
-		std::cout << SToMBCS(str, 936) << '\n';
+		std::cout << SToMBCS(str) << '\n';
 	}
 	std::cout << std::endl;
 }
@@ -399,8 +393,8 @@ LoadFunctions(NPLContext& context)
 		if(CheckLiteral(arg) == '\'')
 			EvalS(ystdex::get_mid(arg));
 	}});
-	m.insert({"evalf", [](const string& path_gbk){
-		if(TextFile tf{String(path_gbk, CHRLib::CharSet::GBK).GetMBCS()})
+	m.insert({"evalf", [](const string& path_acp){
+		if(TextFile tf{MBCSToMBCS(path_acp)})
 		{
 			Configuration conf;
 			File f("out.txt", "w");
@@ -419,7 +413,7 @@ LoadFunctions(NPLContext& context)
 			}
 		}
 		else
-			throw LoggedEvent("Invalid file: \"" + path_gbk + "\".", Warning);
+			throw LoggedEvent("Invalid file: \"" + path_acp + "\".", Warning);
 	}});
 	m.insert({"$+", [&](const string& arg){
 		context.sem = "$__+" + arg;
@@ -433,7 +427,6 @@ main(int argc, char* argv[])
 {
 	using namespace std;
 
-	platform::YDebugSetStatus(true);
 	try
 	{
 		Interpreter intp(LoadFunctions);
