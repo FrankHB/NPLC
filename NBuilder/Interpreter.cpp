@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013 FrankHB.
+	© 2013-2014 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r161
+\version r189
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2013-12-27 10:39 +0800
+	2014-07-19 09:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -48,12 +48,35 @@ yconstexpr auto prompt("> ");
 yconstexpr auto title(NPL_NAME" " NPL_VER" @ (" __DATE__", " __TIME__") "
 	NPL_PLATFORM);
 
+/// 519
+namespace
+{
+
+/// 520
+using namespace platform_ex;
+
+void
+PrintError(WConsole& wc, const char* s)
+{
+	wc.SetColor(ErrorColor);
+	std::cerr << s << std::endl;
+}
+void
+PrintError(WConsole& wc, const LoggedEvent& e)
+{
+	wc.SetColor(ErrorColor);
+	std::cerr << "Error<" << unsigned(e.GetLevel()) << ">: "
+		<< e.what() << std::endl;
+}
+
+}//unnamed namespace
+
 
 Interpreter::Interpreter(std::function<void(NPLContext&)> loader)
 	: wc(), err_threshold(RecordLevel(0x10)), line(), context()
 {
 	using namespace std;
-	using namespace Consoles;
+	using namespace platform_ex;
 
 	wc.SetColor(TitleColor);
 	cout << title << endl << "Initializing...";
@@ -95,7 +118,7 @@ Interpreter::HandleSignal(SSignal e)
 bool
 Interpreter::Process()
 {
-	using namespace Consoles;
+	using namespace platform_ex;
 
 	if(line.empty())
 		return true;
@@ -107,9 +130,8 @@ Interpreter::Process()
 		if(!unreduced.empty())
 		{
 			using namespace std;
-			using namespace Consoles;
 
-		//	wc.PrintError("Bad command.");
+		//	PrintError(wc, "Bad command.");
 		//	wc.SetColor(InfoColor);
 		//	cout << "Unrecognized reduced token list:" << endl;
 			wc.SetColor(ReducedColor);
@@ -134,7 +156,7 @@ Interpreter::Process()
 
 		if(l < err_threshold)
 			throw;
-		wc.PrintError(e);
+		PrintError(wc, e);
 	}
 	return true;
 }
@@ -143,13 +165,13 @@ std::istream&
 Interpreter::WaitForLine()
 {
 	using namespace std;
-	using namespace Consoles;
+	using namespace platform_ex;
 
 	wc.SetColor(PromptColor);
 	for(const auto& n : GlobalPath)
 		cout << n << ' ';
 	cout << prompt;
-	wc.SetColor();
+	wc.SetColor(DefaultColor);
 	return getline(cin, line);
 }
 
