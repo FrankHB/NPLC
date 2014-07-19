@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r182
+\version r189
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2014-07-19 07:47 +0800
+	2014-07-19 09:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -52,7 +52,8 @@ yconstexpr auto title(NPL_NAME" " NPL_VER" @ (" __DATE__", " __TIME__") "
 namespace
 {
 
-using namespace Consoles;
+/// 520
+using namespace platform_ex;
 
 void
 PrintError(WConsole& wc, const char* s)
@@ -75,7 +76,7 @@ Interpreter::Interpreter(std::function<void(NPLContext&)> loader)
 	: wc(), err_threshold(RecordLevel(0x10)), line(), context()
 {
 	using namespace std;
-	using namespace Consoles;
+	using namespace platform_ex;
 
 	wc.SetColor(TitleColor);
 	cout << title << endl << "Initializing...";
@@ -117,7 +118,7 @@ Interpreter::HandleSignal(SSignal e)
 bool
 Interpreter::Process()
 {
-	using namespace Consoles;
+	using namespace platform_ex;
 
 	if(line.empty())
 		return true;
@@ -129,7 +130,6 @@ Interpreter::Process()
 		if(!unreduced.empty())
 		{
 			using namespace std;
-			using namespace Consoles;
 
 		//	PrintError(wc, "Bad command.");
 		//	wc.SetColor(InfoColor);
@@ -165,13 +165,13 @@ std::istream&
 Interpreter::WaitForLine()
 {
 	using namespace std;
-	using namespace Consoles;
+	using namespace platform_ex;
 
 	wc.SetColor(PromptColor);
 	for(const auto& n : GlobalPath)
 		cout << n << ' ';
 	cout << prompt;
-	wc.SetColor();
+	wc.SetColor(DefaultColor);
 	return getline(cin, line);
 }
 

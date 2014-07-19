@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013 FrankHB.
+	© 2013-2014 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r74
+\version r87
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2013-12-27 10:29 +0800
+	2014-07-19 09:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -31,7 +31,7 @@
 #include <YSLib/Adaptor/YModules.h>
 #include YFM_YSLib_Adaptor_YContainer
 #include "NPLContext.h"
-#include "Consoles.h"
+#include YFM_MinGW32_YCLib_Consoles
 #include <iosfwd>
 #include <functional>
 
@@ -41,12 +41,24 @@ namespace NPL
 /// 403
 extern list<string> GlobalPath;
 
+/// 519
+using namespace platform::Consoles;
+
+/*!
+\build 控制台默认颜色。
+\since YSLib build 327
+*/
+yconstexpr Color DefaultColor(Gray), TitleColor(Cyan),
+	InfoColor(White), ErrorColor(Red), PromptColor(DarkGreen),
+	SignalColor(DarkRed), SideEffectColor(Yellow), ReducedColor(Magenta);
+
 
 /// 304
 class Interpreter
 {
 private:
-	Consoles::WConsole wc;
+	/// 520
+	platform_ex::WConsole wc;
 	YSLib::LoggedEvent::LevelType err_threshold;
 	YSLib::string line;
 	NPLContext context;

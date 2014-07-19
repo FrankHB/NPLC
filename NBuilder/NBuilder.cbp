@@ -44,8 +44,6 @@
 			<Add directory="F:/Programing/YSLib/YBase/include" />
 			<Add directory="F:/Programing/YSLib/3rdparty/include" />
 		</Compiler>
-		<Unit filename="Consoles.cpp" />
-		<Unit filename="Consoles.h" />
 		<Unit filename="Interpreter.cpp" />
 		<Unit filename="Interpreter.h" />
 		<Unit filename="NBuilder.cpp" />
