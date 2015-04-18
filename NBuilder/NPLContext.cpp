@@ -55,25 +55,9 @@ NPLContext::FetchValue(const ValueNode& ctx, const string& name)
 const ValueNode*
 NPLContext::LookupName(const ValueNode& ctx, const string& id)
 {
-	try
-	{
-		if(id != "$parent")
-			try
-			{
-				 return &ctx.at(id);
-			}
-			catch(std::out_of_range&)
-			{}
-		try
-		{
-			if(const auto p = AccessChild<ValueNode*>(ctx, "$parent"))
-				return LookupName(*p, id);
-		}
-		catch(std::out_of_range&)
-		{}
-	}
-	catch(ystdex::bad_any_cast&)
-	{}
+	TryRet(&ctx.at(id))
+	CatchIgnore(std::out_of_range&)
+	CatchIgnore(ystdex::bad_any_cast&)
 	return {};
 }
 
@@ -95,8 +79,8 @@ NPLContext::HandleIntrinsic(const string& cmd)
 #define NPL_TRACE 1
 
 void
-NPLContext::Reduce(size_t depth, const ValueNode& sema, const ValueNode& ctx,
-	FunctionContext fctx)
+NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
+	Continuation cont)
 {
 	std::clog << "Depth = " << depth << ", Context = " << &ctx
 		<< ", Semantics = " << &sema << std::endl;
@@ -113,24 +97,30 @@ NPLContext::Reduce(size_t depth, const ValueNode& sema, const ValueNode& ctx,
 			// NOTE: List with single element shall be reduced to its value.
 			sema.Value = std::move(p->begin()->Value);
 			sema.ClearContainer();
-			Reduce(depth, sema, ctx, fctx);
+			Reduce(depth, sema, ctx, cont);
 		}
 		else
 		{
 			// NOTE: List application: call by value.
+			// FIXME: Context.
 			for(auto& term : *p)
-				Reduce(depth, term, PackNodes(sema.GetName(),
-					ValueNode(0, "$parent", &ctx)), fctx);
+//PackNodes(sema.GetName(), ValueNode(0, "$parent", &ctx)
+				Reduce(depth, term, ctx, cont);
 			ystdex::erase_all_if(*p, p->begin(), p->end(),
-				[](const ValueNode& term){
+				[](const SemaNode& term){
 					return !term;
 			});
 			// NOTE: Match function calls.
-			TryExpr(fctx(sema)(sema, ctx, fctx))
+			try
+			{
+				Deref(p).begin()->Value.Access<FunctionHandler>()(sema, ctx);
+				cont(sema);
+			}
 			CatchExpr(std::out_of_range&, YTraceDe(Warning,
 				"No matching functions found."))
-			CatchThrow(ystdex::bad_any_cast&,
-				LoggedEvent("Mismatched types found.", Warning))
+			CatchThrow(ystdex::bad_any_cast& e,
+				LoggedEvent(ystdex::sfmt("Mismatched types <'%s', '%s'> found.",
+				e.from(), e.to()), Warning))
 			return;
 		}
 	}
@@ -141,24 +131,18 @@ NPLContext::Reduce(size_t depth, const ValueNode& sema, const ValueNode& ctx,
 		auto& id(*p);
 
 		if(id == "," || id == ";")
-			sema.Value.Clear();
+			sema.Clear();
 		else
 		{
 			HandleIntrinsic(id);
 			// NOTE: Value rewriting.
 			if(auto v = FetchValue(ctx, id))
 				sema.Value = std::move(v);
-#if 1
-			else
-				YTraceDe(Warning, "Wrong identifier '%s' found", id.c_str());
-#else
-			else
-				throw LoggedEvent((string("Unknown name found: '")
-					+ id + "'.").c_str(), Warning);
-			throw LoggedEvent((string("Undeclared name found: '")
-				+ id + "'.").c_str(), Warning);
-#endif
+		//	else
+		//		throw LoggedEvent(ystdex::sfmt(
+		//			"Wrong identifier '%s' found", id.c_str()), Warning);
 		}
+		cont(sema);
 	}
 }
 
@@ -198,34 +182,30 @@ WriteNodeC(std::ostream& f, const ValueNode& node, size_t depth)
 		if(PrintNodeString(f, node))
 			return f;
 		f << '\n';
-		for(const auto& n : node)
+		try
 		{
-			WritePrefix(f, depth);
-			if(IsPrefixedIndex(n.GetName()))
-				PrintNodeString(f, n);
-			else
+			for(const auto& n : node)
 			{
-				f << '(' << '\n';
-				TryExpr(WriteNodeC(f, n, depth + 1))
-				CatchIgnore(std::out_of_range&)
 				WritePrefix(f, depth);
-				f << ')' << '\n';
+				if(IsPrefixedIndex(n.GetName()))
+					PrintNodeString(f, n);
+				else
+				{
+					f << '(' << '\n';
+					TryExpr(WriteNodeC(f, n, depth + 1))
+					CatchIgnore(std::out_of_range&)
+					WritePrefix(f, depth);
+					f << ')' << '\n';
+				}
 			}
 		}
+		CatchExpr(ystdex::bad_any_cast&,
+			f << '[' << node.Value.GetType().name() << ']')
 	}
 	return f;
 }
 
-void
-ConvTokens(const ValueNode& sema)
-{
-	using namespace std;
-
-	WriteNodeC(cout, sema, 0);
-	cout << endl;
-}
-
-}
+} // unnamed namespace;
 
 TokenList&
 NPLContext::Perform(const string& unit)
@@ -235,62 +215,14 @@ NPLContext::Perform(const string& unit)
 
 	auto sema(SContext::Analyze(Session(unit)));
 
-	Reduce(0, sema, Root, [this](const string&){
-		return [&, this](const SemaNode& sema, const ContextNode& ctx,
-			FunctionContextWrapper w){
-			auto& fctx(ystdex::any_cast<FunctionContext&>(w));
-			auto p(sema.GetContainerPtr());
-			auto i(Deref(p).begin());
-			const auto& fn(i->Value.Access<string>());
-			const auto n(p->size());
-
-			++i;
-			if(fn == "$lambda")
-			{
-				std::clog << "Found lambda abstraction: fn = " << fn
-					<< " param.n = " << n - 1 << std::endl;
-			}
-			else if(fn == "$decl")
-			{
-				std::clog << "Found form: fn = " << fn
-					<< " param.n = " << n - 1 << std::endl;
-				if(n < 3)
-					throw LoggedEvent("Missing declarator.", Warning);
-				try
-				{
-					auto& id(Access<string>(*i));
-
-					if(!ctx.Add({0, id, Access<string>(*++i)}))
-						throw LoggedEvent("Duplicate name found.", Warning);
-				}
-				catch(LoggedEvent&)
-				{
-					throw;
-				}
-				catch(...)
-				{
-					throw LoggedEvent("Bad declaration found.", Warning);
-				}
-			}
-			else if(n == 3 && fn == "+")
-			{
-				const auto e1(std::stoi(i->Value.Access<string>()));
-				++i;
-				const auto e2(std::stoi(i->Value.Access<string>()));
-				++i;
-
-				sema.Value = to_string(e1 + e2);
-			}
-			else
-			{
-				YTraceDe(Warning, "No matching functions found @ ReduceC.");
-				Map.at(fn)(fn);
-			}
-		};
-	});
-
+	Reduce(0, sema, Root, [](const SemaNode&){});
 	// TODO: Merge result to 'Root'.
-	ConvTokens(sema);
+
+	using namespace std;
+
+	WriteNodeC(cout, sema, 0);
+	cout << endl;
+
 	return token_list;
 }
 

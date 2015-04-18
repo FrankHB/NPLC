@@ -58,6 +58,43 @@ enum class ValueToken
 };
 
 
+/// 592
+//@{
+using SemaNode = ValueNode;
+using ContextNode = ValueNode;
+using ContinuationWrapper = ystdex::any;
+using FunctionHandler
+	= std::function<void(const SemaNode&, const ContextNode&)>;
+using XFunction = std::function<void(const SemaNode&, const ContextNode&,
+	ContinuationWrapper)>;
+using Continuation = std::function<void(const SemaNode&)>;
+
+
+template<typename _func>
+inline void
+SetContextHandler(const ContextNode& node, const string& name, _func f)
+{
+	node[name].Value = FunctionHandler(f);
+}
+
+template<typename _func>
+inline void
+SetContextHandler_A(const ContextNode& node, const string& name, _func f)
+{
+	SetContextHandler(node, name, [f](const SemaNode& term, const ContextNode&){
+		auto& c(term.GetContainerRef());
+		const auto n(c.size());
+		auto i(c.begin());
+
+		if(n != 0 && ++i != c.end())
+			f(i, c.size() - 1, term.Value);
+		else
+			throw LoggedEvent("No sufficient arguments.", Alert);
+	});
+}
+//@}
+
+
 /// 306
 struct NPLContext : private noncopyable
 {
@@ -65,23 +102,14 @@ public:
 	/// 403
 	using Function = std::function<void(const string&)>;
 	using FunctionMap = map<string, Function>;
-	/// 592
-	//@{
-	using SemaNode = ValueNode;
-	using ContextNode = ValueNode;
-	using FunctionContextWrapper = ystdex::any;
-	using XFunction = std::function<void(const SemaNode&, const ContextNode&,
-		FunctionContextWrapper)>;
-	using FunctionContext = std::function<XFunction(const string&)>;
-	//@}
 
 	ValueNode Root;
 	/// 403
 	FunctionMap Map;
 
 private:
+	// TODO: use TLCIter instead of TLIter for C++11 comforming implementations.
 	TokenList token_list;
-	// TODO: use TLCIter instead of TLIter for C++11 comforming implementations;
 
 public:
 	/// 328
@@ -112,7 +140,7 @@ private:
 public:
 	/// 592
 	static void
-	Reduce(size_t, const SemaNode&, const ContextNode&, FunctionContext);
+	Reduce(size_t, const SemaNode&, const ContextNode&, Continuation);
 
 	TokenList&
 	Perform(const string& unit);

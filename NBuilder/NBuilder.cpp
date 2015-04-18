@@ -321,6 +321,64 @@ LoadFunctions(NPLContext& context)
 	m.insert({"$+", [&](const string& arg){
 		context.sem = "$__+" + arg;
 	}});
+
+	auto& root(context.Root);
+
+	SetContextHandler_A(root, "+", [](SemaNode::Container::iterator i, size_t n,
+		ValueObject& v){
+		if(n == 2)
+			try
+			{
+				const auto e1(std::stoi(i->Value.Access<string>()));
+
+				++i;
+
+				const auto e2(std::stoi(i->Value.Access<string>()));
+
+				v = to_string(e1 + e2);
+			}
+			CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
+	});
+	SetContextHandler_A(root, "$lambda", [](SemaNode::Container::iterator i,
+		size_t n, ValueObject& v){
+		const auto& fn(i->Value.Access<string>());
+
+		YTraceDe(Debug, "Found lambda abstraction, name = '%s',"
+			" param num = '%u'", fn.c_str(), unsigned(n - 1));
+		v = FunctionHandler([](const SemaNode&, const ContextNode&){
+
+		});
+	});
+	SetContextHandler(root, "$decl", [](const SemaNode& term,
+		const ContextNode& ctx){
+		auto& c(term.GetContainerRef());
+		auto i(c.begin());
+
+		++i;
+
+		const auto& fn(i->Value.Access<string>());
+		const auto n(c.size());
+
+		std::clog << "Found form: fn = " << fn
+			<< " param.n = " << n - 1 << std::endl;
+		if(n < 3)
+			throw LoggedEvent("Missing declarator.", Warning);
+		try
+		{
+			auto& id(Access<string>(*i));
+
+			if(!ctx.Add({0, id, Access<string>(*++i)}))
+				throw LoggedEvent("Duplicate name found.", Warning);
+		}
+		catch(LoggedEvent&)
+		{
+			throw;
+		}
+		catch(...)
+		{
+			throw LoggedEvent("Bad declaration found.", Warning);
+		}
+	});
 }
 
 } // unnamed namespace;
