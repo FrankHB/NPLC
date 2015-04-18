@@ -43,15 +43,15 @@ using platform_ex::MBCSToMBCS;
 
 ValueNode GlobalRoot;
 
+namespace
+{
+
 string
 SToMBCS(const String& str, int cp = CP_ACP)
 {
 	return platform_ex::WCSToMBCS(str.length(),
 		reinterpret_cast<const wchar_t*>(str.c_str()), cp);
 }
-
-namespace
-{
 
 void
 Traverse(const ValueNode& node)
@@ -262,9 +262,6 @@ SearchName(ValueNode& root, const string& arg)
 	}
 }
 
-} // unnamed namespace;
-
-
 /// 328
 void
 LoadFunctions(NPLContext& context)
@@ -326,6 +323,8 @@ LoadFunctions(NPLContext& context)
 	}});
 }
 
+} // unnamed namespace;
+
 
 /// 304
 int
@@ -334,6 +333,7 @@ main(int argc, char* argv[])
 	using namespace std;
 	int exit_code(EXIT_SUCCESS);
 
+	yunused(argc), yunused(argv);
 	FilterExceptions([=, &exit_code]{
 		try
 		{

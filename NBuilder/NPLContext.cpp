@@ -235,7 +235,7 @@ NPLContext::Perform(const string& unit)
 
 	auto sema(SContext::Analyze(Session(unit)));
 
-	Reduce(0, sema, Root, [this](const string& fn){
+	Reduce(0, sema, Root, [this](const string&){
 		return [&, this](const SemaNode& sema, const ContextNode& ctx,
 			FunctionContextWrapper w){
 			auto& fctx(ystdex::any_cast<FunctionContext&>(w));
