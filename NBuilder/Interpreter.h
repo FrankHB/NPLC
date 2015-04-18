@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r91
+\version r93
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2015-04-18 13:07 +0800
+	2015-04-18 15:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -38,9 +38,6 @@
 
 namespace NPL
 {
-
-/// 403
-extern list<string> GlobalPath;
 
 /// 592
 using namespace YSLib::Consoles;

@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r3927
+\version r4056
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2015-04-18 13:08 +0800
+	2015-04-18 16:51 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -150,24 +150,6 @@ EvalS(const ValueNode& root)
 namespace
 {
 
-/// 403
-const ValueNode&
-GetNodeFromPath(const ValueNode& root, list<string> path)
-{
-	auto p(&root);
-
-	for(const auto& n : path)
-		p = &p->at(n);
-	return *p;
-}
-
-/// 403
-const ValueNode&
-GetCurrentNode()
-{
-	return GetNodeFromPath(GlobalRoot, GlobalPath);
-}
-
 /// 327
 void ParseOutput(LexicalAnalyzer& lex)
 {
@@ -199,38 +181,18 @@ void ParseOutput(LexicalAnalyzer& lex)
 	cout << rlst.size() << " token(s) parsed." <<endl;
 }
 
-/// 330
-void
-ParseFileImpl(LexicalAnalyzer& lex, const string& path_gbk)
-{
-	const auto& path(MBCSToMBCS(path_gbk));
-	TextFile tf(path.c_str());
-
-	if(!tf)
-		throw LoggedEvent("Invalid file: \"" + path_gbk + "\".", Warning);
-	{
-		ystdex::ifile_iterator i(tf.GetPtr());
-
-		while(!tf.CheckEOF())
-		{
-			if(YB_UNLIKELY(is_undereferenceable(i)))
-				throw LoggedEvent("Bad Source!", Critical);
-			lex.ParseByte(*i);
-			++i;
-		}
-	}
-}
-
 /// 304
 void
 ParseFile(const string& path_gbk)
 {
-	LexicalAnalyzer lex;
-
-	ParseFileImpl(lex, path_gbk);
 	std::cout << ystdex::sfmt("Parse from file: %s : ", path_gbk.c_str())
 		<< std::endl;
-	ParseOutput(lex);
+
+	const auto& path(MBCSToMBCS(path_gbk));
+	TextFile tf(path.c_str());
+	Session sess(tf);
+
+	ParseOutput(sess.Lexer);
 }
 
 /// 334
@@ -314,64 +276,6 @@ LoadFunctions(NPLContext& context)
 
 	m.insert({"parse", ParseFile});
 	m.insert({"print", PrintFile});
-	m.insert({"cd", [](const string& arg){
-		if(arg == "..")
-		{
-			if(GlobalPath.empty())
-				throw LoggedEvent("No parent node found.", Warning);
-			GlobalPath.pop_back();
-		}
-		else
-		{
-			auto& node(GetCurrentNode());
-
-			try
-			{
-				node.at(arg);
-			}
-			catch(std::out_of_range&)
-			{
-				throw LoggedEvent("No node found.", Warning);
-			}
-			catch(ystdex::bad_any_cast&)
-			{
-				throw LoggedEvent("Node is empty.", Warning);
-			}
-			GlobalPath.push_back(arg);
-		}
-	}});
-	m.insert({"add", [](const string& arg){
-		if(arg == "..")
-			throw LoggedEvent("Invalid node name found.", Warning);
-		GetCurrentNode() += {0, arg};
-	}});
-	m.insert({"set", [](const string& arg){
-		auto& node(GetCurrentNode());
-
-		if(!node)
-			node.Value = arg;
-		else
-			try
-			{
-				Access<string>(node) = arg;
-			}
-			catch(ystdex::bad_any_cast&)
-			{
-				throw LoggedEvent("Wrong type found.", Warning);
-			}
-	}});
-	m.insert({"get", [](const string&){
-		auto& node(GetCurrentNode());
-
-		try
-		{
-			std::cout << Access<string>(node) << std::endl;
-		}
-		catch(ystdex::bad_any_cast&)
-		{
-			throw LoggedEvent("Wrong type found.", Warning);
-		}
-	}});
 	m.insert({"mangle", [](const string& arg){
 		if(CheckLiteral(arg) == '"')
 			ParseString(ystdex::get_mid(arg));
@@ -428,39 +332,28 @@ int
 main(int argc, char* argv[])
 {
 	using namespace std;
+	int exit_code(EXIT_SUCCESS);
 
-	try
-	{
-		Interpreter intp(LoadFunctions);
+	FilterExceptions([=, &exit_code]{
+		try
+		{
+			Interpreter intp(LoadFunctions);
 
-		while(intp.WaitForLine() && intp.Process())
-			;
-	}
-	catch(LoggedEvent& e) // TODO: Logging.
-	{
-		cerr << "An logged error occured: " << endl << e.what() << endl;
-		return EXIT_FAILURE;
-	}
-	catch(std::invalid_argument& e)
-	{
-		cerr << "Invalid argument found: " << endl << e.what() << endl;
-		return EXIT_FAILURE;
-	}
-	catch(ystdex::bad_any_cast& e)
-	{
-		cerr << "Wrong type in any_cast from [" << typeid(e.from()).name()
-			<< "] to [" << typeid(e.from()).name() << "]: " << e.what() << endl;
-	}
-	catch(std::exception& e)
-	{
-		cerr << "An error occured: " << endl << e.what() << endl;
-		return EXIT_FAILURE;
-	}
-	catch(...)
-	{
-		cerr << "Unhandled exception found." << endl;
-		return EXIT_FAILURE;
-	}
-	cout << "Exited." << endl;
+			while(intp.WaitForLine() && intp.Process())
+				;
+		}
+		catch(ystdex::bad_any_cast& e)
+		{
+			cerr << "Wrong type in any_cast from [" << typeid(e.from()).name()
+				<< "] to [" << typeid(e.from()).name() << "]: " << e.what()
+				<< endl;
+		}
+		catch(...)
+		{
+			exit_code = EXIT_FAILURE;
+			throw;
+		}
+	}, "::main");
+	return exit_code;
 }
 
