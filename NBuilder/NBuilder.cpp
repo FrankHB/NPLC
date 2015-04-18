@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4031
+\version r4056
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2015-04-18 16:23 +0800
+	2015-04-18 16:51 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -181,38 +181,18 @@ void ParseOutput(LexicalAnalyzer& lex)
 	cout << rlst.size() << " token(s) parsed." <<endl;
 }
 
-/// 330
-void
-ParseFileImpl(LexicalAnalyzer& lex, const string& path_gbk)
-{
-	const auto& path(MBCSToMBCS(path_gbk));
-	TextFile tf(path.c_str());
-
-	if(!tf)
-		throw LoggedEvent("Invalid file: \"" + path_gbk + "\".", Warning);
-	{
-		ystdex::ifile_iterator i(tf.GetPtr());
-
-		while(!tf.CheckEOF())
-		{
-			if(YB_UNLIKELY(is_undereferenceable(i)))
-				throw LoggedEvent("Bad Source!", Critical);
-			lex.ParseByte(*i);
-			++i;
-		}
-	}
-}
-
 /// 304
 void
 ParseFile(const string& path_gbk)
 {
-	LexicalAnalyzer lex;
-
-	ParseFileImpl(lex, path_gbk);
 	std::cout << ystdex::sfmt("Parse from file: %s : ", path_gbk.c_str())
 		<< std::endl;
-	ParseOutput(lex);
+
+	const auto& path(MBCSToMBCS(path_gbk));
+	TextFile tf(path.c_str());
+	Session sess(tf);
+
+	ParseOutput(sess.Lexer);
 }
 
 /// 334
