@@ -63,8 +63,17 @@ struct NPLContext : private noncopyable
 {
 public:
 	/// 403
-	typedef std::function<void(const string&)> Function;
-	typedef map<string, Function> FunctionMap;
+	using Function = std::function<void(const string&)>;
+	using FunctionMap = map<string, Function>;
+	/// 592
+	//@{
+	using SemaNode = ValueNode;
+	using ContextNode = ValueNode;
+	using FunctionContextWrapper = ystdex::any;
+	using XFunction = std::function<void(const SemaNode&, const ContextNode&,
+		FunctionContextWrapper)>;
+	using FunctionContext = std::function<XFunction(const string&)>;
+	//@}
 
 	ValueNode Root;
 	/// 403
@@ -83,24 +92,13 @@ public:
 private:
 	///329
 	NPLContext(const FunctionMap&);
-#if 0
-	NPLContext(const NPLContext&, TokenList);
-#endif
-
-	/// 327
-	TLIter
-	Call(TLIter b, TLIter e, size_t& cur_off);
-
-	/// 328
-	void
-	CallS(const string& fn, const string& arg, size_t& cur_off);
 
 public:
 	void
 	Eval(const string& arg);
 
-	/// 407
-	ValueObject
+	/// 592
+	static ValueObject
 	FetchValue(const ValueNode&, const string&);
 
 	/// 495
@@ -111,16 +109,10 @@ private:
 	static void
 	HandleIntrinsic(const string& cmd);
 
-	/// 327
-	/// \pre b and e shall be iterator in or one-past-end of token_list.
-	/// \pre b shall be dereferanceable when e is dereferanceable.
-	pair<TLIter, size_t>
-	Reduce(size_t depth, TLIter b, TLIter e, bool eval = true);
-
 public:
-	/// 495
-	void
-	ReduceS(size_t, const ValueNode&, const ValueNode&);
+	/// 592
+	static void
+	Reduce(size_t, const SemaNode&, const ContextNode&, FunctionContext);
 
 	TokenList&
 	Perform(const string& unit);
