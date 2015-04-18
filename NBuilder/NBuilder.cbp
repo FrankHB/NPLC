@@ -13,6 +13,8 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="-D_GLIBCXX_DEBUG" />
+					<Add option="-D_GLIBCXX_DEBUG_PEDANTIC" />
 				</Compiler>
 				<Linker>
 					<Add library="YFrameworkd" />
@@ -48,7 +50,6 @@
 		<Unit filename="Interpreter.h" />
 		<Unit filename="NBuilder.cpp" />
 		<Unit filename="NBuilder.h" />
-		<Unit filename="NPL.txt" />
 		<Unit filename="NPLContext.cpp" />
 		<Unit filename="NPLContext.h" />
 		<Extensions>

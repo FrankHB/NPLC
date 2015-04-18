@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2014 FrankHB.
+	© 2013-2015 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r189
+\version r202
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2014-07-19 09:20 +0800
+	2015-04-18 13:07 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -55,16 +55,18 @@ namespace
 /// 520
 using namespace platform_ex;
 
+#if 0
 void
 PrintError(WConsole& wc, const char* s)
 {
-	wc.SetColor(ErrorColor);
+	wc.UpdateForeColor(ErrorColor);
 	std::cerr << s << std::endl;
 }
+#endif
 void
 PrintError(WConsole& wc, const LoggedEvent& e)
 {
-	wc.SetColor(ErrorColor);
+	wc.UpdateForeColor(ErrorColor);
 	std::cerr << "Error<" << unsigned(e.GetLevel()) << ">: "
 		<< e.what() << std::endl;
 }
@@ -78,12 +80,12 @@ Interpreter::Interpreter(std::function<void(NPLContext&)> loader)
 	using namespace std;
 	using namespace platform_ex;
 
-	wc.SetColor(TitleColor);
+	wc.UpdateForeColor(TitleColor);
 	cout << title << endl << "Initializing...";
 	YSLib::InitializeInstalled();
 	loader(context);
 	cout << "NPLC initialization OK!" << endl << endl;
-	wc.SetColor(InfoColor);
+	wc.UpdateForeColor(InfoColor);
 	cout << "Type \"exit\" to exit,"
 		" \"cls\" to clear screen, \"help\", \"about\", or \"license\""
 		" for more information." << endl << endl;
@@ -122,7 +124,7 @@ Interpreter::Process()
 
 	if(line.empty())
 		return true;
-	wc.SetColor(SideEffectColor);
+	wc.UpdateForeColor(SideEffectColor);
 	try
 	{
 		auto& unreduced(context.Perform(line));
@@ -132,9 +134,9 @@ Interpreter::Process()
 			using namespace std;
 
 		//	PrintError(wc, "Bad command.");
-		//	wc.SetColor(InfoColor);
+		//	wc.UpdateForeColor(InfoColor);
 		//	cout << "Unrecognized reduced token list:" << endl;
-			wc.SetColor(ReducedColor);
+			wc.UpdateForeColor(ReducedColor);
 			for(const auto& token : unreduced)
 			{
 			//	cout << token << endl;
@@ -147,7 +149,7 @@ Interpreter::Process()
 	{
 		if(e == SSignal::Exit)
 			return false;
-		wc.SetColor(SignalColor);
+		wc.UpdateForeColor(SignalColor);
 		HandleSignal(e);
 	}
 	catch(LoggedEvent& e)
@@ -167,11 +169,11 @@ Interpreter::WaitForLine()
 	using namespace std;
 	using namespace platform_ex;
 
-	wc.SetColor(PromptColor);
+	wc.UpdateForeColor(PromptColor);
 	for(const auto& n : GlobalPath)
 		cout << n << ' ';
 	cout << prompt;
-	wc.SetColor(DefaultColor);
+	wc.UpdateForeColor(DefaultColor);
 	return getline(cin, line);
 }
 
