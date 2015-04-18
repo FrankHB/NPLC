@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4056
+\version r4060
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2015-04-18 16:51 +0800
+	2015-04-18 20:12 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -43,15 +43,15 @@ using platform_ex::MBCSToMBCS;
 
 ValueNode GlobalRoot;
 
+namespace
+{
+
 string
 SToMBCS(const String& str, int cp = CP_ACP)
 {
 	return platform_ex::WCSToMBCS(str.length(),
 		reinterpret_cast<const wchar_t*>(str.c_str()), cp);
 }
-
-namespace
-{
 
 void
 Traverse(const ValueNode& node)
@@ -262,9 +262,6 @@ SearchName(ValueNode& root, const string& arg)
 	}
 }
 
-} // unnamed namespace;
-
-
 /// 328
 void
 LoadFunctions(NPLContext& context)
@@ -326,6 +323,8 @@ LoadFunctions(NPLContext& context)
 	}});
 }
 
+} // unnamed namespace;
+
 
 /// 304
 int
@@ -334,6 +333,7 @@ main(int argc, char* argv[])
 	using namespace std;
 	int exit_code(EXIT_SUCCESS);
 
+	yunused(argc), yunused(argv);
 	FilterExceptions([=, &exit_code]{
 		try
 		{

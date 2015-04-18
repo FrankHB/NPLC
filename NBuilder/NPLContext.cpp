@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2013 FrankHB.
+	© 2012-2013, 2015 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1286
+\version r1288
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2013-12-27 10:42 +0800
+	2015-04-19 20:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -80,7 +80,7 @@ match_fail:
 
 /// 328
 void
-NPLContext::CallS(const string& fn, const string& arg, size_t& cur_off)
+NPLContext::CallS(const string& fn, const string& arg, size_t&)
 {
 	using namespace std;
 
