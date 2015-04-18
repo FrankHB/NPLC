@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r3927
+\version r3997
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2015-04-18 13:08 +0800
+	2015-04-18 15:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -149,24 +149,6 @@ EvalS(const ValueNode& root)
 
 namespace
 {
-
-/// 403
-const ValueNode&
-GetNodeFromPath(const ValueNode& root, list<string> path)
-{
-	auto p(&root);
-
-	for(const auto& n : path)
-		p = &p->at(n);
-	return *p;
-}
-
-/// 403
-const ValueNode&
-GetCurrentNode()
-{
-	return GetNodeFromPath(GlobalRoot, GlobalPath);
-}
 
 /// 327
 void ParseOutput(LexicalAnalyzer& lex)
@@ -314,64 +296,6 @@ LoadFunctions(NPLContext& context)
 
 	m.insert({"parse", ParseFile});
 	m.insert({"print", PrintFile});
-	m.insert({"cd", [](const string& arg){
-		if(arg == "..")
-		{
-			if(GlobalPath.empty())
-				throw LoggedEvent("No parent node found.", Warning);
-			GlobalPath.pop_back();
-		}
-		else
-		{
-			auto& node(GetCurrentNode());
-
-			try
-			{
-				node.at(arg);
-			}
-			catch(std::out_of_range&)
-			{
-				throw LoggedEvent("No node found.", Warning);
-			}
-			catch(ystdex::bad_any_cast&)
-			{
-				throw LoggedEvent("Node is empty.", Warning);
-			}
-			GlobalPath.push_back(arg);
-		}
-	}});
-	m.insert({"add", [](const string& arg){
-		if(arg == "..")
-			throw LoggedEvent("Invalid node name found.", Warning);
-		GetCurrentNode() += {0, arg};
-	}});
-	m.insert({"set", [](const string& arg){
-		auto& node(GetCurrentNode());
-
-		if(!node)
-			node.Value = arg;
-		else
-			try
-			{
-				Access<string>(node) = arg;
-			}
-			catch(ystdex::bad_any_cast&)
-			{
-				throw LoggedEvent("Wrong type found.", Warning);
-			}
-	}});
-	m.insert({"get", [](const string&){
-		auto& node(GetCurrentNode());
-
-		try
-		{
-			std::cout << Access<string>(node) << std::endl;
-		}
-		catch(ystdex::bad_any_cast&)
-		{
-			throw LoggedEvent("Wrong type found.", Warning);
-		}
-	}});
 	m.insert({"mangle", [](const string& arg){
 		if(CheckLiteral(arg) == '"')
 			ParseString(ystdex::get_mid(arg));

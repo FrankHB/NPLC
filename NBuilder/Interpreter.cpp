@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r202
+\version r204
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2015-04-18 13:07 +0800
+	2015-04-18 15:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -36,10 +36,6 @@ using YSLib::LoggedEvent;
 
 namespace NPL
 {
-
-/// 403
-list<string> GlobalPath;
-
 
 #define NPL_NAME "NPL console"
 #define NPL_VER "b30xx"
@@ -170,8 +166,6 @@ Interpreter::WaitForLine()
 	using namespace platform_ex;
 
 	wc.UpdateForeColor(PromptColor);
-	for(const auto& n : GlobalPath)
-		cout << n << ' ';
 	cout << prompt;
 	wc.UpdateForeColor(DefaultColor);
 	return getline(cin, line);
