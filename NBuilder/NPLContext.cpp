@@ -343,44 +343,44 @@ WritePrefix(std::ostream& f, size_t n = 1, char c = '\t')
 	return f;
 }
 
-string
-EscapeNodeString(const string& str)
+bool
+PrintNodeString(std::ostream& f, const ValueNode& node)
 {
-	const char c(CheckLiteral(str));
-	auto content(MakeEscape(c == char() ? str : ystdex::get_mid(str)));
+	try
+	{
+		const auto& s(Access<string>(node));
 
-	return c == char() ? std::move(content) : c + content + c;
+		f << '"' << EscapeLiteral(s) << '"' << '\n';
+		return true;
+	}
+	CatchIgnore(ystdex::bad_any_cast&)
+	return {};
 }
 
 std::ostream&
 WriteNodeC(std::ostream& f, const ValueNode& node, size_t depth)
 {
 	WritePrefix(f, depth);
-	f << node.GetName();
+	f << EscapeLiteral(node.GetName());
 	if(node)
 	{
-		try
-		{
-			const auto& s(Access<string>(node));
-
-			f << ' ' << '"' << EscapeNodeString(s) << '"' << '\n';
+		f << ' ';
+		if(PrintNodeString(f, node))
 			return f;
-		}
-		catch(ystdex::bad_any_cast&)
-		{}
 		f << '\n';
 		for(const auto& n : node)
 		{
 			WritePrefix(f, depth);
-			f << '(' << '\n';
-			try
+			if(IsPrefixedIndex(n.GetName()))
+				PrintNodeString(f, n);
+			else
 			{
-				WriteNodeC(f, n, depth + 1);
+				f << '(' << '\n';
+				TryExpr(WriteNodeC(f, n, depth + 1))
+				CatchIgnore(std::out_of_range&)
+				WritePrefix(f, depth);
+				f << ')' << '\n';
 			}
-			catch(std::out_of_range&)
-			{}
-			WritePrefix(f, depth);
-			f << ')' << '\n';
 		}
 	}
 	return f;

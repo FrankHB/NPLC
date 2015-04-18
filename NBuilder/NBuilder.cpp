@@ -1,5 +1,5 @@
 ﻿/*
-	© 2011-2014 FrankHB.
+	© 2011-2015 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r3922
+\version r3927
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2014-07-18 18:49 +0800
+	2015-04-18 13:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -46,8 +46,8 @@ ValueNode GlobalRoot;
 string
 SToMBCS(const String& str, int cp = CP_ACP)
 {
-	return platform_ex::WCSToMBCS(reinterpret_cast<const wchar_t*>(str.c_str()),
-		str.length(), cp);
+	return platform_ex::WCSToMBCS(str.length(),
+		reinterpret_cast<const wchar_t*>(str.c_str()), cp);
 }
 
 namespace
@@ -78,6 +78,7 @@ Traverse(const ValueNode& node)
 	cout << ") ";
 }
 
+#if 0
 void
 PrintNode(const ValueNode& node)
 {
@@ -85,6 +86,7 @@ PrintNode(const ValueNode& node)
 	Traverse(node);
 	std::cout << std::endl;
 }
+#endif
 
 void
 TraverseN(const ValueNode& node)
