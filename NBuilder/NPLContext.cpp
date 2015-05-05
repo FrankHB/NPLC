@@ -96,8 +96,7 @@ NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
 		else if(n == 1)
 		{
 			// NOTE: List with single element shall be reduced to its value.
-			sema.Value = std::move(cont.begin()->Value);
-			sema.ClearContainer();
+			Deref(cont.begin()).SwapContent(sema);
 			Reduce(depth, sema, ctx, k);
 		}
 		else
