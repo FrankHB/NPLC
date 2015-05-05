@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2014 FrankHB.
+	© 2012-2015 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r1842
+\version r1843
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2014-07-18 18:48 +0800
+	2015-05-05 17:19 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,7 +29,6 @@
 #define INC_NPL_NBuilder_h_
 
 #include "NPLContext.h"
-#include YFM_YSLib_Adaptor_YContainer
 #include YFM_YSLib_Core_YString
 
 ///334
