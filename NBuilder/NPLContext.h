@@ -83,13 +83,15 @@ SetContextHandler_A(const ContextNode& node, const string& name, _func f)
 {
 	SetContextHandler(node, name, [f](const SemaNode& term, const ContextNode&){
 		auto& c(term.GetContainerRef());
-		const auto n(c.size());
+
+		YAssert(!c.empty(), "Invalid term found.");
+
 		auto i(c.begin());
 
-		if(n != 0 && ++i != c.end())
-			f(i, c.size() - 1, term.Value);
-		else
-			throw LoggedEvent("No sufficient arguments.", Alert);
+		++i;
+		YAssert(i != c.end(), "No sufficient arguments.");
+
+		f(i, c.size() - 1, term.Value);
 	});
 }
 //@}

@@ -80,14 +80,15 @@ NPLContext::HandleIntrinsic(const string& cmd)
 
 void
 NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
-	Continuation cont)
+	Continuation k)
 {
 	std::clog << "Depth = " << depth << ", Context = " << &ctx
 		<< ", Semantics = " << &sema << std::endl;
 	++depth;
 	if(auto p = sema.GetContainerPtr())
 	{
-		const auto n(p->size());
+		auto& cont(Deref(p));
+		const auto n(cont.size());
 
 		if(n == 0)
 			// NOTE: Empty list.
@@ -95,32 +96,33 @@ NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
 		else if(n == 1)
 		{
 			// NOTE: List with single element shall be reduced to its value.
-			sema.Value = std::move(p->begin()->Value);
+			sema.Value = std::move(cont.begin()->Value);
 			sema.ClearContainer();
-			Reduce(depth, sema, ctx, cont);
+			Reduce(depth, sema, ctx, k);
 		}
 		else
 		{
 			// NOTE: List application: call by value.
 			// FIXME: Context.
-			for(auto& term : *p)
+			for(auto& term : cont)
 //PackNodes(sema.GetName(), ValueNode(0, "$parent", &ctx)
-				Reduce(depth, term, ctx, cont);
-			ystdex::erase_all_if(*p, p->begin(), p->end(),
+				Reduce(depth, term, ctx, k);
+			ystdex::erase_all_if(cont, cont.begin(), cont.end(),
 				[](const SemaNode& term){
 					return !term;
-			});
-			// NOTE: Match function calls.
-			try
-			{
-				Deref(p).begin()->Value.Access<FunctionHandler>()(sema, ctx);
-				cont(sema);
-			}
-			CatchExpr(std::out_of_range&, YTraceDe(Warning,
-				"No matching functions found."))
-			CatchThrow(ystdex::bad_any_cast& e,
-				LoggedEvent(ystdex::sfmt("Mismatched types <'%s', '%s'> found.",
-				e.from(), e.to()), Warning))
+				});
+			if(cont.size() > 1)
+				// NOTE: Match function calls.
+				try
+				{
+					cont.begin()->Value.Access<FunctionHandler>()(sema, ctx);
+					k(sema);
+				}
+				CatchExpr(std::out_of_range&, YTraceDe(Warning,
+					"No matching functions found."))
+				CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(ystdex::sfmt(
+					"Mismatched types <'%s', '%s'> found.", e.from(), e.to()),
+					Warning))
 			return;
 		}
 	}
@@ -142,7 +144,7 @@ NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
 		//		throw LoggedEvent(ystdex::sfmt(
 		//			"Wrong identifier '%s' found", id.c_str()), Warning);
 		}
-		cont(sema);
+		k(sema);
 	}
 }
 
