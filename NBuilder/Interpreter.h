@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r94
+\version r97
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2015-05-05 17:19 +0800
+	2015-12-28 04:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -30,7 +30,7 @@
 
 #include <YSLib/Adaptor/YModules.h>
 #include "NPLContext.h"
-#include YFM_MinGW32_YCLib_Consoles
+#include YFM_Win32_YCLib_Consoles
 #include YFM_YSLib_Core_YConsole
 #include <iosfwd>
 #include <functional>
@@ -56,7 +56,8 @@ class Interpreter
 private:
 	/// 520
 	platform_ex::WConsole wc;
-	YSLib::LoggedEvent::LevelType err_threshold;
+	/// 662
+	RecordLevel err_threshold;
 	YSLib::string line;
 	NPLContext context;
 

@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2014 FrankHB.
+	© 2012-2015 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1493
+\version r1496
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2014-04-25 18:57 +0800
+	2015-12-28 04:16 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -85,9 +85,9 @@ NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
 	std::clog << "Depth = " << depth << ", Context = " << &ctx
 		<< ", Semantics = " << &sema << std::endl;
 	++depth;
-	if(auto p = sema.GetContainerPtr())
+	if(!sema.empty())
 	{
-		auto& cont(Deref(p));
+		auto& cont(sema.GetContainerRef());
 		const auto n(cont.size());
 
 		if(n == 0)

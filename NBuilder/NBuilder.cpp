@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4056
+\version r4084
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2015-04-18 16:51 +0800
+	2015-12-28 04:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -34,7 +34,7 @@
 #include YFM_NPL_Configuration
 #include YFM_Helper_Initialization
 #include YFM_YCLib_Debug
-#include YFM_MinGW32_YCLib_MinGW32
+#include YFM_Win32_YCLib_MinGW32
 #include "Interpreter.h"
 
 using namespace NPL;
@@ -49,8 +49,8 @@ namespace
 string
 SToMBCS(const String& str, int cp = CP_ACP)
 {
-	return platform_ex::WCSToMBCS(str.length(),
-		reinterpret_cast<const wchar_t*>(str.c_str()), cp);
+	return platform_ex::WCSToMBCS({reinterpret_cast<const wchar_t*>(
+		str.c_str()), str.length()}, cp);
 }
 
 void
@@ -103,7 +103,7 @@ TraverseN(const ValueNode& node)
 	}
 	catch(ystdex::bad_any_cast&)
 	{}
-	if(node.GetSize() != 0)
+	if(!node.empty())
 	{
 		cout << "( ";
 		try
@@ -120,7 +120,7 @@ TraverseN(const ValueNode& node)
 void
 PrintNodeN(const ValueNode& node)
 {
-	std::cout << ">>>Root size: " << node.GetSize() << std::endl;
+	std::cout << ">>>Root size: " << node.size() << std::endl;
 	TraverseN(node);
 	std::cout << std::endl;
 }
@@ -188,11 +188,15 @@ ParseFile(const string& path_gbk)
 	std::cout << ystdex::sfmt("Parse from file: %s : ", path_gbk.c_str())
 		<< std::endl;
 
-	const auto& path(MBCSToMBCS(path_gbk));
-	TextFile tf(path.c_str());
-	Session sess(tf);
+	if(ifstream ifs{MBCSToMBCS(path_gbk)})
+	{
+		Session sess;
+		char c;
 
-	ParseOutput(sess.Lexer);
+		while((c = ifs.get()), ifs)
+			Session::DefaultParseByte(sess.Lexer, c);
+		ParseOutput(sess.Lexer);
+	}
 }
 
 /// 334
@@ -201,11 +205,13 @@ PrintFile(const string& path_gbk)
 {
 	const auto& path(MBCSToMBCS(path_gbk));
 	size_t bom;
+	if(ifstream ifs{path})
 	{
-		TextFile tf(path);
-
-		bom = tf.GetBOMSize();
+		ifs.seekg(0, std::ios_base::end);
+		bom = Text::DetectBOM(ifs, ifs.tellg()).second;
 	}
+	else
+		throw LoggedEvent("Failed opening file.");
 
 	std::ifstream fin(path.c_str());
 	string str;
@@ -294,17 +300,17 @@ LoadFunctions(NPLContext& context)
 		std::bind(&NPLContext::Eval, &context, std::placeholders::_1)});
 	m.insert({"evals", [](const string& arg){
 		if(CheckLiteral(arg) == '\'')
-			EvalS(ystdex::get_mid(arg));
+			EvalS(string_view(ystdex::get_mid(arg)));
 	}});
 	m.insert({"evalf", [](const string& path_acp){
-		if(TextFile tf{MBCSToMBCS(path_acp)})
+		if(ifstream ifs{MBCSToMBCS(path_acp)})
 		{
 			Configuration conf;
-			File f("out.txt", "w");
+			ofstream f("out.txt");
 
 			try
 			{
-				tf >> conf;
+				ifs >> conf;
 				f << conf;
 			}
 			catch(ystdex::bad_any_cast& e)

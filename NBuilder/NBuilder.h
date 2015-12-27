@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r1843
+\version r1850
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2015-05-05 17:19 +0800
+	2015-12-28 04:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -44,6 +44,13 @@ namespace NPL
 ///334
 void
 EvalS(const ValueNode&);
+///662
+template<typename _type>
+void
+EvalS(string_view arg)
+{
+	EvalS(SContext::Analyze(arg));
+}
 ///334
 template<typename _type>
 void
