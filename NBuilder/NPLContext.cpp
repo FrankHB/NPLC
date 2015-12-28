@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1288
+\version r1298
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2015-04-19 20:13 +0800
+	2015-12-29 01:12 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -127,11 +127,8 @@ NPLContext::HandleIntrinsic(const string& cmd)
 
 #define NPL_TRACE 1
 
-/// 327
-/// \pre b and e shall be iterator in or one-past-end of token_list.
-/// \pre b shall be dereferanceable when e is dereferanceable.
 pair<TLIter, size_t>
-NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
+NPLContext::Reduce(size_t depth, TLIter b, TLIter e)
 {
 	size_t cur_off(0);
 	TLIter ifn(e);
@@ -141,7 +138,7 @@ NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
 		if(*b == "(")
 		{
 			const auto ileft(b);
-			auto res(Reduce(depth + 1, ++b, e, eval));
+			auto res(Reduce(depth + 1, ++b, e));
 
 			if(res.first == e || *res.first != ")")
 				throw LoggedEvent("Redundant '(' found.", Alert);
@@ -157,7 +154,7 @@ NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
 		}
 		else if(*b == ";" || *b == ",")
 			yunseq(ifn = e, ++b, ++cur_off);
-		else if(eval)
+		else
 		{
 			if(!sem.empty())
 			{
@@ -179,8 +176,6 @@ NPLContext::Reduce(size_t depth, TLIter b, TLIter e, bool eval)
 				ifn = e;
 			}
 		}
-		else
-			yunseq(++b, ++cur_off);
 #if !NDEBUG && NPL_TRACE
 		using namespace std;
 
@@ -203,11 +198,11 @@ NPLContext::Perform(const string& unit)
 		HandleIntrinsic(token_list.front());
 	if(token_list.empty())
 		throw LoggedEvent("Empty token list found;", Alert);
-	if(Reduce(0, token_list.begin(), token_list.end(), false).first
+	if(SContext::Validate(token_list.begin(), token_list.end())
 		!= token_list.end())
 		throw LoggedEvent("Redundant ')' found.", Alert);
 
-	const auto res(Reduce(0, token_list.begin(), token_list.end(), true));
+	const auto res(Reduce(0, token_list.begin(), token_list.end()));
 
 	yassume(res.first == token_list.end());
 

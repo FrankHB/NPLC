@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2013 FrankHB.
+	© 2012-2013, 2015 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1139
+\version r1142
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2013-12-27 10:31 +0800
+	2015-12-29 01:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -92,11 +92,11 @@ private:
 	static void
 	HandleIntrinsic(const string& cmd);
 
-	/// 327
+	/// 663
 	/// \pre b and e shall be iterator in or one-past-end of token_list.
 	/// \pre b shall be dereferanceable when e is dereferanceable.
 	pair<TLIter, size_t>
-	Reduce(size_t depth, TLIter b, TLIter e, bool eval = true);
+	Reduce(size_t depth, TLIter b, TLIter e);
 
 public:
 	TokenList&
