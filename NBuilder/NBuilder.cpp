@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4084
+\version r4093
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2015-12-28 04:13 +0800
+	2015-12-28 15:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -337,10 +337,9 @@ int
 main(int argc, char* argv[])
 {
 	using namespace std;
-	int exit_code(EXIT_SUCCESS);
 
 	yunused(argc), yunused(argv);
-	FilterExceptions([=, &exit_code]{
+	return FilterExceptions([]{
 		try
 		{
 			Interpreter intp(LoadFunctions);
@@ -354,12 +353,6 @@ main(int argc, char* argv[])
 				<< "] to [" << typeid(e.from()).name() << "]: " << e.what()
 				<< endl;
 		}
-		catch(...)
-		{
-			exit_code = EXIT_FAILURE;
-			throw;
-		}
-	}, "::main");
-	return exit_code;
+	}, "::main") ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
