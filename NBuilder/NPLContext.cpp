@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1298
+\version r1300
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2015-12-29 01:12 +0800
+	2015-12-31 00:44 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -192,12 +192,13 @@ NPLContext::Reduce(size_t depth, TLIter b, TLIter e)
 TokenList&
 NPLContext::Perform(const string& unit)
 {
+	if(unit.empty())
+		throw LoggedEvent("Empty token list found;", Alert);
+
 	Session session(unit);
 
 	if((token_list = session.GetTokenList()).size() == 1)
 		HandleIntrinsic(token_list.front());
-	if(token_list.empty())
-		throw LoggedEvent("Empty token list found;", Alert);
 	if(SContext::Validate(token_list.begin(), token_list.end())
 		!= token_list.end())
 		throw LoggedEvent("Redundant ')' found.", Alert);
