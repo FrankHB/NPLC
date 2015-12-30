@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1496
+\version r1553
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2015-12-28 04:16 +0800
+	2015-12-31 01:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,6 +29,7 @@
 #include YFM_NPL_SContext
 #include <ystdex/container.hpp>
 #include <iostream>
+#include YFM_NPL_NPLA1
 
 namespace NPL
 {
@@ -147,67 +148,6 @@ NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
 	}
 }
 
-namespace
-{
-
-inline std::ostream&
-WritePrefix(std::ostream& f, size_t n = 1, char c = '\t')
-{
-	while(n--)
-		f << c;
-	return f;
-}
-
-bool
-PrintNodeString(std::ostream& f, const ValueNode& node)
-{
-	try
-	{
-		const auto& s(Access<string>(node));
-
-		f << '"' << EscapeLiteral(s) << '"' << '\n';
-		return true;
-	}
-	CatchIgnore(ystdex::bad_any_cast&)
-	return {};
-}
-
-std::ostream&
-WriteNodeC(std::ostream& f, const ValueNode& node, size_t depth)
-{
-	WritePrefix(f, depth);
-	f << EscapeLiteral(node.GetName());
-	if(node)
-	{
-		f << ' ';
-		if(PrintNodeString(f, node))
-			return f;
-		f << '\n';
-		try
-		{
-			for(const auto& n : node)
-			{
-				WritePrefix(f, depth);
-				if(IsPrefixedIndex(n.GetName()))
-					PrintNodeString(f, n);
-				else
-				{
-					f << '(' << '\n';
-					TryExpr(WriteNodeC(f, n, depth + 1))
-					CatchIgnore(std::out_of_range&)
-					WritePrefix(f, depth);
-					f << ')' << '\n';
-				}
-			}
-		}
-		CatchExpr(ystdex::bad_any_cast&,
-			f << '[' << node.Value.GetType().name() << ']')
-	}
-	return f;
-}
-
-} // unnamed namespace;
-
 TokenList&
 NPLContext::Perform(const string& unit)
 {
@@ -221,7 +161,7 @@ NPLContext::Perform(const string& unit)
 
 	using namespace std;
 
-	WriteNodeC(cout, sema, 0);
+	PrintNode(cout, sema, LiteralizeEscapeNodeLiteral);
 	cout << endl;
 
 	return token_list;
