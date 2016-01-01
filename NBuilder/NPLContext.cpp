@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2015 FrankHB.
+	© 2012-2016 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1553
+\version r1580
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2015-12-31 01:09 +0800
+	2016-01-02 02:40 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -77,6 +77,26 @@ NPLContext::HandleIntrinsic(const string& cmd)
 		throw SSignal(SSignal::License);
 }
 
+
+void
+RegisterForm(const ContextNode& node, const string& name, FormHandler f)
+{
+	RegisterContextHandler(node, name,
+		[f](const SemaNode& term, const ContextNode&){
+		auto& c(term.GetContainerRef());
+		const auto s(c.size());
+
+		// TODO: Use more specific exceptions.
+		if(s > 1)
+			f(std::next(c.begin()), s - 1, term.Value);
+		else if(s != 0)
+			throw std::invalid_argument("No sufficient arguments.");
+		else
+			throw std::invalid_argument("Invalid term found.");
+	});
+}
+
+
 #define NPL_TRACE 1
 
 void
@@ -105,30 +125,31 @@ NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
 			// NOTE: List application: call by value.
 			// FIXME: Context.
 			for(auto& term : cont)
-//PackNodes(sema.GetName(), ValueNode(0, "$parent", &ctx)
 				Reduce(depth, term, ctx, k);
 			ystdex::erase_all_if(cont, cont.begin(), cont.end(),
 				[](const SemaNode& term){
 					return !term;
 				});
 			if(cont.size() > 1)
-				// NOTE: Match function calls.
 				try
 				{
-					cont.begin()->Value.Access<FunctionHandler>()(sema, ctx);
+					// NOTE: Matching non-empty syntactic forms like function
+					//	calls.
+					// TODO: Matching special forms?
+					Access<ContextHanlder>(Deref(cont.begin()))(sema, ctx);
 					k(sema);
 				}
 				CatchExpr(std::out_of_range&, YTraceDe(Warning,
-					"No matching functions found."))
+					"No matching form found."))
 				CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(ystdex::sfmt(
-					"Mismatched types <'%s', '%s'> found.", e.from(), e.to()),
+					"Mismatched types ('%s', '%s') found.", e.from(), e.to()),
 					Warning))
 			return;
 		}
 	}
-	else if(sema.Value.AccessPtr<ValueToken>())
+	else if(AccessPtr<ValueToken>(sema))
 		;
-	else if(auto p = sema.Value.AccessPtr<string>())
+	else if(auto p = AccessPtr<string>(sema))
 	{
 		auto& id(*p);
 

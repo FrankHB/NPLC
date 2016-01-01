@@ -1,5 +1,5 @@
 ﻿/*
-	© 2011-2015 FrankHB.
+	© 2011-2016 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4084
+\version r4102
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2015-12-28 04:13 +0800
+	2016-01-02 02:40 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -330,39 +330,38 @@ LoadFunctions(NPLContext& context)
 
 	auto& root(context.Root);
 
-	SetContextHandler_A(root, "+", [](SemaNode::Container::iterator i, size_t n,
+	RegisterForm(root, "+", [](SemaNode::Container::iterator i, size_t n,
 		ValueObject& v){
 		if(n == 2)
 			try
 			{
-				const auto e1(std::stoi(i->Value.Access<string>()));
+				const auto e1(std::stoi(Access<string>(Deref(i))));
 
 				++i;
 
-				const auto e2(std::stoi(i->Value.Access<string>()));
+				const auto e2(std::stoi(Access<string>(Deref(i))));
 
 				v = to_string(e1 + e2);
 			}
 			CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
 	});
-	SetContextHandler_A(root, "$lambda", [](SemaNode::Container::iterator i,
+	RegisterForm(root, "$lambda", [](SemaNode::Container::iterator i,
 		size_t n, ValueObject& v){
-		const auto& fn(i->Value.Access<string>());
+		const auto& fn(Access<string>(Deref(i)));
 
 		YTraceDe(Debug, "Found lambda abstraction, name = '%s',"
 			" param num = '%u'", fn.c_str(), unsigned(n - 1));
-		v = FunctionHandler([](const SemaNode&, const ContextNode&){
-
+		v = ContextHanlder([](const SemaNode&, const ContextNode&){
 		});
 	});
-	SetContextHandler(root, "$decl", [](const SemaNode& term,
+	RegisterContextHandler(root, "$decl", [](const SemaNode& term,
 		const ContextNode& ctx){
 		auto& c(term.GetContainerRef());
 		auto i(c.begin());
 
 		++i;
 
-		const auto& fn(i->Value.Access<string>());
+		const auto& fn(Access<string>(Deref(i)));
 		const auto n(c.size());
 
 		std::clog << "Found form: fn = " << fn
@@ -395,10 +394,9 @@ int
 main(int argc, char* argv[])
 {
 	using namespace std;
-	int exit_code(EXIT_SUCCESS);
 
 	yunused(argc), yunused(argv);
-	FilterExceptions([=, &exit_code]{
+	return FilterExceptions([]{
 		try
 		{
 			Interpreter intp(LoadFunctions);
@@ -412,12 +410,6 @@ main(int argc, char* argv[])
 				<< "] to [" << typeid(e.from()).name() << "]: " << e.what()
 				<< endl;
 		}
-		catch(...)
-		{
-			exit_code = EXIT_FAILURE;
-			throw;
-		}
-	}, "::main");
-	return exit_code;
+	}, "::main") ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 

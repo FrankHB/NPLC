@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2014 FrankHB.
+	© 2012-2016 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1159
+\version r1185
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2014-04-25 18:56 +0800
+	2016-01-02 02:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -62,37 +62,25 @@ enum class ValueToken
 using SemaNode = ValueNode;
 using ContextNode = ValueNode;
 using ContinuationWrapper = ystdex::any;
-using FunctionHandler
+/// 663
+using ContextHanlder
 	= std::function<void(const SemaNode&, const ContextNode&)>;
+/// 663
+using FormHandler = std::function<void(SemaNode::Container::iterator, size_t,
+	ValueObject&)>;
 using XFunction = std::function<void(const SemaNode&, const ContextNode&,
 	ContinuationWrapper)>;
 using Continuation = std::function<void(const SemaNode&)>;
 
 
-template<typename _func>
-inline void
-SetContextHandler(const ContextNode& node, const string& name, _func f)
-{
-	node[name].Value = FunctionHandler(f);
-}
+// 663
+inline PDefH(void, RegisterContextHandler, const ContextNode& node,
+	const string& name, ContextHanlder f)
+	ImplExpr(node[name].Value = f)
 
-template<typename _func>
-inline void
-SetContextHandler_A(const ContextNode& node, const string& name, _func f)
-{
-	SetContextHandler(node, name, [f](const SemaNode& term, const ContextNode&){
-		auto& c(term.GetContainerRef());
-
-		YAssert(!c.empty(), "Invalid term found.");
-
-		auto i(c.begin());
-
-		++i;
-		YAssert(i != c.end(), "No sufficient arguments.");
-
-		f(i, c.size() - 1, term.Value);
-	});
-}
+// 663
+void
+RegisterForm(const ContextNode&, const string&, FormHandler);
 //@}
 
 
@@ -109,7 +97,6 @@ public:
 	FunctionMap Map;
 
 private:
-	// TODO: use TLCIter instead of TLIter for C++11 comforming implementations.
 	TokenList token_list;
 
 public:
