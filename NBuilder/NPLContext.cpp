@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1580
+\version r1639
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-02 02:40 +0800
+	2016-01-03 02:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -30,6 +30,8 @@
 #include <ystdex/container.hpp>
 #include <iostream>
 #include YFM_NPL_NPLA1
+#include <ystdex/cast.hpp> // for ystdex::pvoid;
+#include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 
 namespace NPL
 {
@@ -79,6 +81,15 @@ NPLContext::HandleIntrinsic(const string& cmd)
 
 
 void
+CleanupEmptyTerms(SemaNode::Container& cont) ynothrow
+{
+	ystdex::erase_all_if(cont, cont.begin(), cont.end(),
+		[](const SemaNode& term) ynothrow{
+			return !term;
+		});
+}
+
+void
 RegisterForm(const ContextNode& node, const string& name, FormHandler f)
 {
 	RegisterContextHandler(node, name,
@@ -100,16 +111,24 @@ RegisterForm(const ContextNode& node, const string& name, FormHandler f)
 #define NPL_TRACE 1
 
 void
-NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
+NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 	Continuation k)
 {
-	std::clog << "Depth = " << depth << ", Context = " << &ctx
-		<< ", Semantics = " << &sema << std::endl;
+	using ystdex::pvoid;
+	auto& depth(AccessChild<size_t>(ctx, "__depth"));
+
+	YTraceDe(Informative, "Depth = %zu, context = %p, semantics = %p.", depth,
+		pvoid(&ctx), pvoid(&sema));
 	++depth;
+
+	const auto gd(ystdex::make_guard([&]() ynothrow{
+		--depth;
+	}));
+
 	if(!sema.empty())
 	{
 		auto& cont(sema.GetContainerRef());
-		const auto n(cont.size());
+		auto n(cont.size());
 
 		if(n == 0)
 			// NOTE: Empty list.
@@ -118,32 +137,42 @@ NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
 		{
 			// NOTE: List with single element shall be reduced to its value.
 			Deref(cont.begin()).SwapContent(sema);
-			Reduce(depth, sema, ctx, k);
+			Reduce(sema, ctx, k);
 		}
 		else
 		{
 			// NOTE: List application: call by value.
-			// FIXME: Context.
-			for(auto& term : cont)
-				Reduce(depth, term, ctx, k);
-			ystdex::erase_all_if(cont, cont.begin(), cont.end(),
-				[](const SemaNode& term){
-					return !term;
-				});
-			if(cont.size() > 1)
+			ReduceTerms_CallByValue(sema, ctx, k);
+			n = cont.size();
+			if(n > 2)
+			{
 				try
 				{
 					// NOTE: Matching non-empty syntactic forms like function
 					//	calls.
 					// TODO: Matching special forms?
-					Access<ContextHanlder>(Deref(cont.begin()))(sema, ctx);
-					k(sema);
+					auto i(cont.begin());
+					const auto& fn(Deref(i));
+
+					if(const auto p_handler = AccessPtr<ContextHanlder>(fn))
+					{
+						++i;
+						(*p_handler)(sema, ctx);
+						k(sema);
+					}
+					else
+						YTraceDe(Warning, "No matching form found.");
 				}
-				CatchExpr(std::out_of_range&, YTraceDe(Warning,
-					"No matching form found."))
 				CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(ystdex::sfmt(
 					"Mismatched types ('%s', '%s') found.", e.from(), e.to()),
 					Warning))
+				return;
+			}
+			if(n == 0)
+				YTraceDe(Warning, "Empty reduced form found.");
+			else
+				YTraceDe(Warning, "%zu term(s) not reduced found.", n);
+		//	k(sema);
 			return;
 		}
 	}
@@ -169,6 +198,18 @@ NPLContext::Reduce(size_t depth, const SemaNode& sema, const ContextNode& ctx,
 	}
 }
 
+void
+NPLContext::ReduceTerms_CallByValue(const SemaNode& sema,
+	const ContextNode& ctx, Continuation k)
+{
+	auto& cont(sema.GetContainerRef());
+
+	// FIXME: Context.
+	for(auto& term : cont)
+		Reduce(term, ctx, k);
+	CleanupEmptyTerms(cont);
+}
+
 TokenList&
 NPLContext::Perform(const string& unit)
 {
@@ -177,7 +218,8 @@ NPLContext::Perform(const string& unit)
 
 	auto sema(SContext::Analyze(Session(unit)));
 
-	Reduce(0, sema, Root, [](const SemaNode&){});
+	Root["__depth"].Value = size_t();
+	Reduce(sema, Root, [](const SemaNode&){});
 	// TODO: Merge result to 'Root'.
 
 	using namespace std;

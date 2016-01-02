@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1185
+\version r1197
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-02 02:30 +0800
+	2016-01-02 11:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -71,14 +71,18 @@ using FormHandler = std::function<void(SemaNode::Container::iterator, size_t,
 using XFunction = std::function<void(const SemaNode&, const ContextNode&,
 	ContinuationWrapper)>;
 using Continuation = std::function<void(const SemaNode&)>;
+//@}
 
 
-// 663
+/// 663
+//@{
+void
+CleanupEmptyTerms(SemaNode::Container&) ynothrow;
+
 inline PDefH(void, RegisterContextHandler, const ContextNode& node,
 	const string& name, ContextHanlder f)
 	ImplExpr(node[name].Value = f)
 
-// 663
 void
 RegisterForm(const ContextNode&, const string&, FormHandler);
 //@}
@@ -126,9 +130,14 @@ private:
 	HandleIntrinsic(const string& cmd);
 
 public:
-	/// 592
+	/// 663
 	static void
-	Reduce(size_t, const SemaNode&, const ContextNode&, Continuation);
+	Reduce(const SemaNode&, const ContextNode&, Continuation);
+
+	/// 663
+	static void
+	ReduceTerms_CallByValue(const SemaNode&, const ContextNode&,
+		Continuation);
 
 	TokenList&
 	Perform(const string& unit);
