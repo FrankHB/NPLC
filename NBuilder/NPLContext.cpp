@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1639
+\version r1656
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-03 02:35 +0800
+	2016-01-03 03:46 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -98,10 +98,8 @@ RegisterForm(const ContextNode& node, const string& name, FormHandler f)
 		const auto s(c.size());
 
 		// TODO: Use more specific exceptions.
-		if(s > 1)
-			f(std::next(c.begin()), s - 1, term.Value);
-		else if(s != 0)
-			throw std::invalid_argument("No sufficient arguments.");
+		if(s != 0)
+			f(c.begin(), s - 1, term.Value);
 		else
 			throw std::invalid_argument("Invalid term found.");
 	});
@@ -130,10 +128,8 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 		auto& cont(sema.GetContainerRef());
 		auto n(cont.size());
 
-		if(n == 0)
-			// NOTE: Empty list.
-			sema.Value = ValueToken::Null;
-		else if(n == 1)
+		YAssert(n != 0, "Invalid node found.");
+		if(n == 1)
 		{
 			// NOTE: List with single element shall be reduced to its value.
 			Deref(cont.begin()).SwapContent(sema);
@@ -144,7 +140,7 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 			// NOTE: List application: call by value.
 			ReduceTerms_CallByValue(sema, ctx, k);
 			n = cont.size();
-			if(n > 2)
+			if(n > 1)
 			{
 				try
 				{
@@ -156,7 +152,11 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 
 					if(const auto p_handler = AccessPtr<ContextHanlder>(fn))
 					{
-						++i;
+						// NOTE: Adjust null list argument application to
+						//	function call without arguments.
+						// TODO: Improve performance of comparison?
+						if(n == 2 && Deref(++i).Value == ValueToken::Null)
+							cont.erase(i);
 						(*p_handler)(sema, ctx);
 						k(sema);
 					}
@@ -176,6 +176,9 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 			return;
 		}
 	}
+	else if(!sema.Value)
+		// NOTE: Empty list.
+		sema.Value = ValueToken::Null;
 	else if(AccessPtr<ValueToken>(sema))
 		;
 	else if(auto p = AccessPtr<string>(sema))

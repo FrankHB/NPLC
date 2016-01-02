@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4102
+\version r4117
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-02 02:40 +0800
+	2016-01-03 03:46 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -332,15 +332,26 @@ LoadFunctions(NPLContext& context)
 
 	RegisterForm(root, "+", [](SemaNode::Container::iterator i, size_t n,
 		ValueObject& v){
+		try
+		{
+			int sum(0);
+
+			// FIXME: Overflow?
+			while(n-- != 0)
+				sum += std::stoi(Access<string>(Deref(++i)));
+			v = to_string(sum);
+		}
+		CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
+	});
+	RegisterForm(root, "add2", [](SemaNode::Container::iterator i, size_t n,
+		ValueObject& v){
 		if(n == 2)
 			try
 			{
-				const auto e1(std::stoi(Access<string>(Deref(i))));
+				const auto e1(std::stoi(Access<string>(Deref(++i))));
+				const auto e2(std::stoi(Access<string>(Deref(++i))));
 
-				++i;
-
-				const auto e2(std::stoi(Access<string>(Deref(i))));
-
+				// FIXME: Overflow?
 				v = to_string(e1 + e2);
 			}
 			CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
