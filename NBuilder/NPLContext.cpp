@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1656
+\version r1674
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-03 03:46 +0800
+	2016-01-03 19:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -137,7 +137,7 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 		}
 		else
 		{
-			// NOTE: List application: call by value.
+			// NOTE: List evaluation: call by value.
 			ReduceTerms_CallByValue(sema, ctx, k);
 			n = cont.size();
 			if(n > 1)
@@ -161,7 +161,14 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 						k(sema);
 					}
 					else
-						YTraceDe(Warning, "No matching form found.");
+					{
+						const auto p(AccessPtr<string>(fn));
+
+						// TODO: Capture contextual information in error.
+						throw LoggedEvent(ystdex::sfmt("No matching form '%s'"
+							" with %zu argument(s) found.", p ? p->c_str()
+							: "#<unknown>", n), Err);
+					}
 				}
 				CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(ystdex::sfmt(
 					"Mismatched types ('%s', '%s') found.", e.from(), e.to()),
@@ -187,15 +194,19 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 
 		if(id == "," || id == ";")
 			sema.Clear();
-		else
+		else if(!id.empty())
 		{
 			HandleIntrinsic(id);
 			// NOTE: Value rewriting.
-			if(auto v = FetchValue(ctx, id))
-				sema.Value = std::move(v);
-		//	else
-		//		throw LoggedEvent(ystdex::sfmt(
-		//			"Wrong identifier '%s' found", id.c_str()), Warning);
+			// TODO: Implement general literal check.
+			if(!std::isdigit(id.front()))
+			{
+				if(auto v = FetchValue(ctx, id))
+					sema.Value = std::move(v);
+				else
+					throw LoggedEvent(ystdex::sfmt(
+						"Undeclared identifier '%s' found", id.c_str()), Err);
+			}
 		}
 		k(sema);
 	}
