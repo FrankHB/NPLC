@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1197
+\version r1198
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-02 11:59 +0800
+	2016-01-02 13:47 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -63,11 +63,21 @@ using SemaNode = ValueNode;
 using ContextNode = ValueNode;
 using ContinuationWrapper = ystdex::any;
 /// 663
-using ContextHanlder
-	= std::function<void(const SemaNode&, const ContextNode&)>;
-/// 663
+//@{
+struct ContextHandler
+{
+	std::function<void(const SemaNode&, const ContextNode&)> Handler;
+	bool Special = {};
+
+	template<typename _func>
+	ContextHandler(_func f, bool special = {})
+		: Handler(f), Special(special)
+	{}
+};
+
 using FormHandler = std::function<void(SemaNode::Container::iterator, size_t,
 	ValueObject&)>;
+//@{
 using XFunction = std::function<void(const SemaNode&, const ContextNode&,
 	ContinuationWrapper)>;
 using Continuation = std::function<void(const SemaNode&)>;
@@ -80,11 +90,12 @@ void
 CleanupEmptyTerms(SemaNode::Container&) ynothrow;
 
 inline PDefH(void, RegisterContextHandler, const ContextNode& node,
-	const string& name, ContextHanlder f)
+	const string& name, ContextHandler f)
 	ImplExpr(node[name].Value = f)
 
 void
-RegisterForm(const ContextNode&, const string&, FormHandler);
+RegisterForm(const ContextNode&, const string&, FormHandler,
+	bool = {});
 //@}
 
 
@@ -131,13 +142,8 @@ private:
 
 public:
 	/// 663
-	static void
+	static bool
 	Reduce(const SemaNode&, const ContextNode&, Continuation);
-
-	/// 663
-	static void
-	ReduceTerms_CallByValue(const SemaNode&, const ContextNode&,
-		Continuation);
 
 	TokenList&
 	Perform(const string& unit);

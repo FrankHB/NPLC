@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1674
+\version r1762
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-03 19:23 +0800
+	2016-01-05 15:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -32,6 +32,7 @@
 #include YFM_NPL_NPLA1
 #include <ystdex/cast.hpp> // for ystdex::pvoid;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
+#include <ystdex/functional.hpp> // for ystdex::retry_on_cond;
 
 namespace NPL
 {
@@ -90,25 +91,26 @@ CleanupEmptyTerms(SemaNode::Container& cont) ynothrow
 }
 
 void
-RegisterForm(const ContextNode& node, const string& name, FormHandler f)
+RegisterForm(const ContextNode& node, const string& name, FormHandler f,
+	bool special)
 {
-	RegisterContextHandler(node, name,
+	RegisterContextHandler(node, name, ContextHandler(
 		[f](const SemaNode& term, const ContextNode&){
 		auto& c(term.GetContainerRef());
 		const auto s(c.size());
 
-		// TODO: Use more specific exceptions.
 		if(s != 0)
 			f(c.begin(), s - 1, term.Value);
 		else
+			// TODO: Use more specific exceptions.
 			throw std::invalid_argument("Invalid term found.");
-	});
+	}, special));
 }
 
 
 #define NPL_TRACE 1
 
-void
+bool
 NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 	Continuation k)
 {
@@ -133,54 +135,92 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 		{
 			// NOTE: List with single element shall be reduced to its value.
 			Deref(cont.begin()).SwapContent(sema);
-			Reduce(sema, ctx, k);
+			return Reduce(sema, ctx, k);
 		}
 		else
 		{
-			// NOTE: List evaluation: call by value.
-			ReduceTerms_CallByValue(sema, ctx, k);
-			n = cont.size();
-			if(n > 1)
-			{
-				try
-				{
-					// NOTE: Matching non-empty syntactic forms like function
-					//	calls.
-					// TODO: Matching special forms?
-					auto i(cont.begin());
-					const auto& fn(Deref(i));
+			ystdex::retry_on_cond([&](bool reducible) ynothrow{
+				// TODO: Simplify.
+				if(reducible)
+					k(sema);
+				CleanupEmptyTerms(cont);
 
-					if(const auto p_handler = AccessPtr<ContextHanlder>(fn))
+				// NOTE: Stop on got a normal form.
+				return reducible && !cont.empty();
+			}, [&]() -> bool{
+				// NOTE: List evaluation: call by value.
+				auto i(cont.cbegin());
+
+				// TODO: Form evaluation: macro expansion, etc.
+				Reduce(*i, ctx, k);
+				if(!*i)
+					cont.erase(i);
+				i = cont.begin();
+
+				const auto& fm(Deref(i));
+
+				if(const auto p_handler = AccessPtr<ContextHandler>(fm))
+				{
+					if(p_handler->Special)
 					{
-						// NOTE: Adjust null list argument application to
-						//	function call without arguments.
-						// TODO: Improve performance of comparison?
-						if(n == 2 && Deref(++i).Value == ValueToken::Null)
-							cont.erase(i);
-						(*p_handler)(sema, ctx);
-						k(sema);
+						// TODO: Matching specific special forms?
+						YTraceDe(Debug, "Found special form.");
+						try
+						{
+							(p_handler->Handler)(sema, ctx);
+							k(sema);
+						}
+						CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
+							ystdex::sfmt("Mismatched types ('%s', '%s') found.",
+							e.from(), e.to()), Warning))
+						// FIXME: Recoginze normal forms.
+						return {};
 					}
 					else
 					{
-						const auto p(AccessPtr<string>(fn));
-
-						// TODO: Capture contextual information in error.
-						throw LoggedEvent(ystdex::sfmt("No matching form '%s'"
-							" with %zu argument(s) found.", p ? p->c_str()
-							: "#<unknown>", n), Err);
+						// NOTE: Arguments evaluation: call by value.
+						// FIXME: Context.
+						std::for_each(std::next(i), cont.cend(),
+							[&](decltype(*i)& term){
+							Reduce(term, ctx, k);
+						});
+						n = cont.size();
+						if(n > 1)
+						{
+							// NOTE: Matching function calls.
+							try
+							{
+								// NOTE: Adjust null list argument application
+								//	to function call without arguments.
+								// TODO: Improve performance of comparison?
+								if(n == 2
+									&& Deref(++i).Value == ValueToken::Null)
+									cont.erase(i);
+								(p_handler->Handler)(sema, ctx);
+								k(sema);
+							}
+							CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
+								ystdex::sfmt("Mismatched types ('%s', '%s')"
+								" found.", e.from(), e.to()), Warning))
+						}
 					}
 				}
-				CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(ystdex::sfmt(
-					"Mismatched types ('%s', '%s') found.", e.from(), e.to()),
-					Warning))
-				return;
-			}
-			if(n == 0)
-				YTraceDe(Warning, "Empty reduced form found.");
-			else
-				YTraceDe(Warning, "%zu term(s) not reduced found.", n);
-		//	k(sema);
-			return;
+				else
+				{
+					const auto p(AccessPtr<string>(fm));
+
+					// TODO: Capture contextual information in error.
+					throw LoggedEvent(ystdex::sfmt("No matching form '%s'"
+						" with %zu argument(s) found.", p ? p->c_str()
+						: "#<unknown>", n), Err);
+				}
+				if(n == 0)
+					YTraceDe(Warning, "Empty reduced form found.");
+				else
+					YTraceDe(Warning, "%zu term(s) not reduced found.", n);
+				return {};
+			});
+			return {};
 		}
 	}
 	else if(!sema.Value)
@@ -209,19 +249,10 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 			}
 		}
 		k(sema);
+		// XXX: Remained reducible?
+		return true;
 	}
-}
-
-void
-NPLContext::ReduceTerms_CallByValue(const SemaNode& sema,
-	const ContextNode& ctx, Continuation k)
-{
-	auto& cont(sema.GetContainerRef());
-
-	// FIXME: Context.
-	for(auto& term : cont)
-		Reduce(term, ctx, k);
-	CleanupEmptyTerms(cont);
+	return {};
 }
 
 TokenList&
