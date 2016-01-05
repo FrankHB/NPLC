@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4117
+\version r4126
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-03 03:46 +0800
+	2016-01-04 18:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -330,6 +330,16 @@ LoadFunctions(NPLContext& context)
 
 	auto& root(context.Root);
 
+	RegisterContextHandler(root, "$quote",
+		ContextHandler([](const SemaNode&, const ContextNode&){}, true));
+	RegisterContextHandler(root, "$quote1",
+		ContextHandler([](const SemaNode& sema, const ContextNode&){
+		const auto n(sema.size() - 1);
+
+		if(n != 1)
+			throw LoggedEvent(ystdex::sfmt("Syntax error in '$quote1': expected"
+				" 1 argument, received %zu.", n), Err);
+	}, true));
 	RegisterForm(root, "+", [](SemaNode::Container::iterator i, size_t n,
 		ValueObject& v){
 		try
@@ -362,7 +372,7 @@ LoadFunctions(NPLContext& context)
 
 		YTraceDe(Debug, "Found lambda abstraction, name = '%s',"
 			" param num = '%u'", fn.c_str(), unsigned(n - 1));
-		v = ContextHanlder([](const SemaNode&, const ContextNode&){
+		v = ContextHandler([](const SemaNode&, const ContextNode&){
 		});
 	});
 	RegisterContextHandler(root, "$decl", [](const SemaNode& term,
