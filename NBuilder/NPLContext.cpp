@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1762
+\version r1774
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-05 15:25 +0800
+	2016-01-08 21:44 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -82,6 +82,17 @@ NPLContext::HandleIntrinsic(const string& cmd)
 
 
 void
+ContextHandler::operator()(const SemaNode& sema, const ContextNode& ctx) const
+{
+	if(!sema.empty())
+		handler(sema, ctx);
+	else
+		// TODO: Use more specific exceptions.
+		throw std::invalid_argument("Empty term found.");
+}
+
+
+void
 CleanupEmptyTerms(SemaNode::Container& cont) ynothrow
 {
 	ystdex::erase_all_if(cont, cont.begin(), cont.end(),
@@ -99,11 +110,8 @@ RegisterForm(const ContextNode& node, const string& name, FormHandler f,
 		auto& c(term.GetContainerRef());
 		const auto s(c.size());
 
-		if(s != 0)
-			f(c.begin(), s - 1, term.Value);
-		else
-			// TODO: Use more specific exceptions.
-			throw std::invalid_argument("Invalid term found.");
+		YAssert(s != 0, "Invalid term found.");
+		f(c.begin(), s - 1, term.Value);
 	}, special));
 }
 
@@ -167,7 +175,7 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 						YTraceDe(Debug, "Found special form.");
 						try
 						{
-							(p_handler->Handler)(sema, ctx);
+							(*p_handler)(sema, ctx);
 							k(sema);
 						}
 						CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
@@ -196,7 +204,7 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 								if(n == 2
 									&& Deref(++i).Value == ValueToken::Null)
 									cont.erase(i);
-								(p_handler->Handler)(sema, ctx);
+								(*p_handler)(sema, ctx);
 								k(sema);
 							}
 							CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
