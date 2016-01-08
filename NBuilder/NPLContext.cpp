@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1782
+\version r1785
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-08 21:52 +0800
+	2016-01-08 22:04 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -105,13 +105,13 @@ void
 RegisterForm(const ContextNode& node, const string& name, FormHandler f,
 	bool special)
 {
-	RegisterContextHandler(node, name, ContextHandler(
-		[f](const SemaNode& term, const ContextNode&){
+	RegisterContextHandler(node, name,
+		ContextHandler([f](const SemaNode& term, const ContextNode&){
 		auto& c(term.GetContainerRef());
 		const auto s(c.size());
 
 		YAssert(s != 0, "Invalid term found.");
-		f(c.begin(), s - 1, term.Value);
+		f(c.begin(), s - 1, term);
 	}, special));
 }
 

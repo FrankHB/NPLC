@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1204
+\version r1205
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-08 21:42 +0800
+	2016-01-08 22:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -82,7 +82,7 @@ public:
 };
 
 using FormHandler = std::function<void(SemaNode::Container::iterator, size_t,
-	ValueObject&)>;
+	const SemaNode&)>;
 //@{
 using XFunction = std::function<void(const SemaNode&, const ContextNode&,
 	ContinuationWrapper)>;

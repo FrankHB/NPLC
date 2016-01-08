@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4130
+\version r4136
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-08 21:46 +0800
+	2016-01-08 22:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -345,7 +345,7 @@ LoadFunctions(NPLContext& context)
 				" 1 argument, received %zu.", n), Err);
 	}, true));
 	RegisterForm(root, "+", [](SemaNode::Container::iterator i, size_t n,
-		ValueObject& v){
+		const SemaNode& sema){
 		try
 		{
 			int sum(0);
@@ -353,12 +353,12 @@ LoadFunctions(NPLContext& context)
 			// FIXME: Overflow?
 			while(n-- != 0)
 				sum += std::stoi(Access<string>(Deref(++i)));
-			v = to_string(sum);
+			sema.Value = to_string(sum);
 		}
 		CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
 	});
 	RegisterForm(root, "add2", [](SemaNode::Container::iterator i, size_t n,
-		ValueObject& v){
+		const SemaNode& sema){
 		if(n == 2)
 			try
 			{
@@ -366,17 +366,17 @@ LoadFunctions(NPLContext& context)
 				const auto e2(std::stoi(Access<string>(Deref(++i))));
 
 				// FIXME: Overflow?
-				v = to_string(e1 + e2);
+				sema.Value = to_string(e1 + e2);
 			}
 			CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
 	});
 	RegisterForm(root, "$lambda", [](SemaNode::Container::iterator i,
-		size_t n, ValueObject& v){
+		size_t n, const SemaNode& sema){
 		const auto& fn(Access<string>(Deref(i)));
 
 		YTraceDe(Debug, "Found lambda abstraction, name = '%s',"
 			" param num = '%u'", fn.c_str(), unsigned(n - 1));
-		v = ContextHandler([](const SemaNode&, const ContextNode&){
+		sema.Value = ContextHandler([](const SemaNode&, const ContextNode&){
 		});
 	});
 	RegisterContextHandler(root, "$decl", [](const SemaNode& term,
