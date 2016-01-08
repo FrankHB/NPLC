@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4136
+\version r4206
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-08 22:09 +0800
+	2016-01-09 23:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -344,6 +344,47 @@ LoadFunctions(NPLContext& context)
 			throw LoggedEvent(ystdex::sfmt("Syntax error in '$quote1': expected"
 				" 1 argument, received %zu.", n), Err);
 	}, true));
+	RegisterContextHandler(root, "$define",
+		ContextHandler([](const SemaNode& term, const ContextNode& ctx){
+		auto& c(term.GetContainerRef());
+
+		YAssert(!c.empty(), "Invalid term found.");
+
+	//	const auto n(c.size() - 1);
+		auto i(c.begin());
+
+		if(const auto p_id = AccessPtr<string>(Deref(++i)))
+		{
+			const auto& id(*p_id);
+
+			YTraceDe(Debug, "Found identifier '%s'.", id.c_str());
+			try
+			{
+			//	TODO: Implementation.
+			}
+			// TODO: Proper error handling.
+			CatchThrow(..., LoggedEvent("Bad definition found.", Warning))
+		}
+		else
+			throw LoggedEvent("List substitution is not supported yet.", Err);
+	}, true));
+	RegisterContextHandler(root, "$lambda",
+		ContextHandler([](const SemaNode& term, const ContextNode&){
+		auto& c(term.GetContainerRef());
+		auto s(c.size());
+
+		YAssert(s != 0, "Invalid term found.");
+		--s;
+		YTraceDe(Debug, "Found lambda abstraction with %zu argument(s).", s);
+		if(s != 0)
+		{
+		//	TODO: Implementation.
+		}
+		else
+			// TODO: Use proper exception type for syntax error.
+			throw LoggedEvent(ystdex::sfmt("Syntax error in lambda abstraction,"
+				" no arguments are found."), Err);
+	}, true));
 	RegisterForm(root, "+", [](SemaNode::Container::iterator i, size_t n,
 		const SemaNode& sema){
 		try
@@ -369,45 +410,6 @@ LoadFunctions(NPLContext& context)
 				sema.Value = to_string(e1 + e2);
 			}
 			CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
-	});
-	RegisterForm(root, "$lambda", [](SemaNode::Container::iterator i,
-		size_t n, const SemaNode& sema){
-		const auto& fn(Access<string>(Deref(i)));
-
-		YTraceDe(Debug, "Found lambda abstraction, name = '%s',"
-			" param num = '%u'", fn.c_str(), unsigned(n - 1));
-		sema.Value = ContextHandler([](const SemaNode&, const ContextNode&){
-		});
-	});
-	RegisterContextHandler(root, "$decl", [](const SemaNode& term,
-		const ContextNode& ctx){
-		auto& c(term.GetContainerRef());
-		auto i(c.begin());
-
-		++i;
-
-		const auto& fn(Access<string>(Deref(i)));
-		const auto n(c.size());
-
-		std::clog << "Found form: fn = " << fn
-			<< " param.n = " << n - 1 << std::endl;
-		if(n < 3)
-			throw LoggedEvent("Missing declarator.", Warning);
-		try
-		{
-			auto& id(Access<string>(*i));
-
-			if(!ctx.Add({0, id, Access<string>(*++i)}))
-				throw LoggedEvent("Duplicate name found.", Warning);
-		}
-		catch(LoggedEvent&)
-		{
-			throw;
-		}
-		catch(...)
-		{
-			throw LoggedEvent("Bad declaration found.", Warning);
-		}
 	});
 }
 
