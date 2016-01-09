@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1830
+\version r1834
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-10 04:14 +0800
+	2016-01-10 04:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -95,10 +95,9 @@ ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 void
 CleanupEmptyTerms(TermNode::Container& con) ynothrow
 {
-	ystdex::erase_all_if(con, con.begin(), con.end(),
-		[](const TermNode& term) ynothrow{
-			return !term;
-		});
+	ystdex::erase_all_if(con, [](const TermNode& term) ynothrow{
+		return !term;
+	});
 }
 
 void
