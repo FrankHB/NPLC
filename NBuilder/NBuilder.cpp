@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4206
+\version r4229
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-09 23:41 +0800
+	2016-01-10 00:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -331,27 +331,27 @@ LoadFunctions(NPLContext& context)
 	auto& root(context.Root);
 
 	RegisterContextHandler(root, "$quote",
-		ContextHandler([](const SemaNode& sema, const ContextNode&){
-		YAssert(!sema.empty(), "Invalid term found.");
+		ContextHandler([](const TermNode& term, const ContextNode&){
+		YAssert(!term.empty(), "Invalid term found.");
 	}, true));
 	RegisterContextHandler(root, "$quote1",
-		ContextHandler([](const SemaNode& sema, const ContextNode&){
-		YAssert(!sema.empty(), "Invalid term found.");
+		ContextHandler([](const TermNode& term, const ContextNode&){
+		YAssert(!term.empty(), "Invalid term found.");
 
-		const auto n(sema.size() - 1);
+		const auto n(term.size() - 1);
 
 		if(n != 1)
 			throw LoggedEvent(ystdex::sfmt("Syntax error in '$quote1': expected"
 				" 1 argument, received %zu.", n), Err);
 	}, true));
 	RegisterContextHandler(root, "$define",
-		ContextHandler([](const SemaNode& term, const ContextNode& ctx){
-		auto& c(term.GetContainerRef());
+		ContextHandler([](const TermNode& term, const ContextNode&){
+		auto& con(term.GetContainerRef());
 
-		YAssert(!c.empty(), "Invalid term found.");
+		YAssert(!con.empty(), "Invalid term found.");
 
-	//	const auto n(c.size() - 1);
-		auto i(c.begin());
+	//	const auto n(con.size() - 1);
+		auto i(con.cbegin());
 
 		if(const auto p_id = AccessPtr<string>(Deref(++i)))
 		{
@@ -369,14 +369,14 @@ LoadFunctions(NPLContext& context)
 			throw LoggedEvent("List substitution is not supported yet.", Err);
 	}, true));
 	RegisterContextHandler(root, "$lambda",
-		ContextHandler([](const SemaNode& term, const ContextNode&){
-		auto& c(term.GetContainerRef());
-		auto s(c.size());
+		ContextHandler([](const TermNode& term, const ContextNode&){
+		auto& con(term.GetContainerRef());
+		auto size(con.size());
 
-		YAssert(s != 0, "Invalid term found.");
-		--s;
-		YTraceDe(Debug, "Found lambda abstraction with %zu argument(s).", s);
-		if(s != 0)
+		YAssert(size != 0, "Invalid term found.");
+		--size;
+		YTraceDe(Debug, "Found lambda abstraction with %zu argument(s).", size);
+		if(size != 0)
 		{
 		//	TODO: Implementation.
 		}
@@ -385,8 +385,8 @@ LoadFunctions(NPLContext& context)
 			throw LoggedEvent(ystdex::sfmt("Syntax error in lambda abstraction,"
 				" no arguments are found."), Err);
 	}, true));
-	RegisterForm(root, "+", [](SemaNode::Container::iterator i, size_t n,
-		const SemaNode& sema){
+	RegisterForm(root, "+", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
 		try
 		{
 			int sum(0);
@@ -394,12 +394,12 @@ LoadFunctions(NPLContext& context)
 			// FIXME: Overflow?
 			while(n-- != 0)
 				sum += std::stoi(Access<string>(Deref(++i)));
-			sema.Value = to_string(sum);
+			term.Value = to_string(sum);
 		}
 		CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
 	});
-	RegisterForm(root, "add2", [](SemaNode::Container::iterator i, size_t n,
-		const SemaNode& sema){
+	RegisterForm(root, "add2", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
 		if(n == 2)
 			try
 			{
@@ -407,7 +407,7 @@ LoadFunctions(NPLContext& context)
 				const auto e2(std::stoi(Access<string>(Deref(++i))));
 
 				// FIXME: Overflow?
-				sema.Value = to_string(e1 + e2);
+				term.Value = to_string(e1 + e2);
 			}
 			CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
 	});

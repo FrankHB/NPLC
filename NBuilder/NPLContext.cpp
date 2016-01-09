@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1785
+\version r1830
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-08 22:04 +0800
+	2016-01-10 04:14 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -82,10 +82,10 @@ NPLContext::HandleIntrinsic(const string& cmd)
 
 
 void
-ContextHandler::operator()(const SemaNode& sema, const ContextNode& ctx) const
+ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 {
-	if(!sema.empty())
-		handler(sema, ctx);
+	if(!term.empty())
+		handler(term, ctx);
 	else
 		// TODO: Use more specific exceptions.
 		throw std::invalid_argument("Empty term found.");
@@ -93,10 +93,10 @@ ContextHandler::operator()(const SemaNode& sema, const ContextNode& ctx) const
 
 
 void
-CleanupEmptyTerms(SemaNode::Container& cont) ynothrow
+CleanupEmptyTerms(TermNode::Container& con) ynothrow
 {
-	ystdex::erase_all_if(cont, cont.begin(), cont.end(),
-		[](const SemaNode& term) ynothrow{
+	ystdex::erase_all_if(con, con.begin(), con.end(),
+		[](const TermNode& term) ynothrow{
 			return !term;
 		});
 }
@@ -106,12 +106,12 @@ RegisterForm(const ContextNode& node, const string& name, FormHandler f,
 	bool special)
 {
 	RegisterContextHandler(node, name,
-		ContextHandler([f](const SemaNode& term, const ContextNode&){
-		auto& c(term.GetContainerRef());
-		const auto s(c.size());
+		ContextHandler([f](const TermNode& term, const ContextNode&){
+		auto& con(term.GetContainerRef());
+		const auto size(con.size());
 
-		YAssert(s != 0, "Invalid term found.");
-		f(c.begin(), s - 1, term);
+		YAssert(size != 0, "Invalid term found.");
+		f(con.begin(), size - 1, term);
 	}, special));
 }
 
@@ -119,51 +119,53 @@ RegisterForm(const ContextNode& node, const string& name, FormHandler f,
 #define NPL_TRACE 1
 
 bool
-NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
+NPLContext::Reduce(const TermNode& term, const ContextNode& ctx,
 	Continuation k)
 {
 	using ystdex::pvoid;
 	auto& depth(AccessChild<size_t>(ctx, "__depth"));
 
 	YTraceDe(Informative, "Depth = %zu, context = %p, semantics = %p.", depth,
-		pvoid(&ctx), pvoid(&sema));
+		pvoid(&ctx), pvoid(&term));
 	++depth;
 
 	const auto gd(ystdex::make_guard([&]() ynothrow{
 		--depth;
 	}));
 
-	if(!sema.empty())
+	if(!term.empty())
 	{
-		auto& cont(sema.GetContainerRef());
-		auto n(cont.size());
+		auto& con(term.GetContainerRef());
+		auto n(con.size());
 
 		YAssert(n != 0, "Invalid node found.");
 		if(n == 1)
 		{
 			// NOTE: List with single element shall be reduced to its value.
-			Deref(cont.begin()).SwapContent(sema);
-			return Reduce(sema, ctx, k);
+			Deref(con.begin()).SwapContent(term);
+			return Reduce(term, ctx, k);
 		}
 		else
 		{
 			ystdex::retry_on_cond([&](bool reducible) ynothrow{
 				// TODO: Simplify.
 				if(reducible)
-					k(sema);
-				CleanupEmptyTerms(cont);
+					k(term);
+				CleanupEmptyTerms(con);
 
 				// NOTE: Stop on got a normal form.
-				return reducible && !cont.empty();
+				return reducible && !con.empty();
 			}, [&]() -> bool{
+				YAssert(!con.empty(), "Invalid term found.");
+
 				// NOTE: List evaluation: call by value.
 				// TODO: Form evaluation: macro expansion, etc.
-				Reduce(*cont.cbegin(), ctx, k);
-				CleanupEmptyTerms(cont);
-				if(cont.empty())
+				Reduce(*con.cbegin(), ctx, k);
+				CleanupEmptyTerms(con);
+				if(con.empty())
 					return {};
 
-				auto i(cont.cbegin());
+				auto i(con.cbegin());
 
 				const auto& fm(Deref(i));
 
@@ -175,8 +177,8 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 						YTraceDe(Debug, "Found special form.");
 						try
 						{
-							(*p_handler)(sema, ctx);
-							k(sema);
+							(*p_handler)(term, ctx);
+							k(term);
 						}
 						CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
 							ystdex::sfmt("Mismatched types ('%s', '%s') found.",
@@ -188,11 +190,11 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 					{
 						// NOTE: Arguments evaluation: call by value.
 						// FIXME: Context.
-						std::for_each(std::next(i), cont.cend(),
-							[&](decltype(*i)& term){
-							Reduce(term, ctx, k);
+						std::for_each(std::next(i), con.cend(),
+							[&](decltype(*i)& sub_term){
+							Reduce(sub_term, ctx, k);
 						});
-						n = cont.size();
+						n = con.size();
 						if(n > 1)
 						{
 							// NOTE: Matching function calls.
@@ -203,9 +205,9 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 								// TODO: Improve performance of comparison?
 								if(n == 2
 									&& Deref(++i).Value == ValueToken::Null)
-									cont.erase(i);
-								(*p_handler)(sema, ctx);
-								k(sema);
+									con.erase(i);
+								(*p_handler)(term, ctx);
+								k(term);
 							}
 							CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
 								ystdex::sfmt("Mismatched types ('%s', '%s')"
@@ -231,17 +233,17 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 			return {};
 		}
 	}
-	else if(!sema.Value)
+	else if(!term.Value)
 		// NOTE: Empty list.
-		sema.Value = ValueToken::Null;
-	else if(AccessPtr<ValueToken>(sema))
+		term.Value = ValueToken::Null;
+	else if(AccessPtr<ValueToken>(term))
 		;
-	else if(auto p = AccessPtr<string>(sema))
+	else if(auto p = AccessPtr<string>(term))
 	{
 		auto& id(*p);
 
 		if(id == "," || id == ";")
-			sema.Clear();
+			term.Clear();
 		else if(!id.empty())
 		{
 			HandleIntrinsic(id);
@@ -250,13 +252,13 @@ NPLContext::Reduce(const SemaNode& sema, const ContextNode& ctx,
 			if(!std::isdigit(id.front()))
 			{
 				if(auto v = FetchValue(ctx, id))
-					sema.Value = std::move(v);
+					term.Value = std::move(v);
 				else
 					throw LoggedEvent(ystdex::sfmt(
 						"Undeclared identifier '%s' found", id.c_str()), Err);
 			}
 		}
-		k(sema);
+		k(term);
 		// XXX: Remained reducible?
 		return true;
 	}
@@ -269,15 +271,15 @@ NPLContext::Perform(const string& unit)
 	if(unit.empty())
 		throw LoggedEvent("Empty token list found;", Alert);
 
-	auto sema(SContext::Analyze(Session(unit)));
+	auto term(SContext::Analyze(Session(unit)));
 
 	Root["__depth"].Value = size_t();
-	Reduce(sema, Root, [](const SemaNode&){});
+	Reduce(term, Root, [](const TermNode&){});
 	// TODO: Merge result to 'Root'.
 
 	using namespace std;
 
-	PrintNode(cout, sema, LiteralizeEscapeNodeLiteral);
+	PrintNode(cout, term, LiteralizeEscapeNodeLiteral);
 	cout << endl;
 
 	return token_list;

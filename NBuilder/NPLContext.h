@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1205
+\version r1215
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-08 22:08 +0800
+	2016-01-09 23:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -57,9 +57,10 @@ enum class ValueToken
 };
 
 
+/// 633
 /// 592
 //@{
-using SemaNode = ValueNode;
+using TermNode = ValueNode;
 using ContextNode = ValueNode;
 using ContinuationWrapper = ystdex::any;
 /// 663
@@ -67,7 +68,7 @@ using ContinuationWrapper = ystdex::any;
 struct ContextHandler
 {
 private:
-	std::function<void(const SemaNode&, const ContextNode&)> handler;
+	std::function<void(const TermNode&, const ContextNode&)> handler;
 
 public:
 	bool Special = {};
@@ -78,22 +79,22 @@ public:
 	{}
 
 	void
-	operator()(const SemaNode&, const ContextNode&) const;
+	operator()(const TermNode&, const ContextNode&) const;
 };
 
-using FormHandler = std::function<void(SemaNode::Container::iterator, size_t,
-	const SemaNode&)>;
+using FormHandler = std::function<void(TermNode::Container::iterator, size_t,
+	const TermNode&)>;
 //@{
-using XFunction = std::function<void(const SemaNode&, const ContextNode&,
+using XFunction = std::function<void(const TermNode&, const ContextNode&,
 	ContinuationWrapper)>;
-using Continuation = std::function<void(const SemaNode&)>;
+using Continuation = std::function<void(const TermNode&)>;
 //@}
 
 
 /// 663
 //@{
 void
-CleanupEmptyTerms(SemaNode::Container&) ynothrow;
+CleanupEmptyTerms(TermNode::Container&) ynothrow;
 
 inline PDefH(void, RegisterContextHandler, const ContextNode& node,
 	const string& name, ContextHandler f)
@@ -148,8 +149,9 @@ private:
 
 public:
 	/// 663
+	//! \note 可能使参数中容器的迭代器失效。
 	static bool
-	Reduce(const SemaNode&, const ContextNode&, Continuation);
+	Reduce(const TermNode&, const ContextNode&, Continuation);
 
 	TokenList&
 	Perform(const string& unit);
