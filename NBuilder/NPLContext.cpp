@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2020
+\version r2051
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-10 20:20 +0800
+	2016-01-10 20:32 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -88,11 +88,7 @@ ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 	{
 		// TODO: Matching specific special forms?
 		YTraceDe(Debug, "Found special form.");
-		TryExpr(DoHandle(term, ctx))
-		CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
-			ystdex::sfmt("Mismatched types ('%s', '%s') found.",
-			e.from(), e.to()), Warning))
-		// FIXME: Recoginze normal forms.
+		DoHandle(term, ctx);
 	}
 	else
 	{
@@ -111,22 +107,15 @@ ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 
 		if(n > 1)
 		{
+			// NOTE: Matching function calls.
 			auto i(con.cbegin());
 
-			// NOTE: Matching function calls.
-			try
-			{
-				// NOTE: Adjust null list argument application
-				//	to function call without arguments.
-				// TODO: Improve performance of comparison?
-				if(n == 2
-					&& Deref(++i).Value == ValueToken::Null)
-					con.erase(i);
-				DoHandle(term, ctx);
-			}
-			CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
-				ystdex::sfmt("Mismatched types ('%s', '%s')"
-				" found.", e.from(), e.to()), Warning))
+			// NOTE: Adjust null list argument application
+			//	to function call without arguments.
+			// TODO: Improve performance of comparison?
+			if(n == 2 && Deref(++i).Value == ValueToken::Null)
+				con.erase(i);
+			DoHandle(term, ctx);
 		}
 		if(n == 0)
 			YTraceDe(Warning, "Empty reduced form found.");
@@ -138,11 +127,17 @@ ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 void
 ContextHandler::DoHandle(const TermNode& term, const ContextNode& ctx) const
 {
-	if(!term.empty())
-		handler(term, ctx);
-	else
-		// TODO: Use more specific exceptions.
-		throw std::invalid_argument("Empty term found.");
+	try
+	{
+		if(!term.empty())
+			handler(term, ctx);
+		else
+			// TODO: Use more specific exceptions.
+			throw std::invalid_argument("Empty term found.");
+	}
+	CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
+		ystdex::sfmt("Mismatched types ('%s', '%s') found.",
+		e.from(), e.to()), Warning))
 }
 
 
