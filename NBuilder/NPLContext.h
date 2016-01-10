@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1215
+\version r1217
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-09 23:50 +0800
+	2016-01-10 20:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -87,7 +87,6 @@ using FormHandler = std::function<void(TermNode::Container::iterator, size_t,
 //@{
 using XFunction = std::function<void(const TermNode&, const ContextNode&,
 	ContinuationWrapper)>;
-using Continuation = std::function<void(const TermNode&)>;
 //@}
 
 
@@ -151,7 +150,7 @@ public:
 	/// 663
 	//! \note 可能使参数中容器的迭代器失效。
 	static bool
-	Reduce(const TermNode&, const ContextNode&, Continuation);
+	Reduce(const TermNode&, const ContextNode&);
 
 	TokenList&
 	Perform(const string& unit);

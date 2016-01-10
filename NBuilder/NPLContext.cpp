@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1910
+\version r1925
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-10 19:41 +0800
+	2016-01-10 20:01 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -118,8 +118,7 @@ RegisterForm(const ContextNode& node, const string& name, FormHandler f,
 #define NPL_TRACE 1
 
 bool
-NPLContext::Reduce(const TermNode& term, const ContextNode& ctx,
-	Continuation k)
+NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 {
 	using ystdex::pvoid;
 	auto& depth(AccessChild<size_t>(ctx, "__depth"));
@@ -136,10 +135,10 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx,
 	// NOTE: Rewriting loop until the normal form is got.
 	return ystdex::retry_on_cond([&](bool reducible) ynothrow{
 		// TODO: Simplify.
-		if(reducible)
-			k(term);
+		// XXX: Continuations?
+	//	if(reducible)
+		//	k(term);
 		CleanupEmptyTerms(con);
-
 		// NOTE: Stop on got a normal form.
 		return reducible && !con.empty();
 	}, [&]() -> bool{
@@ -152,13 +151,13 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx,
 			{
 				// NOTE: List with single element shall be reduced to its value.
 				Deref(con.begin()).SwapContent(term);
-				return Reduce(term, ctx, k);
+				return Reduce(term, ctx);
 			}
 			else
 			{
 				// NOTE: List evaluation: call by value.
 				// TODO: Form evaluation: macro expansion, etc.
-				if(Reduce(*con.cbegin(), ctx, k))
+				if(Reduce(*con.cbegin(), ctx))
 					return true;
 				if(con.empty())
 					return {};
@@ -172,11 +171,7 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx,
 					{
 						// TODO: Matching specific special forms?
 						YTraceDe(Debug, "Found special form.");
-						try
-						{
-							(*p_handler)(term, ctx);
-							k(term);
-						}
+						TryExpr((*p_handler)(term, ctx))
 						CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
 							ystdex::sfmt("Mismatched types ('%s', '%s') found.",
 							e.from(), e.to()), Warning))
@@ -189,7 +184,7 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx,
 						// FIXME: Context.
 						std::for_each(std::next(i), con.cend(),
 							[&](decltype(*i)& sub_term){
-							Reduce(sub_term, ctx, k);
+							Reduce(sub_term, ctx);
 						});
 						n = con.size();
 						if(n > 1)
@@ -204,7 +199,6 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx,
 									&& Deref(++i).Value == ValueToken::Null)
 									con.erase(i);
 								(*p_handler)(term, ctx);
-								k(term);
 							}
 							CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
 								ystdex::sfmt("Mismatched types ('%s', '%s')"
@@ -258,8 +252,6 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx,
 				}
 			}
 			// XXX: Empty token is ignored.
-			// XXX: Continuations?
-			k(term);
 			// XXX: Remained reducible?
 			return {};
 		}
@@ -277,7 +269,7 @@ NPLContext::Perform(const string& unit)
 	auto term(SContext::Analyze(Session(unit)));
 
 	Root["__depth"].Value = size_t();
-	Reduce(term, Root, [](const TermNode&){});
+	Reduce(term, Root);
 	// TODO: Merge result to 'Root'.
 
 	using namespace std;
