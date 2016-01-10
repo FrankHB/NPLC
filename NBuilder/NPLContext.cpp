@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1925
+\version r2020
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-10 20:01 +0800
+	2016-01-10 20:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -83,6 +83,60 @@ NPLContext::HandleIntrinsic(const string& cmd)
 
 void
 ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
+{
+	if(Special)
+	{
+		// TODO: Matching specific special forms?
+		YTraceDe(Debug, "Found special form.");
+		TryExpr(DoHandle(term, ctx))
+		CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
+			ystdex::sfmt("Mismatched types ('%s', '%s') found.",
+			e.from(), e.to()), Warning))
+		// FIXME: Recoginze normal forms.
+	}
+	else
+	{
+		auto& con(term.GetContainerRef());
+
+		if(con.size() < 2)
+			throw LoggedEvent("Invalid term to handle found.", Err);
+		// NOTE: Arguments evaluation: call by value.
+		// FIXME: Context.
+		std::for_each(std::next(con.cbegin()), con.cend(),
+			[&](decltype(*con.cend())& sub_term){
+			NPLContext::Reduce(sub_term, ctx);
+		});
+
+		const auto n(con.size());
+
+		if(n > 1)
+		{
+			auto i(con.cbegin());
+
+			// NOTE: Matching function calls.
+			try
+			{
+				// NOTE: Adjust null list argument application
+				//	to function call without arguments.
+				// TODO: Improve performance of comparison?
+				if(n == 2
+					&& Deref(++i).Value == ValueToken::Null)
+					con.erase(i);
+				DoHandle(term, ctx);
+			}
+			CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
+				ystdex::sfmt("Mismatched types ('%s', '%s')"
+				" found.", e.from(), e.to()), Warning))
+		}
+		if(n == 0)
+			YTraceDe(Warning, "Empty reduced form found.");
+		else
+			YTraceDe(Warning, "%zu term(s) not reduced found.", n);
+	}
+}
+
+void
+ContextHandler::DoHandle(const TermNode& term, const ContextNode& ctx) const
 {
 	if(!term.empty())
 		handler(term, ctx);
@@ -162,50 +216,10 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 				if(con.empty())
 					return {};
 
-				auto i(con.cbegin());
-				const auto& fm(Deref(i));
+				const auto& fm(Deref(con.cbegin()));
 
 				if(const auto p_handler = AccessPtr<ContextHandler>(fm))
-				{
-					if(p_handler->Special)
-					{
-						// TODO: Matching specific special forms?
-						YTraceDe(Debug, "Found special form.");
-						TryExpr((*p_handler)(term, ctx))
-						CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
-							ystdex::sfmt("Mismatched types ('%s', '%s') found.",
-							e.from(), e.to()), Warning))
-						// FIXME: Recoginze normal forms.
-						return {};
-					}
-					else
-					{
-						// NOTE: Arguments evaluation: call by value.
-						// FIXME: Context.
-						std::for_each(std::next(i), con.cend(),
-							[&](decltype(*i)& sub_term){
-							Reduce(sub_term, ctx);
-						});
-						n = con.size();
-						if(n > 1)
-						{
-							// NOTE: Matching function calls.
-							try
-							{
-								// NOTE: Adjust null list argument application
-								//	to function call without arguments.
-								// TODO: Improve performance of comparison?
-								if(n == 2
-									&& Deref(++i).Value == ValueToken::Null)
-									con.erase(i);
-								(*p_handler)(term, ctx);
-							}
-							CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
-								ystdex::sfmt("Mismatched types ('%s', '%s')"
-								" found.", e.from(), e.to()), Warning))
-						}
-					}
-				}
+					(*p_handler)(term, ctx);
 				else
 				{
 					const auto p(AccessPtr<string>(fm));
@@ -215,10 +229,6 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 						" with %zu argument(s) found.", p ? p->c_str()
 						: "#<unknown>", n), Err);
 				}
-				if(n == 0)
-					YTraceDe(Warning, "Empty reduced form found.");
-				else
-					YTraceDe(Warning, "%zu term(s) not reduced found.", n);
 				return {};
 			}
 		}
