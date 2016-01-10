@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1834
+\version r1910
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-10 04:15 +0800
+	2016-01-10 19:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -131,41 +131,39 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx,
 	const auto gd(ystdex::make_guard([&]() ynothrow{
 		--depth;
 	}));
+	auto& con(term.GetContainerRef());
 
-	if(!term.empty())
-	{
-		auto& con(term.GetContainerRef());
-		auto n(con.size());
+	// NOTE: Rewriting loop until the normal form is got.
+	return ystdex::retry_on_cond([&](bool reducible) ynothrow{
+		// TODO: Simplify.
+		if(reducible)
+			k(term);
+		CleanupEmptyTerms(con);
 
-		YAssert(n != 0, "Invalid node found.");
-		if(n == 1)
+		// NOTE: Stop on got a normal form.
+		return reducible && !con.empty();
+	}, [&]() -> bool{
+		if(!con.empty())
 		{
-			// NOTE: List with single element shall be reduced to its value.
-			Deref(con.begin()).SwapContent(term);
-			return Reduce(term, ctx, k);
-		}
-		else
-		{
-			ystdex::retry_on_cond([&](bool reducible) ynothrow{
-				// TODO: Simplify.
-				if(reducible)
-					k(term);
-				CleanupEmptyTerms(con);
+			auto n(con.size());
 
-				// NOTE: Stop on got a normal form.
-				return reducible && !con.empty();
-			}, [&]() -> bool{
-				YAssert(!con.empty(), "Invalid term found.");
-
+			YAssert(n != 0, "Invalid node found.");
+			if(n == 1)
+			{
+				// NOTE: List with single element shall be reduced to its value.
+				Deref(con.begin()).SwapContent(term);
+				return Reduce(term, ctx, k);
+			}
+			else
+			{
 				// NOTE: List evaluation: call by value.
 				// TODO: Form evaluation: macro expansion, etc.
-				Reduce(*con.cbegin(), ctx, k);
-				CleanupEmptyTerms(con);
+				if(Reduce(*con.cbegin(), ctx, k))
+					return true;
 				if(con.empty())
 					return {};
 
 				auto i(con.cbegin());
-
 				const auto& fm(Deref(i));
 
 				if(const auto p_handler = AccessPtr<ContextHandler>(fm))
@@ -228,40 +226,46 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx,
 				else
 					YTraceDe(Warning, "%zu term(s) not reduced found.", n);
 				return {};
-			});
-			return {};
-		}
-	}
-	else if(!term.Value)
-		// NOTE: Empty list.
-		term.Value = ValueToken::Null;
-	else if(AccessPtr<ValueToken>(term))
-		;
-	else if(auto p = AccessPtr<string>(term))
-	{
-		auto& id(*p);
-
-		if(id == "," || id == ";")
-			term.Clear();
-		else if(!id.empty())
-		{
-			HandleIntrinsic(id);
-			// NOTE: Value rewriting.
-			// TODO: Implement general literal check.
-			if(!std::isdigit(id.front()))
-			{
-				if(auto v = FetchValue(ctx, id))
-					term.Value = std::move(v);
-				else
-					throw LoggedEvent(ystdex::sfmt(
-						"Undeclared identifier '%s' found", id.c_str()), Err);
 			}
 		}
-		k(term);
-		// XXX: Remained reducible?
-		return true;
-	}
-	return {};
+		else if(!term.Value)
+			// NOTE: Empty list.
+			term.Value = ValueToken::Null;
+		else if(AccessPtr<ValueToken>(term))
+			// TODO: Handle special value token.
+			;
+		else if(const auto p = AccessPtr<string>(term))
+		{
+			// NOTE: String node of identifier.
+			auto& id(*p);
+
+			// FIXME: Correct handling of separators.
+			if(id == "," || id == ";")
+				term.Clear();
+			else if(!id.empty())
+			{
+				// TODO: Correct intrinsic handled only as a single term form.
+				HandleIntrinsic(id);
+				// NOTE: Value rewriting.
+				// TODO: Implement general literal check.
+				if(!std::isdigit(id.front()))
+				{
+					if(auto v = FetchValue(ctx, id))
+						term.Value = std::move(v);
+					else
+						throw LoggedEvent(ystdex::sfmt("Undeclared identifier"
+							" '%s' found", id.c_str()), Err);
+				}
+			}
+			// XXX: Empty token is ignored.
+			// XXX: Continuations?
+			k(term);
+			// XXX: Remained reducible?
+			return {};
+		}
+		// NOTE: Exited loop has produced normal form by default.
+		return {};
+	});
 }
 
 TokenList&
