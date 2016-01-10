@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4229
+\version r4247
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-10 00:15 +0800
+	2016-01-10 23:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -345,7 +345,7 @@ LoadFunctions(NPLContext& context)
 				" 1 argument, received %zu.", n), Err);
 	}, true));
 	RegisterContextHandler(root, "$define",
-		ContextHandler([](const TermNode& term, const ContextNode&){
+		ContextHandler([](const TermNode& term, const ContextNode& ctx){
 		auto& con(term.GetContainerRef());
 
 		YAssert(!con.empty(), "Invalid term found.");
@@ -353,6 +353,9 @@ LoadFunctions(NPLContext& context)
 	//	const auto n(con.size() - 1);
 		auto i(con.cbegin());
 
+		if(con.size() == 1)
+			throw LoggedEvent(ystdex::sfmt("Syntax error in definition,"
+				" no arguments are found."), Err);
 		if(const auto p_id = AccessPtr<string>(Deref(++i)))
 		{
 			const auto& id(*p_id);
@@ -360,9 +363,21 @@ LoadFunctions(NPLContext& context)
 			YTraceDe(Debug, "Found identifier '%s'.", id.c_str());
 			try
 			{
-			//	TODO: Implementation.
+				if(++i != con.cend())
+				{
+					// TODO: Extract to specific method?
+					con.erase(term.begin(), i);
+					NPLContext::Reduce(term, ctx);
+				//	if(!ctx.Add({0, id, Access<string>(*i)}))
+					//	throw LoggedEvent("Duplicate name found.", Warning);
+					// TODO: Error handling.
+					ctx[id].Value = std::move(term.Value);
+				}
+				else
+					ctx.Remove(*p_id);
 			}
-			// TODO: Proper error handling.
+			CatchThrow(LoggedEvent&, )
+			// TODO: More proper error handling.
 			CatchThrow(..., LoggedEvent("Bad definition found.", Warning))
 		}
 		else
