@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2061
+\version r2063
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-14 22:59 +0800
+	2016-01-14 23:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -249,7 +249,8 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 				HandleIntrinsic(id);
 				// NOTE: Value rewriting.
 				// TODO: Implement general literal check.
-				if(!std::isdigit(id.front()))
+				if(!std::isdigit(id.front())
+					&& CheckLiteral(id.front()) == char())
 				{
 					if(auto v = FetchValue(ctx, id))
 						term.Value = std::move(v);
