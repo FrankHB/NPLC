@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2066
+\version r2067
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-14 23:08 +0800
+	2016-01-14 23:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -33,6 +33,8 @@
 #include <ystdex/cast.hpp> // for ystdex::pvoid;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond;
+
+#define NPL_TracePerform 1
 
 namespace NPL
 {
