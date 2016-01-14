@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2056
+\version r2061
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-14 10:34 +0800
+	2016-01-14 22:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -170,6 +170,7 @@ bool
 NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 {
 	using ystdex::pvoid;
+#if NPL_TraceDepth
 	auto& depth(AccessChild<size_t>(ctx, "__depth"));
 
 	YTraceDe(Informative, "Depth = %zu, context = %p, semantics = %p.", depth,
@@ -179,6 +180,7 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 	const auto gd(ystdex::make_guard([&]() ynothrow{
 		--depth;
 	}));
+#endif
 	auto& con(term.GetContainerRef());
 
 	// NOTE: Rewriting loop until the normal form is got.
@@ -273,9 +275,12 @@ NPLContext::Perform(const string& unit)
 
 	auto term(SContext::Analyze(Session(unit)));
 
+#if NPL_TraceDepth
 	Root["__depth"].Value = size_t();
+#endif
 	Reduce(term, Root);
-#ifndef NDEBUG
+#if NPL_TracePerform
+
 	// TODO: Merge result to 'Root'.
 	std::ostringstream oss;
 
