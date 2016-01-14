@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4348
+\version r4373
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-14 23:37 +0800
+	2016-01-15 00:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -298,6 +298,24 @@ DoIntegerBinaryArithmetics(_func f, TermNode::Container::iterator i, size_t n,
 		ThrowArityMismatch(2, n);
 }
 
+template<typename _func>
+void
+DoIntegerNAryArithmetics(_func f, int val, TermNode::Container::iterator i,
+	size_t n, const TermNode& term)
+{
+	try
+	{
+		const auto j(ystdex::make_transform(++i,
+			[](TermNode::Container::iterator i){
+			return std::stoi(Access<string>(Deref(i)));
+		}));
+
+		// FIXME: Overflow?
+		term.Value = to_string(std::accumulate(j, std::next(j, n), val, f));
+	}
+	CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
+}
+
 } // unnamed namespace;
 
 /// 328
@@ -490,16 +508,7 @@ LoadFunctions(NPLContext& context)
 	// NOTE: Examples.
 	RegisterForm(root, "+", [](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
-		try
-		{
-			int sum(0);
-
-			// FIXME: Overflow?
-			while(n-- != 0)
-				sum += std::stoi(Access<string>(Deref(++i)));
-			term.Value = to_string(sum);
-		}
-		CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
+		DoIntegerNAryArithmetics(ystdex::plus<>(), 0, i, n, term);
 	});
 	RegisterForm(root, "add2", [](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
