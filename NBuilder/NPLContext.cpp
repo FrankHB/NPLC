@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2063
+\version r2066
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-14 23:00 +0800
+	2016-01-14 23:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -117,10 +117,13 @@ ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 				con.erase(i);
 			DoHandle(term, ctx);
 		}
+		// TODO: Unreduced form check.
+#if 0
 		if(n == 0)
 			YTraceDe(Warning, "Empty reduced form found.");
 		else
 			YTraceDe(Warning, "%zu term(s) not reduced found.", n);
+#endif
 	}
 }
 
@@ -249,8 +252,7 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 				HandleIntrinsic(id);
 				// NOTE: Value rewriting.
 				// TODO: Implement general literal check.
-				if(!std::isdigit(id.front())
-					&& CheckLiteral(id.front()) == char())
+				if(CheckLiteral(id) == char() && !std::isdigit(id.front()))
 				{
 					if(auto v = FetchValue(ctx, id))
 						term.Value = std::move(v);
