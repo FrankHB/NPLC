@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4320
+\version r4348
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-14 23:28 +0800
+	2016-01-14 23:37 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -279,6 +279,25 @@ ThrowArityMismatch(size_t expected, size_t received)
 		" expected %zu, received %zu.", expected, received), Err);
 }
 
+template<typename _func>
+void
+DoIntegerBinaryArithmetics(_func f, TermNode::Container::iterator i, size_t n,
+	const TermNode& term)
+{
+	if(n == 2)
+		try
+		{
+			const auto e1(std::stoi(Access<string>(Deref(++i))));
+
+			// TODO: Remove 'to_string'?
+			term.Value
+				= to_string(f(e1, std::stoi(Access<string>(Deref(++i)))));
+		}
+		CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
+	else
+		ThrowArityMismatch(2, n);
+}
+
 } // unnamed namespace;
 
 /// 328
@@ -484,18 +503,8 @@ LoadFunctions(NPLContext& context)
 	});
 	RegisterForm(root, "add2", [](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
-		if(n == 2)
-			try
-			{
-				const auto e1(std::stoi(Access<string>(Deref(++i))));
-				const auto e2(std::stoi(Access<string>(Deref(++i))));
-
-				// FIXME: Overflow?
-				term.Value = to_string(e1 + e2);
-			}
-			CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
-		else
-			ThrowArityMismatch(2, n);
+		// FIXME: Overflow?
+		DoIntegerBinaryArithmetics(ystdex::plus<>(), i, n, term);
 	});
 }
 
