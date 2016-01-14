@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2051
+\version r2056
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-10 20:32 +0800
+	2016-01-14 10:34 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -275,13 +275,13 @@ NPLContext::Perform(const string& unit)
 
 	Root["__depth"].Value = size_t();
 	Reduce(term, Root);
+#ifndef NDEBUG
 	// TODO: Merge result to 'Root'.
+	std::ostringstream oss;
 
-	using namespace std;
-
-	PrintNode(cout, term, LiteralizeEscapeNodeLiteral);
-	cout << endl;
-
+	PrintNode(oss, term, LiteralizeEscapeNodeLiteral);
+	YTraceDe(Debug, "%s", oss.str().c_str());
+#endif
 	return token_list;
 }
 
