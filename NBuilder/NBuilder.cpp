@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4373
+\version r4403
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-15 00:03 +0800
+	2016-01-15 00:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -514,6 +514,36 @@ LoadFunctions(NPLContext& context)
 		const TermNode& term){
 		// FIXME: Overflow?
 		DoIntegerBinaryArithmetics(ystdex::plus<>(), i, n, term);
+	});
+	RegisterForm(root, "-", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		// FIXME: Underflow?
+		DoIntegerBinaryArithmetics(ystdex::minus<>(), i, n, term);
+	});
+	RegisterForm(root, "*", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		// FIXME: Overflow?
+		DoIntegerNAryArithmetics(ystdex::multiplies<>(), 1, i, n, term);
+	});
+	RegisterForm(root, "multiply2", [](TermNode::Container::iterator i,
+		size_t n, const TermNode& term){
+		// FIXME: Overflow?
+		DoIntegerBinaryArithmetics(ystdex::multiplies<>(), i, n, term);	});
+	RegisterForm(root, "/", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoIntegerBinaryArithmetics([](int e1, int e2){
+			if(e2 == 0)
+				throw LoggedEvent("Runtime error: divided by zero.", Err);
+			return e1 / e2;
+		}, i, n, term);
+	});
+	RegisterForm(root, "%", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoIntegerBinaryArithmetics([](int e1, int e2){
+			if(e2 == 0)
+				throw LoggedEvent("Runtime error: divided by zero.", Err);
+			return e1 % e2;
+		}, i, n, term);
 	});
 }
 
