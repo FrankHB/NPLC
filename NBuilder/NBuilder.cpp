@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4403
+\version r4434
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-15 00:06 +0800
+	2016-01-15 00:14 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -316,6 +316,18 @@ DoIntegerNAryArithmetics(_func f, int val, TermNode::Container::iterator i,
 	CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
 }
 
+template<typename _func>
+void
+DoUnary(_func f, TermNode::Container::iterator i, size_t n,
+	const TermNode&)
+{
+	if(n == 1)
+		// TODO: Assignment of void term.
+		f(Access<string>(Deref(++i)));
+	else
+		ThrowArityMismatch(1, n);
+}
+
 } // unnamed namespace;
 
 /// 328
@@ -335,13 +347,6 @@ LoadFunctions(NPLContext& context)
 		else
 			std::cout << "Please use a string literal as argument."
 				<< std::endl;
-	}});
-	m.insert({"system", [](const string& arg){
-		std::system(arg.c_str());
-	}});
-	m.insert({"echo", [](const string& arg){
-		if(CheckLiteral(arg) != 0)
-			std::cout << ystdex::get_mid(arg) << std::endl;
 	}});
 	m.insert({"search", [&](const string& arg){
 		SearchName(context.Root, arg);
@@ -543,6 +548,19 @@ LoadFunctions(NPLContext& context)
 			if(e2 == 0)
 				throw LoggedEvent("Runtime error: divided by zero.", Err);
 			return e1 % e2;
+		}, i, n, term);
+	});
+	RegisterForm(root, "system", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoUnary([](const string& arg){
+			std::system(arg.c_str());
+		}, i, n, term);
+	});
+	RegisterForm(root, "echo", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoUnary([](const string& arg){
+			if(CheckLiteral(arg) != 0)
+				std::cout << ystdex::get_mid(arg) << std::endl;
 		}, i, n, term);
 	});
 }
