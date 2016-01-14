@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4305
+\version r4318
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-14 22:19 +0800
+	2016-01-14 23:27 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -268,6 +268,19 @@ SearchName(ValueNode& root, const string& arg)
 	}
 }
 
+/// 664
+namespace
+{
+
+YB_NORETURN void
+ThrowArityMismatch(size_t expected, size_t received)
+{
+	throw LoggedEvent(ystdex::sfmt("Arity mismatch:"
+		" expected %zu, received %zu.", expected, received), Err);
+}
+
+} // unnamed namespace;
+
 /// 328
 void
 LoadFunctions(NPLContext& context)
@@ -427,8 +440,7 @@ LoadFunctions(NPLContext& context)
 				const auto n_args(n_terms - 1);
 
 				if(n_args != n_params)
-					throw LoggedEvent(ystdex::sfmt("Arity mismatch:"
-						" expected %zu, received %zu.", n_params, n_args), Err);
+					ThrowArityMismatch(n_params, n_args);
 
 				auto i(app_term.begin());
 
@@ -456,6 +468,7 @@ LoadFunctions(NPLContext& context)
 			throw LoggedEvent(ystdex::sfmt(
 				"Syntax error in lambda abstraction."), Err);
 	}, true));
+	// NOTE: Examples.
 	RegisterForm(root, "+", [](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
 		try
