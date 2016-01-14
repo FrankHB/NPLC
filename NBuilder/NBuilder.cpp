@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4247
+\version r4304
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-10 23:36 +0800
+	2016-01-14 22:18 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -384,21 +384,77 @@ LoadFunctions(NPLContext& context)
 			throw LoggedEvent("List substitution is not supported yet.", Err);
 	}, true));
 	RegisterContextHandler(root, "$lambda",
-		ContextHandler([](const TermNode& term, const ContextNode&){
+		ContextHandler([](const TermNode& term, const ContextNode& ctx){
 		auto& con(term.GetContainerRef());
 		auto size(con.size());
 
 		YAssert(size != 0, "Invalid term found.");
-		--size;
-		YTraceDe(Debug, "Found lambda abstraction with %zu argument(s).", size);
-		if(size != 0)
+		if(size > 1)
 		{
-		//	TODO: Implementation.
+			auto i(con.cbegin());
+			const auto& plist_con((++i)->GetContainerRef());
+			// TODO: Blocked. Use ISO C++14 lambda initializers to reduce
+			//	initialization cost by directly moving.
+			const auto p_params(make_shared<vector<string>>());
+
+			YTraceDe(Debug, "Found lambda abstraction form with %zu"
+				" argument(s).", plist_con.size());
+			// TODO: Simplify?
+			std::for_each(plist_con.cbegin(), plist_con.cend(),
+				[&](decltype(*i)& pv){
+				p_params->push_back(Access<string>(pv));
+			});
+			con.erase(con.cbegin(), ++i);
+
+			// FIXME: Cyclic reference to '$lambda' context handler?
+			const auto p_ctx(make_shared<ContextNode>(ctx));
+			const auto p_closure(make_shared<ValueNode>(std::move(con),
+				term.GetName(), std::move(term.Value)));
+
+			term.Value = ContextHandler([=](const TermNode& app_term,
+				const ContextNode&){
+				const auto& params(Deref(p_params));
+				const auto n_params(params.size());
+				// TODO: Optimize for performance.
+				auto app_ctx(Deref(p_ctx));
+				const auto n_terms(app_term.size());
+
+				YTraceDe(Debug, "Lambda called, with %ld shared context(s),"
+					" %zu parameter(s).", p_ctx.use_count(), n_params);
+				if(n_terms == 0)
+					throw LoggedEvent("Invalid application found.", Alert);
+
+				const auto n_args(n_terms - 1);
+
+				if(n_args != n_params)
+					throw LoggedEvent(ystdex::sfmt("Arity mismatch:"
+						" expected %zu, received %zu.", n_params, n_args), Err);
+
+				auto i(app_term.begin());
+
+				++i;
+				for(const auto& param : params)
+				{
+					// XXX: Moved.
+					app_ctx[param].Value = std::move(i->Value);
+					++i;
+				}
+				YAssert(i == app_term.end(),
+					"Invalid state found on passing arguments.");
+				// NOTE: Beta reduction.
+				app_term.GetContainerRef() = p_closure->GetContainerRef();
+				app_term.Value = p_closure->Value;
+				// TODO: Test for normal form.
+				// FIXME: Return value?
+				NPLContext::Reduce(app_term, app_ctx);
+			//	app_term.GetContainerRef().clear();
+			});
+			con.clear();
 		}
 		else
 			// TODO: Use proper exception type for syntax error.
-			throw LoggedEvent(ystdex::sfmt("Syntax error in lambda abstraction,"
-				" no arguments are found."), Err);
+			throw LoggedEvent(ystdex::sfmt(
+				"Syntax error in lambda abstraction."), Err);
 	}, true));
 	RegisterForm(root, "+", [](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
