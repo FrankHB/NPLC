@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4434
+\version r4463
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-15 00:14 +0800
+	2016-01-17 04:32 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -328,6 +328,16 @@ DoUnary(_func f, TermNode::Container::iterator i, size_t n,
 		ThrowArityMismatch(1, n);
 }
 
+void
+ReduceTail(const TermNode& term, const ContextNode& ctx,
+	TermNode::Container::iterator i)
+{
+	auto& con(term.GetContainerRef());
+
+	con.erase(con.begin(), i);
+	NPLContext::Reduce(term, ctx);
+}
+
 } // unnamed namespace;
 
 /// 328
@@ -404,36 +414,27 @@ LoadFunctions(NPLContext& context)
 		auto& con(term.GetContainerRef());
 
 		YAssert(!con.empty(), "Invalid term found.");
-
-	//	const auto n(con.size() - 1);
-		auto i(con.cbegin());
-
 		if(con.size() == 1)
 			throw LoggedEvent(ystdex::sfmt("Syntax error in definition,"
 				" no arguments are found."), Err);
+
+		auto i(con.cbegin());
+
 		if(const auto p_id = AccessPtr<string>(Deref(++i)))
 		{
 			const auto& id(*p_id);
 
 			YTraceDe(Debug, "Found identifier '%s'.", id.c_str());
-			try
+			if(++i != con.cend())
 			{
-				if(++i != con.cend())
-				{
-					// TODO: Extract to specific method?
-					con.erase(term.begin(), i);
-					NPLContext::Reduce(term, ctx);
-				//	if(!ctx.Add({0, id, Access<string>(*i)}))
-					//	throw LoggedEvent("Duplicate name found.", Warning);
-					// TODO: Error handling.
-					ctx[id].Value = std::move(term.Value);
-				}
-				else
-					ctx.Remove(*p_id);
+				ReduceTail(term, ctx, i);
+			//	if(!ctx.Add({0, id, Access<string>(*i)}))
+				//	throw LoggedEvent("Duplicate name found.", Warning);
+				// TODO: Error handling.
+				ctx[id].Value = std::move(term.Value);
 			}
-			CatchThrow(LoggedEvent&, )
-			// TODO: More proper error handling.
-			CatchThrow(..., LoggedEvent("Bad definition found.", Warning))
+			else
+				ctx.Remove(*p_id);
 		}
 		else
 			throw LoggedEvent("List substitution is not supported yet.", Err);
