@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4568
+\version r4592
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-17 11:43 +0800
+	2016-01-17 12:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -480,6 +480,34 @@ LoadFunctions(NPLContext& context)
 		}
 		else
 			throw LoggedEvent("List substitution is not supported yet.", Err);
+	}, true));
+	RegisterContextHandler(root, "$set",
+		ContextHandler([](const TermNode& term, const ContextNode& ctx){
+		auto& con(term.GetContainerRef());
+
+		ReduceHead(con);
+		if(con.empty())
+			throw LoggedEvent(ystdex::sfmt("Syntax error in definition,"
+				" no arguments are found."), Err);
+
+		auto i(con.cbegin());
+
+		if(const auto p_id = AccessPtr<string>(Deref(i)))
+		{
+			const auto& id(*p_id);
+
+			YTraceDe(Debug, "Found identifier '%s'.", id.c_str());
+			if(++i != con.cend())
+			{
+				ReduceTail(term, ctx, i);
+				// TODO: Error handling.
+				ctx.at(id).Value = std::move(term.Value);
+			}
+			else
+				throw LoggedEvent("No argument found.");
+		}
+		else
+			throw LoggedEvent("List assignment is not supported yet.", Err);
 	}, true));
 	RegisterContextHandler(root, "$lambda",
 		ContextHandler([](const TermNode& term, const ContextNode& ctx){
