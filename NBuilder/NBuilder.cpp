@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4480
+\version r4533
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-17 11:28 +0800
+	2016-01-17 11:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -322,6 +322,36 @@ DoUnary(_func f, TermNode::Container::iterator i, size_t n,
 		ThrowArityMismatch(1, n);
 }
 
+bool
+ExtractModifier(TermNode::Container& con, string_view mod = "!")
+{
+	if(!con.empty())
+	{
+		const auto i(con.cbegin());
+
+		if(const auto p = AccessPtr<string>(Deref(i)))
+		{
+			if(*p == mod)
+			{
+				con.erase(i);
+				return true;
+			}
+		}
+	}
+	return {};
+}
+//PDefH(bool, ExtractModifier, const TermNode& term, string_view mod = "!")
+	//ImplRet(ExtractModifier(term.GetContainerRef(), mod))
+
+void
+ReduceHead(TermNode::Container& con)
+{
+	YAssert(!con.empty(), "Invalid term found.");
+	con.erase(con.cbegin());
+}
+//PDefH(void, ReduceHead, const TermNode& term)
+	//ImplExpr(ReduceHead(term.GetContainerRef()))
+
 void
 ReduceTail(const TermNode& term, const ContextNode& ctx,
 	TermNode::Container::iterator i)
@@ -407,14 +437,17 @@ LoadFunctions(NPLContext& context)
 		ContextHandler([](const TermNode& term, const ContextNode& ctx){
 		auto& con(term.GetContainerRef());
 
-		YAssert(!con.empty(), "Invalid term found.");
-		if(con.size() == 1)
+		ReduceHead(con);
+
+		const bool mod(ExtractModifier(con));
+
+		if(con.empty())
 			throw LoggedEvent(ystdex::sfmt("Syntax error in definition,"
 				" no arguments are found."), Err);
 
 		auto i(con.cbegin());
 
-		if(const auto p_id = AccessPtr<string>(Deref(++i)))
+		if(const auto p_id = AccessPtr<string>(Deref(i)))
 		{
 			const auto& id(*p_id);
 
@@ -422,16 +455,31 @@ LoadFunctions(NPLContext& context)
 			if(++i != con.cend())
 			{
 				ReduceTail(term, ctx, i);
-			//	if(!ctx.Add({0, id, Access<string>(*i)}))
-				//	throw LoggedEvent("Duplicate name found.", Warning);
 				// TODO: Error handling.
-				ctx[id].Value = std::move(term.Value);
+				if(mod)
+					ctx[id].Value = std::move(term.Value);
+				else
+				{
+					if(!ctx.Add({0, id, std::move(term.Value)}))
+						throw LoggedEvent("Duplicate name '" + id + "' found.",
+							Err);
+				}
 			}
 			else
-				ctx.Remove(*p_id);
+			{
+				TryExpr(ctx.at(id))
+				catch(std::out_of_range& e)
+				{
+					if(!mod)
+						throw;
+				}
+				// TODO: Simplify?
+				ctx.Remove(id);
+			}
 		}
 		else
 			throw LoggedEvent("List substitution is not supported yet.", Err);
+		con.clear();
 	}, true));
 	RegisterContextHandler(root, "$lambda",
 		ContextHandler([](const TermNode& term, const ContextNode& ctx){
