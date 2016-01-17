@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2013, 2015 FrankHB.
+	© 2012-2016 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1300
+\version r1527
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2015-12-31 00:44 +0800
+	2016-01-17 20:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -27,166 +27,238 @@
 
 #include "NPLContext.h"
 #include YFM_NPL_SContext
+#include <ystdex/container.hpp>
 #include <iostream>
+#include YFM_NPL_NPLA1
+#include <ystdex/cast.hpp> // for ystdex::pvoid;
+#include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
+#include <ystdex/functional.hpp> // for ystdex::retry_on_cond;
+
+#define NPL_TracePerform 1
 
 namespace NPL
 {
 
-NPLContext::NPLContext(const FunctionMap& fproto)
-	: Root(), Map(fproto), token_list(), sem()
-{}
-#if 0
-NPLContext::NPLContext(const NPLContext& proto, TokenList new_token_list)
-	: Root(), Map(proto.Map), token_list(new_token_list), sem()
-{}
-#endif
-
-TLIter
-NPLContext::Call(TLIter b, TLIter e, size_t& cur_off)
-{
-	yconstraint(cur_off != 0),
-	yconstraint(b != e);
-	yconstraint(*b != "("),
-	yconstraint(*b != ")");
-
-	const auto ib(b++);
-
-	yconstraint(*b != "("),
-	yconstraint(*b != ")");
-
-	const auto& fn(*ib);
-	const auto& arg(*b);
-
-	if(fn == "()" && arg == "()")
-	{
-		--cur_off;
-		return token_list.erase(ib);
-	}
-	else
-	{
-		const auto it(Map.find(fn));
-
-		if(it != Map.end())
-			it->second(arg);
-		else
-			goto match_fail;
-		cur_off -= std::distance(ib, e) - 1;
-		return token_list.erase(ib, e);
-	}
-match_fail:
-	return std::next(ib, 1);
-//	throw LoggedEvent("No matching function found.", 0xC0);
-}
-
-/// 328
 void
-NPLContext::CallS(const string& fn, const string& arg, size_t&)
+ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 {
-	using namespace std;
-
-	if(!fn.compare(0, 4, "$__+"))
-		cout << "XXX" << arg << endl;
+	if(Special)
+	{
+		// TODO: Matching specific special forms?
+		YTraceDe(Debug, "Found special form.");
+		DoHandle(term, ctx);
+	}
 	else
-		cout << "YYY" << fn << ":" << arg << endl;
+	{
+		auto& con(term.GetContainerRef());
+
+		if(con.size() < 2)
+			throw LoggedEvent("Invalid term to handle found.", Err);
+		// NOTE: Arguments evaluation: call by value.
+		// FIXME: Context.
+		std::for_each(std::next(con.cbegin()), con.cend(),
+			[&](decltype(*con.cend())& sub_term){
+			NPLContext::Reduce(sub_term, ctx);
+		});
+
+		const auto n(con.size());
+
+		if(n > 1)
+		{
+			// NOTE: Matching function calls.
+			auto i(con.cbegin());
+
+			// NOTE: Adjust null list argument application
+			//	to function call without arguments.
+			// TODO: Improve performance of comparison?
+			if(n == 2 && Deref(++i).Value == ValueToken::Null)
+				con.erase(i);
+			DoHandle(term, ctx);
+		}
+		// TODO: Unreduced form check.
+#if 0
+		if(n == 0)
+			YTraceDe(Warning, "Empty reduced form found.");
+		else
+			YTraceDe(Warning, "%zu term(s) not reduced found.", n);
+#endif
+	}
 }
+
+void
+ContextHandler::DoHandle(const TermNode& term, const ContextNode& ctx) const
+{
+	try
+	{
+		if(!term.empty())
+			handler(term, ctx);
+		else
+			// TODO: Use more specific exceptions.
+			throw std::invalid_argument("Empty term found.");
+	}
+	CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
+		ystdex::sfmt("Mismatched types ('%s', '%s') found.",
+		e.from(), e.to()), Warning))
+	// TODO: Use nest exceptions?
+	CatchThrow(std::exception& e, LoggedEvent(e.what(), Err))
+}
+
+
+void
+CleanupEmptyTerms(TermNode::Container& con) ynothrow
+{
+	ystdex::erase_all_if(con, [](const TermNode& term) ynothrow{
+		return !term;
+	});
+}
+
+void
+RegisterForm(const ContextNode& node, const string& name, FormHandler f,
+	bool special)
+{
+	RegisterContextHandler(node, name,
+		ContextHandler([f](const TermNode& term, const ContextNode&){
+		auto& con(term.GetContainerRef());
+		const auto size(con.size());
+
+		YAssert(size != 0, "Invalid term found.");
+		f(con.begin(), size - 1, term);
+	}, special));
+}
+
+
+#define NPL_TRACE 1
+
+NPLContext::NPLContext(const FunctionMap& m)
+	: Root(), Map(m), token_list(), sem()
+{}
 
 void
 NPLContext::Eval(const string& arg)
 {
 	if(CheckLiteral(arg) == '\'')
 		NPLContext(Map).Perform(ystdex::get_mid(arg));
-#if 0
-	{
-		NPLContext new_context(*this, MangleToken(ystdex::get_mid(arg)));
-		const auto b(new_context.token_list.begin());
-		const auto e(new_context.token_list.end());
+}
 
-		if(new_context.Reduce(0, b, e, false).first != e)
-			throw LoggedEvent("eval: Redundant ')' found.", 0x20);
-		auto res(new_context.Reduce(0, b, e, true));
+ValueObject
+NPLContext::FetchValue(const ValueNode& ctx, const string& name)
+{
+	if(auto p_id = LookupName(ctx, name))
+		return p_id->Value;
+	return ValueObject();
+}
 
-		yassume(res.first == e);
-	}
+const ValueNode*
+NPLContext::LookupName(const ValueNode& ctx, const string& id)
+{
+	TryRet(&ctx.at(id))
+	CatchIgnore(std::out_of_range&)
+	CatchIgnore(ystdex::bad_any_cast&)
+	return {};
+}
+
+bool
+NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
+{
+	using ystdex::pvoid;
+#if NPL_TraceDepth
+	auto& depth(AccessChild<size_t>(ctx, "__depth"));
+
+	YTraceDe(Informative, "Depth = %zu, context = %p, semantics = %p.", depth,
+		pvoid(&ctx), pvoid(&term));
+	++depth;
+
+	const auto gd(ystdex::make_guard([&]() ynothrow{
+		--depth;
+	}));
 #endif
-}
+	auto& con(term.GetContainerRef());
 
-void
-NPLContext::HandleIntrinsic(const string& cmd)
-{
-	if(cmd == "exit")
-		throw SSignal(SSignal::Exit);
-	if(cmd == "cls")
-		throw SSignal(SSignal::ClearScreen);
-	if(cmd == "about")
-		throw SSignal(SSignal::About);
-	if(cmd == "help")
-		throw SSignal(SSignal::Help);
-	if(cmd == "license")
-		throw SSignal(SSignal::License);
-}
-
-#define NPL_TRACE 1
-
-pair<TLIter, size_t>
-NPLContext::Reduce(size_t depth, TLIter b, TLIter e)
-{
-	size_t cur_off(0);
-	TLIter ifn(e);
-
-	while(b != e && *b != ")")
-	{
-		if(*b == "(")
+	// NOTE: Rewriting loop until the normal form is got.
+	return ystdex::retry_on_cond([&](bool reducible) ynothrow{
+		// TODO: Simplify.
+		// XXX: Continuations?
+	//	if(reducible)
+		//	k(term);
+		CleanupEmptyTerms(con);
+		// NOTE: Stop on got a normal form.
+		return reducible && !con.empty();
+	}, [&]() -> bool{
+		if(!con.empty())
 		{
-			const auto ileft(b);
-			auto res(Reduce(depth + 1, ++b, e));
+			auto n(con.size());
 
-			if(res.first == e || *res.first != ")")
-				throw LoggedEvent("Redundant '(' found.", Alert);
-			if(res.second < 2)
+			YAssert(n != 0, "Invalid node found.");
+			if(n == 1)
 			{
-				token_list.erase(res.first);
-				b = token_list.erase(ileft);
-				if(res.second == 0)
-					b = token_list.insert(b, "()");
+				// NOTE: List with single element shall be reduced to its value.
+				Deref(con.begin()).SwapContent(term);
+				return Reduce(term, ctx);
 			}
 			else
-				yunseq(b = ++res.first, ++cur_off);
-		}
-		else if(*b == ";" || *b == ",")
-			yunseq(ifn = e, ++b, ++cur_off);
-		else
-		{
-			if(!sem.empty())
 			{
-				CallS(sem, *b, cur_off);
-				sem.clear(),
-				yunseq(++b, ifn = e);
-			}
-			else if(ifn == e)
-			{
-				if(CheckLiteral(*b) == '\0')
-					ifn = b++;
+				// NOTE: List evaluation: call by value.
+				// TODO: Form evaluation: macro expansion, etc.
+				if(Reduce(*con.cbegin(), ctx))
+					return true;
+				if(con.empty())
+					return {};
+
+				const auto& fm(Deref(con.cbegin()));
+
+				if(const auto p_handler = AccessPtr<ContextHandler>(fm))
+					(*p_handler)(term, ctx);
 				else
-					++b;
-				++cur_off;
-			}
-			else
-			{
-				b = Call(ifn, ++b, cur_off);
-				ifn = e;
+				{
+					const auto p(AccessPtr<string>(fm));
+
+					// TODO: Capture contextual information in error.
+					throw LoggedEvent(ystdex::sfmt("No matching form '%s'"
+						" with %zu argument(s) found.", p ? p->c_str()
+						: "#<unknown>", n), Err);
+				}
+				return {};
 			}
 		}
-#if !NDEBUG && NPL_TRACE
-		using namespace std;
+		else if(!term.Value)
+			// NOTE: Empty list.
+			term.Value = ValueToken::Null;
+		else if(AccessPtr<ValueToken>(term))
+			// TODO: Handle special value token.
+			;
+		else if(const auto p = AccessPtr<string>(term))
+		{
+			// NOTE: String node of identifier.
+			auto& id(*p);
 
-		cout << "[depth:cur_off] = [ " << depth << " : "
-			<< cur_off << " ];" << endl << "TokenList: ";
-		for(const auto& s : token_list)
-			cout << s << ' ';
-		cout << endl;
-#endif
-	}
-	return make_pair(b, cur_off);
+			// FIXME: Correct handling of separators.
+			if(id == "," || id == ";")
+				term.Clear();
+			else if(!id.empty())
+			{
+				// NOTE: Value rewriting.
+				// TODO: Implement general literal check.
+				if(CheckLiteral(id) == char() && !std::isdigit(id.front()))
+				{
+					if(auto v = FetchValue(ctx, id))
+					{
+						term.Value = std::move(v);
+						if(const auto p_handler
+							= AccessPtr<LiteralHandler>(term))
+							return (*p_handler)(ctx);
+					}
+					else
+						throw LoggedEvent(ystdex::sfmt("Undeclared identifier"
+							" '%s' found", id.c_str()), Err);
+				}
+			}
+			// XXX: Empty token is ignored.
+			// XXX: Remained reducible?
+			return {};
+		}
+		// NOTE: Exited loop has produced normal form by default.
+		return {};
+	});
 }
 
 TokenList&
@@ -195,18 +267,20 @@ NPLContext::Perform(const string& unit)
 	if(unit.empty())
 		throw LoggedEvent("Empty token list found;", Alert);
 
-	Session session(unit);
+	auto term(SContext::Analyze(Session(unit)));
 
-	if((token_list = session.GetTokenList()).size() == 1)
-		HandleIntrinsic(token_list.front());
-	if(SContext::Validate(token_list.begin(), token_list.end())
-		!= token_list.end())
-		throw LoggedEvent("Redundant ')' found.", Alert);
+#if NPL_TraceDepth
+	Root["__depth"].Value = size_t();
+#endif
+	Reduce(term, Root);
+#if NPL_TracePerform
 
-	const auto res(Reduce(0, token_list.begin(), token_list.end()));
+	// TODO: Merge result to 'Root'.
+	std::ostringstream oss;
 
-	yassume(res.first == token_list.end());
-
+	PrintNode(oss, term, LiteralizeEscapeNodeLiteral);
+	YTraceDe(Debug, "%s", oss.str().c_str());
+#endif
 	return token_list;
 }
 

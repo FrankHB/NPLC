@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2013, 2015 FrankHB.
+	© 2012-2016 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1142
+\version r1221
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2015-12-29 01:09 +0800
+	2016-01-17 20:55 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -36,15 +36,72 @@ namespace NPL
 
 using namespace YSLib;
 
-/// 304
-enum class SSignal
+/*!
+\brief 值记号：节点中的值的占位符。
+\since YSLib build 403
+*/
+enum class ValueToken
 {
-	Exit,
-	ClearScreen,
-	About,
-	Help,
-	License
+	Null
 };
+
+
+/// 592
+//@{
+using TermNode = ValueNode;
+using ContextNode = ValueNode;
+using ContinuationWrapper = ystdex::any;
+/// 663
+//@{
+struct ContextHandler
+{
+private:
+	std::function<void(const TermNode&, const ContextNode&)> handler;
+
+public:
+	bool Special = {};
+
+	template<typename _func>
+	ContextHandler(_func f, bool special = {})
+		: handler(f), Special(special)
+	{}
+
+	void
+	operator()(const TermNode&, const ContextNode&) const;
+
+private:
+	void
+	DoHandle(const TermNode&, const ContextNode&) const;
+};
+
+using FormHandler = std::function<void(TermNode::Container::iterator, size_t,
+	const TermNode&)>;
+/// 664
+using LiteralHandler = std::function<bool(const ContextNode&)>;
+//@{
+using XFunction = std::function<void(const TermNode&, const ContextNode&,
+	ContinuationWrapper)>;
+//@}
+
+
+/// 663
+//@{
+void
+CleanupEmptyTerms(TermNode::Container&) ynothrow;
+
+inline PDefH(void, RegisterContextHandler, const ContextNode& node,
+	const string& name, ContextHandler f)
+	ImplExpr(node[name].Value = f)
+
+void
+RegisterForm(const ContextNode&, const string&, FormHandler,
+	bool = {});
+//@}
+
+/// 664
+inline PDefH(void, RegisterLiteralHandler, const ContextNode& node,
+	const string& name, LiteralHandler f)
+	ImplExpr(node[name].Value = f)
 
 
 /// 306
@@ -52,16 +109,16 @@ struct NPLContext : private noncopyable
 {
 public:
 	/// 403
-	typedef std::function<void(const string&)> Function;
-	typedef map<string, Function> FunctionMap;
+	using Function = std::function<void(const string&)>;
+	using FunctionMap = map<string, Function>;
 
-	ValueNode Root;
+	/// 664
+	ContextNode Root;
 	/// 403
 	FunctionMap Map;
 
 private:
 	TokenList token_list;
-	// TODO: use TLCIter instead of TLIter for C++11 comforming implementations;
 
 public:
 	/// 328
@@ -72,33 +129,24 @@ public:
 private:
 	///329
 	NPLContext(const FunctionMap&);
-#if 0
-	NPLContext(const NPLContext&, TokenList);
-#endif
-
-	/// 327
-	TLIter
-	Call(TLIter b, TLIter e, size_t& cur_off);
-
-	/// 328
-	void
-	CallS(const string& fn, const string& arg, size_t& cur_off);
 
 public:
 	void
 	Eval(const string& arg);
 
-private:
-	static void
-	HandleIntrinsic(const string& cmd);
+	/// 592
+	static ValueObject
+	FetchValue(const ValueNode&, const string&);
+
+	/// 495
+	static const ValueNode*
+	LookupName(const ValueNode&, const string&);
 
 	/// 663
-	/// \pre b and e shall be iterator in or one-past-end of token_list.
-	/// \pre b shall be dereferanceable when e is dereferanceable.
-	pair<TLIter, size_t>
-	Reduce(size_t depth, TLIter b, TLIter e);
+	//! \note 可能使参数中容器的迭代器失效。
+	static bool
+	Reduce(const TermNode&, const ContextNode&);
 
-public:
 	TokenList&
 	Perform(const string& unit);
 };
