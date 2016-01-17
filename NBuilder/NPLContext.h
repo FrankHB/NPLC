@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1220
+\version r1228
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-10 20:13 +0800
+	2016-01-17 20:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -88,6 +88,8 @@ private:
 
 using FormHandler = std::function<void(TermNode::Container::iterator, size_t,
 	const TermNode&)>;
+/// 664
+using LiteralHandler = std::function<bool(const ContextNode&)>;
 //@{
 using XFunction = std::function<void(const TermNode&, const ContextNode&,
 	ContinuationWrapper)>;
@@ -108,6 +110,11 @@ RegisterForm(const ContextNode&, const string&, FormHandler,
 	bool = {});
 //@}
 
+/// 664
+inline PDefH(void, RegisterLiteralHandler, const ContextNode& node,
+	const string& name, LiteralHandler f)
+	ImplExpr(node[name].Value = f)
+
 
 /// 306
 struct NPLContext : private noncopyable
@@ -117,7 +124,8 @@ public:
 	using Function = std::function<void(const string&)>;
 	using FunctionMap = map<string, Function>;
 
-	ValueNode Root;
+	/// 664
+	ContextNode Root;
 	/// 403
 	FunctionMap Map;
 
