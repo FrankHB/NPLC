@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2015 FrankHB.
+	© 2013-2016 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r97
+\version r107
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2015-12-28 04:06 +0800
+	2016-01-17 20:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -40,6 +40,18 @@ namespace NPL
 
 /// 592
 using namespace YSLib::Consoles;
+
+
+/// 304
+enum class SSignal
+{
+	Exit,
+	ClearScreen,
+	About,
+	Help,
+	License
+};
+
 
 /*!
 \build 控制台默认颜色。

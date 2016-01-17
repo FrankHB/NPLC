@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1228
+\version r1242
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-17 20:36 +0800
+	2016-01-17 20:39 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -36,17 +36,6 @@ namespace NPL
 
 using namespace YSLib;
 
-/// 304
-enum class SSignal
-{
-	Exit,
-	ClearScreen,
-	About,
-	Help,
-	License
-};
-
-
 /*!
 \brief 值记号：节点中的值的占位符。
 \since YSLib build 403
@@ -57,7 +46,6 @@ enum class ValueToken
 };
 
 
-/// 633
 /// 592
 //@{
 using TermNode = ValueNode;
@@ -154,11 +142,6 @@ public:
 	static const ValueNode*
 	LookupName(const ValueNode&, const string&);
 
-private:
-	static void
-	HandleIntrinsic(const string& cmd);
-
-public:
 	/// 663
 	//! \note 可能使参数中容器的迭代器失效。
 	static bool
