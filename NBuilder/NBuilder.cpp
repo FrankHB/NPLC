@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4463
+\version r4480
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-17 04:32 +0800
+	2016-01-17 11:28 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -285,15 +285,13 @@ DoIntegerBinaryArithmetics(_func f, TermNode::Container::iterator i, size_t n,
 	const TermNode& term)
 {
 	if(n == 2)
-		try
-		{
-			const auto e1(std::stoi(Access<string>(Deref(++i))));
+	{
+		const auto e1(std::stoi(Access<string>(Deref(++i))));
 
-			// TODO: Remove 'to_string'?
-			term.Value
-				= to_string(f(e1, std::stoi(Access<string>(Deref(++i)))));
-		}
-		CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
+		// TODO: Remove 'to_string'?
+		term.Value
+			= to_string(f(e1, std::stoi(Access<string>(Deref(++i)))));
+	}
 	else
 		ThrowArityMismatch(2, n);
 }
@@ -303,17 +301,13 @@ void
 DoIntegerNAryArithmetics(_func f, int val, TermNode::Container::iterator i,
 	size_t n, const TermNode& term)
 {
-	try
-	{
-		const auto j(ystdex::make_transform(++i,
-			[](TermNode::Container::iterator i){
-			return std::stoi(Access<string>(Deref(i)));
-		}));
+	const auto j(ystdex::make_transform(++i,
+		[](TermNode::Container::iterator i){
+		return std::stoi(Access<string>(Deref(i)));
+	}));
 
-		// FIXME: Overflow?
-		term.Value = to_string(std::accumulate(j, std::next(j, n), val, f));
-	}
-	CatchThrow(std::invalid_argument& e, LoggedEvent(e.what(), Warning))
+	// FIXME: Overflow?
+	term.Value = to_string(std::accumulate(j, std::next(j, n), val, f));
 }
 
 template<typename _func>
