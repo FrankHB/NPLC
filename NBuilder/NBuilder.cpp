@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4533
+\version r4568
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-17 11:30 +0800
+	2016-01-17 11:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -476,10 +476,10 @@ LoadFunctions(NPLContext& context)
 				// TODO: Simplify?
 				ctx.Remove(id);
 			}
+			con.clear();
 		}
 		else
 			throw LoggedEvent("List substitution is not supported yet.", Err);
-		con.clear();
 	}, true));
 	RegisterContextHandler(root, "$lambda",
 		ContextHandler([](const TermNode& term, const ContextNode& ctx){
@@ -524,27 +524,29 @@ LoadFunctions(NPLContext& context)
 
 				const auto n_args(n_terms - 1);
 
-				if(n_args != n_params)
-					ThrowArityMismatch(n_params, n_args);
-
-				auto i(app_term.begin());
-
-				++i;
-				for(const auto& param : params)
+				if(n_args == n_params)
 				{
-					// XXX: Moved.
-					app_ctx[param].Value = std::move(i->Value);
+					auto i(app_term.begin());
+
 					++i;
+					for(const auto& param : params)
+					{
+						// XXX: Moved.
+						app_ctx[param].Value = std::move(i->Value);
+						++i;
+					}
+					YAssert(i == app_term.end(),
+						"Invalid state found on passing arguments.");
+					// NOTE: Beta reduction.
+					app_term.GetContainerRef() = p_closure->GetContainer();
+					app_term.Value = p_closure->Value;
+					// TODO: Test for normal form.
+					// FIXME: Return value?
+					NPLContext::Reduce(app_term, app_ctx);
+				//	app_term.GetContainerRef().clear();
 				}
-				YAssert(i == app_term.end(),
-					"Invalid state found on passing arguments.");
-				// NOTE: Beta reduction.
-				app_term.GetContainerRef() = p_closure->GetContainer();
-				app_term.Value = p_closure->Value;
-				// TODO: Test for normal form.
-				// FIXME: Return value?
-				NPLContext::Reduce(app_term, app_ctx);
-			//	app_term.GetContainerRef().clear();
+				else
+					ThrowArityMismatch(n_params, n_args);
 			});
 			con.clear();
 		}
