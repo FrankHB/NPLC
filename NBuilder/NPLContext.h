@@ -42,7 +42,11 @@ using namespace YSLib;
 */
 enum class ValueToken
 {
-	Null
+	Null,
+	//! \since YSLib build 664
+	GroupingAnchor,
+	//! \since YSLib build 664
+	OrderedAnchor
 };
 
 

@@ -55,7 +55,9 @@ ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 		if(con.size() < 2)
 			throw LoggedEvent("Invalid term to handle found.", Err);
 		// NOTE: Arguments evaluation: call by value.
-		// FIXME: Context.
+		// NOTE: The order of evaluation is unspecified by the language
+		//	specification. However here it can only be either left-to-right
+		//	or right-to-left unless the separators has been predicted.
 		std::for_each(std::next(con.cbegin()), con.cend(),
 			[&](decltype(*con.cend())& sub_term){
 			NPLContext::Reduce(sub_term, ctx);
@@ -197,6 +199,7 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 			}
 			else
 			{
+				// TODO: Insertion automatic grouping pass for separapors.
 				// NOTE: List evaluation: call by value.
 				// TODO: Form evaluation: macro expansion, etc.
 				if(Reduce(*con.cbegin(), ctx))
