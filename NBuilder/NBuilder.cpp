@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4592
+\version r4597
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-17 12:08 +0800
+	2016-01-17 12:10 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -368,12 +368,7 @@ ReduceTail(const TermNode& term, const ContextNode& ctx,
 void
 LoadFunctions(NPLContext& context)
 {
-//	LoadFunctions(root);
-//	root.Add(ValueNode("parse", string("parse")));
-
-	auto& m(context.Map);
-
-	m.insert({"parse", ParseFile});
+	auto& m(context.Map);	m.insert({"parse", ParseFile});
 	m.insert({"print", PrintFile});
 	m.insert({"mangle", [](const string& arg){
 		if(CheckLiteral(arg) == '"')
@@ -412,9 +407,6 @@ LoadFunctions(NPLContext& context)
 		}
 		else
 			throw LoggedEvent("Invalid file: \"" + path_acp + "\".", Warning);
-	}});
-	m.insert({"$+", [&](const string& arg){
-		context.sem = "$__+" + arg;
 	}});
 
 	auto& root(context.Root);
