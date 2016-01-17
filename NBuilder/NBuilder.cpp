@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4695
+\version r4959
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-17 12:31 +0800
+	2016-01-17 19:55 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -39,113 +39,7 @@
 
 using namespace NPL;
 using namespace YSLib;
-using platform_ex::MBCSToMBCS;
-
-ValueNode GlobalRoot;
-
-namespace
-{
-
-string
-SToMBCS(const String& str, int cp = CP_ACP)
-{
-	return platform_ex::WCSToMBCS({reinterpret_cast<const wchar_t*>(
-		str.c_str()), str.length()}, cp);
-}
-
-void
-Traverse(const ValueNode& node)
-{
-	using namespace std;
-
-	try
-	{
-		const auto& s(Access<string>(node));
-
-		cout << s << ' ';
-		return;
-	}
-	catch(ystdex::bad_any_cast&)
-	{}
-	cout << "( ";
-	try
-	{
-		for(const auto& n : node)
-			Traverse(n);
-	}
-	catch(ystdex::bad_any_cast&)
-	{}
-	cout << ") ";
-}
-
-#if 0
-void
-PrintNode(const ValueNode& node)
-{
-	std::cout << ">Root size: " << node.GetSize() << std::endl;
-	Traverse(node);
-	std::cout << std::endl;
-}
-#endif
-
-void
-TraverseN(const ValueNode& node)
-{
-	using namespace std;
-
-	cout << '[' << node.GetName() << ']';
-	try
-	{
-		const auto& s(Access<string>(node));
-
-		cout << s << ' ';
-		return;
-	}
-	catch(ystdex::bad_any_cast&)
-	{}
-	if(!node.empty())
-	{
-		cout << "( ";
-		try
-		{
-			for(const auto& n : node)
-				TraverseN(n);
-		}
-		catch(ystdex::bad_any_cast&)
-		{}
-		cout << ") ";
-	}
-}
-
-void
-PrintNodeN(const ValueNode& node)
-{
-	std::cout << ">>>Root size: " << node.size() << std::endl;
-	TraverseN(node);
-	std::cout << std::endl;
-}
-
-} // unnamed namespace;
-
-namespace NPL
-{
-
-void
-EvalS(const ValueNode& root)
-{
-	PrintNodeN(root);
-	try
-	{
-		PrintNodeN(TransformNPLA1(root));
-	}
-	catch(ystdex::bad_any_cast&)
-	{
-		throw LoggedEvent("Bad configuration found.", Warning);
-	}
-}
-
-} // namespace NPL;
-
+using namespace platform_ex;
 
 namespace
 {
@@ -154,118 +48,20 @@ namespace
 void ParseOutput(LexicalAnalyzer& lex)
 {
 	const auto& cbuf(lex.GetBuffer());
-
-	using namespace std;
-
-#if 0
-	cout << cbuf << endl;
-#endif
-	cout << "cbuf size:" << cbuf.size() << endl;
-
 	const auto xlst(lex.Literalize());
-#if 0
-	for(const auto& str : xlst)
-		cout << str << endl << "--" << endl;
-#endif
-	cout << "xlst size:" << cbuf.size() << endl;
-
+	using namespace std;
 	const auto rlst(Tokenize(xlst));
 
+	cout << "cbuf size:" << cbuf.size() << endl
+		<< "xlst size:" << cbuf.size() << endl;
 	for(const auto& str : rlst)
 	{
 	//	cout << str << endl;
 	//	cout << String(str).GetMBCS(Text::CharSet::GBK) << endl;
-		cout << MBCSToMBCS(str) << endl;
-		cout << "~----: u8 length: " << str.size() << endl;
+		cout << MBCSToMBCS(str) << endl
+			<< "* u8 length: " << str.size() << endl;
 	}
 	cout << rlst.size() << " token(s) parsed." <<endl;
-}
-
-/// 304
-void
-ParseFile(const string& path_gbk)
-{
-	std::cout << ystdex::sfmt("Parse from file: %s : ", path_gbk.c_str())
-		<< std::endl;
-
-	if(ifstream ifs{MBCSToMBCS(path_gbk)})
-	{
-		Session sess;
-		char c;
-
-		while((c = ifs.get()), ifs)
-			Session::DefaultParseByte(sess.Lexer, c);
-		ParseOutput(sess.Lexer);
-	}
-}
-
-/// 334
-void
-PrintFile(const string& path_gbk)
-{
-	const auto& path(MBCSToMBCS(path_gbk));
-	size_t bom;
-	if(ifstream ifs{path})
-	{
-		ifs.seekg(0, std::ios_base::end);
-		bom = Text::DetectBOM(ifs, ifs.tellg()).second;
-	}
-	else
-		throw LoggedEvent("Failed opening file.");
-
-	std::ifstream fin(path.c_str());
-	string str;
-
-	while(bom--)
-		fin.get();
-	while(fin)
-	{
-		std::getline(fin, str);
-		std::cout << SToMBCS(str) << '\n';
-	}
-	std::cout << std::endl;
-}
-
-/// 304
-void
-ParseString(const std::string& str)
-{
-	LexicalAnalyzer lex;
-
-	for(const auto& c : str)
-		lex.ParseByte(c);
-	std::cout << ystdex::sfmt("Parse from str: %s : ", str.c_str())
-		<< std::endl;
-	ParseOutput(lex);
-}
-
-/// 307
-void
-SearchName(ValueNode& root, const string& arg)
-{
-	using namespace std;
-
-	try
-	{
-		const auto& name(arg);
-
-		cout << "Searching... " << name << endl;
-
-		auto& node(root.at(name));
-
-		cout << "Found: " << name << " = ";
-
-		auto& s(Access<string>(node));
-		cout << s << endl;
-	}
-	catch(out_of_range&)
-	{
-		cout << "Not found." << endl;
-	}
-	catch(ystdex::bad_any_cast&)
-	{
-		cout << "[Type error]" << endl;
-	}
 }
 
 /// 664
@@ -313,13 +109,14 @@ DoIntegerNAryArithmetics(_func f, int val, TermNode::Container::iterator i,
 template<typename _func>
 void
 DoUnary(_func f, TermNode::Container::iterator i, size_t n,
-	const TermNode&)
+	const TermNode& term)
 {
 	if(n == 1)
 		// TODO: Assignment of void term.
 		f(Access<string>(Deref(++i)));
 	else
 		ThrowArityMismatch(1, n);
+	term.GetContainerRef().clear();
 }
 
 bool
@@ -591,17 +388,66 @@ LoadFunctions(NPLContext& context)
 	});
 	RegisterForm(root, "parse", [](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
-		DoUnary(ParseFile, i, n, term);
+		DoUnary([](const string& path_gbk)
+		{
+			{
+				using namespace std;
+				cout << ystdex::sfmt("Parse from file: %s : ", path_gbk.c_str())
+					<< endl;
+			}
+			if(ifstream ifs{MBCSToMBCS(path_gbk)})
+			{
+				Session sess;
+				char c;
+
+				while((c = ifs.get()), ifs)
+					Session::DefaultParseByte(sess.Lexer, c);
+				ParseOutput(sess.Lexer);
+			}
+		}, i, n, term);
 	});
 	RegisterForm(root, "print", [](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
-		DoUnary(PrintFile, i, n, term);
+		DoUnary([](const string& path_gbk){
+			const auto& path(MBCSToMBCS(path_gbk));
+			size_t bom;
+
+			if(ifstream ifs{path})
+			{
+				ifs.seekg(0, std::ios_base::end);
+				bom = Text::DetectBOM(ifs, ifs.tellg()).second;
+			}
+			else
+				throw LoggedEvent("Failed opening file.");
+
+			std::ifstream fin(path.c_str());
+			string str;
+
+			while(bom--)
+				fin.get();
+			while(fin)
+			{
+				std::getline(fin, str);
+				std::cout << WCSToMBCS({reinterpret_cast<const wchar_t*>(
+					str.c_str()), str.length()}, CP_ACP) << '\n';
+			}
+			std::cout << std::endl;
+		}, i, n, term);
 	});
 	RegisterForm(root, "mangle", [](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
 		DoUnary([](const string& arg){
 			if(CheckLiteral(arg) == '"')
-				ParseString(ystdex::get_mid(arg));
+			{
+				const auto& str(ystdex::get_mid(arg));
+				LexicalAnalyzer lex;
+
+				for(const auto& c : str)
+					lex.ParseByte(c);
+				std::cout << ystdex::sfmt("Parse from str: %s : ", str.c_str())
+					<< std::endl;
+				ParseOutput(lex);
+			}
 			else
 				std::cout << "Please use a string literal as argument."
 					<< std::endl;
@@ -609,7 +455,19 @@ LoadFunctions(NPLContext& context)
 	});
 	RegisterForm(root, "search", [&](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
-		DoUnary(bind(SearchName, std::ref(context.Root), _1), i, n, term);
+		DoUnary([&](const string& arg){
+			using namespace std;
+
+			try
+			{
+				const auto& name(arg);
+				auto& node(root.at(name));
+				const auto& s(Access<string>(node));
+
+				cout << "Found: " << name << " = " << s << endl;
+			}
+			CatchExpr(out_of_range&, cout << "Not found." << endl)
+		}, i, n, term);
 	});
 	RegisterForm(root, "eval", [&](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
@@ -619,33 +477,34 @@ LoadFunctions(NPLContext& context)
 		const TermNode& term){
 		DoUnary([](const string& arg){
 			if(CheckLiteral(arg) == '\'')
-				EvalS(string_view(ystdex::get_mid(arg)));
+			{
+				using namespace std;
+				const ValueNode&
+					root(SContext::Analyze(string_view(ystdex::get_mid(arg))));
+				const auto PrintNodeN([](const ValueNode& node){
+					cout << ">>>Root size: " << node.size() << endl;
+					PrintNode(cout, node);
+					cout << endl;
+				});
+
+				PrintNodeN(root);
+				PrintNodeN(TransformNPLA1(root));
+			}
 		}, i, n, term);
 	});
 	RegisterForm(root, "evalf", [](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
 		DoUnary([](const string& arg){
-			if(ifstream ifs{platform_ex::DecodeArg(arg)})
+			if(ifstream ifs{DecodeArg(arg)})
 			{
 				Configuration conf;
 				ofstream f("out.txt");
 
-				try
-				{
-					ifs >> conf;
-					f << conf;
-				}
-				catch(ystdex::bad_any_cast& e)
-				{
-					// TODO: Avoid memory allocation.
-					throw LoggedEvent(ystdex::sfmt("Bad configuration found:"
-						" cast failed from [%s] to [%s] .", e.from(), e.to()),
-						Warning);
-				}
+				ifs >> conf;
+				f << conf;
 			}
 			else
-				throw LoggedEvent("Invalid file: \"" + arg + "\".",
-					Warning);
+				throw LoggedEvent("Invalid file: \"" + arg + "\".", Warning);
 		}, i, n, term);
 	});
 }
