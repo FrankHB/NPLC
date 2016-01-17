@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4597
+\version r4695
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-17 12:10 +0800
+	2016-01-17 12:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -368,47 +368,8 @@ ReduceTail(const TermNode& term, const ContextNode& ctx,
 void
 LoadFunctions(NPLContext& context)
 {
-	auto& m(context.Map);	m.insert({"parse", ParseFile});
-	m.insert({"print", PrintFile});
-	m.insert({"mangle", [](const string& arg){
-		if(CheckLiteral(arg) == '"')
-			ParseString(ystdex::get_mid(arg));
-		else
-			std::cout << "Please use a string literal as argument."
-				<< std::endl;
-	}});
-	m.insert({"search", [&](const string& arg){
-		SearchName(context.Root, arg);
-	}});
-	m.insert({"eval",
-		std::bind(&NPLContext::Eval, &context, std::placeholders::_1)});
-	m.insert({"evals", [](const string& arg){
-		if(CheckLiteral(arg) == '\'')
-			EvalS(string_view(ystdex::get_mid(arg)));
-	}});
-	m.insert({"evalf", [](const string& path_acp){
-		if(ifstream ifs{MBCSToMBCS(path_acp)})
-		{
-			Configuration conf;
-			ofstream f("out.txt");
-
-			try
-			{
-				ifs >> conf;
-				f << conf;
-			}
-			catch(ystdex::bad_any_cast& e)
-			{
-				// TODO: Avoid memory allocation.
-				throw LoggedEvent(ystdex::sfmt(
-					">Bad configuration found: cast failed from [%s] to [%s] .",
-					e.from(), e.to()), Warning);
-			}
-		}
-		else
-			throw LoggedEvent("Invalid file: \"" + path_acp + "\".", Warning);
-	}});
-
+	using std::bind;
+	using namespace std::placeholders;
 	auto& root(context.Root);
 
 	RegisterContextHandler(root, "$quote",
@@ -624,8 +585,67 @@ LoadFunctions(NPLContext& context)
 	RegisterForm(root, "echo", [](TermNode::Container::iterator i, size_t n,
 		const TermNode& term){
 		DoUnary([](const string& arg){
-			if(CheckLiteral(arg) != 0)
+			if(CheckLiteral(arg) != char())
 				std::cout << ystdex::get_mid(arg) << std::endl;
+		}, i, n, term);
+	});
+	RegisterForm(root, "parse", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoUnary(ParseFile, i, n, term);
+	});
+	RegisterForm(root, "print", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoUnary(PrintFile, i, n, term);
+	});
+	RegisterForm(root, "mangle", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoUnary([](const string& arg){
+			if(CheckLiteral(arg) == '"')
+				ParseString(ystdex::get_mid(arg));
+			else
+				std::cout << "Please use a string literal as argument."
+					<< std::endl;
+		}, i, n, term);
+	});
+	RegisterForm(root, "search", [&](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoUnary(bind(SearchName, std::ref(context.Root), _1), i, n, term);
+	});
+	RegisterForm(root, "eval", [&](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoUnary(bind(&NPLContext::Eval, &context, _1), i, n, term);
+	});
+	RegisterForm(root, "evals", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoUnary([](const string& arg){
+			if(CheckLiteral(arg) == '\'')
+				EvalS(string_view(ystdex::get_mid(arg)));
+		}, i, n, term);
+	});
+	RegisterForm(root, "evalf", [](TermNode::Container::iterator i, size_t n,
+		const TermNode& term){
+		DoUnary([](const string& arg){
+			if(ifstream ifs{platform_ex::DecodeArg(arg)})
+			{
+				Configuration conf;
+				ofstream f("out.txt");
+
+				try
+				{
+					ifs >> conf;
+					f << conf;
+				}
+				catch(ystdex::bad_any_cast& e)
+				{
+					// TODO: Avoid memory allocation.
+					throw LoggedEvent(ystdex::sfmt("Bad configuration found:"
+						" cast failed from [%s] to [%s] .", e.from(), e.to()),
+						Warning);
+				}
+			}
+			else
+				throw LoggedEvent("Invalid file: \"" + arg + "\".",
+					Warning);
 		}, i, n, term);
 	});
 }
