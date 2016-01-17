@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4959
+\version r4962
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-17 19:55 +0800
+	2016-01-17 20:38 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -159,6 +159,15 @@ ReduceTail(const TermNode& term, const ContextNode& ctx,
 	NPLContext::Reduce(term, ctx);
 }
 
+void
+RegisterLiteralSignal(ContextNode& node, const string& name, SSignal sig)
+{
+	RegisterLiteralHandler(node, name,
+		[=](const ContextNode&) YB_NORETURN -> bool{
+		throw sig;
+	});
+}
+
 } // unnamed namespace;
 
 /// 328
@@ -169,6 +178,11 @@ LoadFunctions(NPLContext& context)
 	using namespace std::placeholders;
 	auto& root(context.Root);
 
+	RegisterLiteralSignal(root, "exit", SSignal::Exit);
+	RegisterLiteralSignal(root, "cls", SSignal::ClearScreen);
+	RegisterLiteralSignal(root, "about", SSignal::About);
+	RegisterLiteralSignal(root, "help", SSignal::Help);
+	RegisterLiteralSignal(root, "license", SSignal::License);
 	RegisterContextHandler(root, "$quote",
 		ContextHandler([](const TermNode& term, const ContextNode&){
 		YAssert(!term.empty(), "Invalid term found.");
