@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4576
+\version r4579
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-17 20:50 +0800
+	2016-01-19 10:47 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -330,8 +330,9 @@ LoadFunctions(NPLContext& context)
 					YAssert(i == app_term.end(),
 						"Invalid state found on passing arguments.");
 					// NOTE: Beta reduction.
-					app_term.GetContainerRef() = p_closure->GetContainer();
-					app_term.Value = p_closure->Value;
+					yunseq(
+						app_term.GetContainerRef() = p_closure->GetContainer(),
+						app_term.Value = p_closure->Value);
 					// TODO: Test for normal form.
 					// FIXME: Return value?
 					NPLContext::Reduce(app_term, app_ctx);
