@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1527
+\version r1548
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-17 20:53 +0800
+	2016-01-21 22:12 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -44,7 +44,7 @@ ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 {
 	if(Special)
 	{
-		// TODO: Matching specific special forms?
+		// TODO: Is it worth matching specific builtin special forms here?
 		YTraceDe(Debug, "Found special form.");
 		DoHandle(term, ctx);
 	}
@@ -52,16 +52,8 @@ ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 	{
 		auto& con(term.GetContainerRef());
 
-		if(con.size() < 2)
-			throw LoggedEvent("Invalid term to handle found.", Err);
-		// NOTE: Arguments evaluation: call by value.
-		// NOTE: The order of evaluation is unspecified by the language
-		//	specification. However here it can only be either left-to-right
-		//	or right-to-left unless the separators has been predicted.
-		std::for_each(std::next(con.cbegin()), con.cend(),
-			[&](decltype(*con.cend())& sub_term){
-			NPLContext::Reduce(sub_term, ctx);
-		});
+		// NOTE: Arguments evaluation: applicative order.
+		NPLContext::ReduceArguments(con, ctx);
 
 		const auto n(con.size());
 
@@ -124,6 +116,9 @@ RegisterForm(const ContextNode& node, const string& name, FormHandler f,
 		const auto size(con.size());
 
 		YAssert(size != 0, "Invalid term found.");
+		// NOTE: This is basically call-by-value, i.e. the arguments would be
+		//	copied as the parameters, unless the terms are prevented to be
+		//	evaluated immediately by some special tags in reduction.
 		f(con.begin(), size - 1, term);
 	}, special));
 }
@@ -262,6 +257,21 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 		// NOTE: Exited loop has produced normal form by default.
 		return {};
 	});
+}
+
+void
+NPLContext::ReduceArguments(TermNode::Container& con, const ContextNode& ctx)
+{
+	if(con.size() > 1)
+		// NOTE: The order of evaluation is unspecified by the language
+		//	specification. However here it can only be either left-to-right
+		//	or right-to-left unless the separators has been predicted.
+		std::for_each(std::next(con.cbegin()), con.cend(),
+			[&](decltype(*con.cend())& sub_term){
+			NPLContext::Reduce(sub_term, ctx);
+		});
+	else
+		throw LoggedEvent("Invalid term to handle found.", Err);
 }
 
 TokenList&

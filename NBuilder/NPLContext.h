@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1221
+\version r1235
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-17 20:55 +0800
+	2016-01-21 22:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -146,10 +146,23 @@ public:
 	static const ValueNode*
 	LookupName(const ValueNode&, const string&);
 
-	/// 663
-	//! \note 可能使参数中容器的迭代器失效。
+	/*!
+	\note 可能使参数中容器的迭代器失效。
+	\since YSLib build 663
+	*/
 	static bool
 	Reduce(const TermNode&, const ContextNode&);
+
+	/*!
+	\brief 对容器中的第二项开始逐项规约。
+	\throw LoggedEvent 容器内的子表达式不大于一项。
+	\note 语言规范指定规约顺序不确定。
+	\note 可能使参数中容器的迭代器失效。
+	\since YSLib build 665
+	\sa Reduce
+	*/
+	static void
+	ReduceArguments(TermNode::Container&, const ContextNode&);
 
 	TokenList&
 	Perform(const string& unit);
