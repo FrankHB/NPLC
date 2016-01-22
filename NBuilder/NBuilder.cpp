@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4587
+\version r4588
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-22 14:12 +0800
+	2016-01-22 15:44 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -508,7 +508,7 @@ LoadFunctions(NPLContext& context)
 				});
 
 				PrintNodeN(root);
-				PrintNodeN(TransformNPLA1(root));
+				PrintNodeN(A1::TransformNode(root));
 			}
 		}, i, n, term);
 	});
