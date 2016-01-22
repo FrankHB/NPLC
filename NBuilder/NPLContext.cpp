@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1558
+\version r1567
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-22 14:15 +0800
+	2016-01-22 14:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -33,8 +33,6 @@
 #include <ystdex/cast.hpp> // for ystdex::pvoid;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond;
-
-#define NPL_TracePerform 1
 
 namespace NPL
 {
@@ -261,7 +259,7 @@ NPLContext::ReduceArguments(TermNode::Container& con, const ContextNode& ctx)
 		throw LoggedEvent("Invalid term to handle found.", Err);
 }
 
-TokenList&
+ValueNode
 NPLContext::Perform(const string& unit)
 {
 	if(unit.empty())
@@ -273,15 +271,8 @@ NPLContext::Perform(const string& unit)
 	Root["__depth"].Value = size_t();
 #endif
 	Reduce(term, Root);
-#if NPL_TracePerform
-
-	// TODO: Merge result to 'Root'.
-	std::ostringstream oss;
-
-	PrintNode(oss, term, LiteralizeEscapeNodeLiteral);
-	YTraceDe(Debug, "%s", oss.str().c_str());
-#endif
-	return token_list;
+	// TODO: Merge result to 'Root'?
+	return term;
 }
 
 } // namespace NPL;

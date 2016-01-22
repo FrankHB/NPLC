@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2015 FrankHB.
+	© 2013-2016 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r204
+\version r221
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2015-04-18 15:56 +0800
+	2016-01-22 14:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -33,6 +33,8 @@
 
 using namespace NPL;
 using YSLib::LoggedEvent;
+
+#define NPL_TracePerform 1
 
 namespace NPL
 {
@@ -123,23 +125,17 @@ Interpreter::Process()
 	wc.UpdateForeColor(SideEffectColor);
 	try
 	{
-		auto& unreduced(context.Perform(line));
+		const auto res(context.Perform(line));
 
-		if(!unreduced.empty())
-		{
-			using namespace std;
+#if NPL_TracePerform
+		std::ostringstream oss;
 
-		//	PrintError(wc, "Bad command.");
-		//	wc.UpdateForeColor(InfoColor);
-		//	cout << "Unrecognized reduced token list:" << endl;
-			wc.UpdateForeColor(ReducedColor);
-			for(const auto& token : unreduced)
-			{
-			//	cout << token << endl;
-				cout << token << ' ';
-			}
-			cout << endl;
-		}
+	//	wc.UpdateForeColor(InfoColor);
+	//	cout << "Unrecognized reduced token list:" << endl;
+		wc.UpdateForeColor(ReducedColor);
+		PrintNode(oss, res, LiteralizeEscapeNodeLiteral);
+		YTraceDe(Debug, "%s", oss.str().c_str());
+#endif
 	}
 	catch(SSignal e)
 	{
