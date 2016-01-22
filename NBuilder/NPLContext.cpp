@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1548
+\version r1558
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-21 22:12 +0800
+	2016-01-22 14:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -123,19 +123,6 @@ RegisterForm(const ContextNode& node, const string& name, FormHandler f,
 	}, special));
 }
 
-
-#define NPL_TRACE 1
-
-NPLContext::NPLContext(const FunctionMap& m)
-	: Root(), Map(m), token_list(), sem()
-{}
-
-void
-NPLContext::Eval(const string& arg)
-{
-	if(CheckLiteral(arg) == '\'')
-		NPLContext(Map).Perform(ystdex::get_mid(arg));
-}
 
 ValueObject
 NPLContext::FetchValue(const ValueNode& ctx, const string& name)

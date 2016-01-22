@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1235
+\version r1248
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-21 22:11 +0800
+	2016-01-22 14:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -112,31 +112,14 @@ inline PDefH(void, RegisterLiteralHandler, const ContextNode& node,
 struct NPLContext : private noncopyable
 {
 public:
-	/// 403
-	using Function = std::function<void(const string&)>;
-	using FunctionMap = map<string, Function>;
-
 	/// 664
 	ContextNode Root;
-	/// 403
-	FunctionMap Map;
 
 private:
 	TokenList token_list;
 
 public:
-	/// 328
-	string sem;
-
 	NPLContext() = default;
-
-private:
-	///329
-	NPLContext(const FunctionMap&);
-
-public:
-	void
-	Eval(const string& arg);
 
 	/// 592
 	static ValueObject
