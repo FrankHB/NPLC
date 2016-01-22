@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1567
+\version r1568
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-22 14:24 +0800
+	2016-01-22 15:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -36,6 +36,8 @@
 
 namespace NPL
 {
+
+using A1::ValueToken;
 
 void
 ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const

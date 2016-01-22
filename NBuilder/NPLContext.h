@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1260
+\version r1272
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-22 15:27 +0800
+	2016-01-22 15:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -35,19 +35,6 @@ namespace NPL
 {
 
 using namespace YSLib;
-
-/*!
-\brief 值记号：节点中的值的占位符。
-\since YSLib build 403
-*/
-enum class ValueToken
-{
-	Null,
-	//! \since YSLib build 664
-	GroupingAnchor,
-	//! \since YSLib build 664
-	OrderedAnchor
-};
 
 
 /// 592
