@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4579
+\version r4583
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-19 10:47 +0800
+	2016-01-22 14:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -163,7 +163,7 @@ void
 RegisterLiteralSignal(ContextNode& node, const string& name, SSignal sig)
 {
 	RegisterLiteralHandler(node, name,
-		[=](const ContextNode&) YB_NORETURN -> bool{
+		[=](const ContextNode&) YB_ATTR(noreturn) -> bool{
 		throw sig;
 	});
 }
@@ -330,10 +330,12 @@ LoadFunctions(NPLContext& context)
 					YAssert(i == app_term.end(),
 						"Invalid state found on passing arguments.");
 					// NOTE: Beta reduction.
+					// TODO: Why the container should be copied?
 					yunseq(
 						app_term.GetContainerRef() = p_closure->GetContainer(),
 						app_term.Value = p_closure->Value);
-					// TODO: Test for normal form.
+					// TODO: Test for normal form?
+					// XXX: Term reused.
 					// FIXME: Return value?
 					NPLContext::Reduce(app_term, app_ctx);
 				//	app_term.GetContainerRef().clear();
