@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1272
+\version r1289
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-01-22 15:53 +0800
+	2016-01-30 10:10 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -46,7 +46,8 @@ using ContextNode = ValueNode;
 struct ContextHandler
 {
 private:
-	std::function<void(const TermNode&, const ContextNode&)> handler;
+	/// 667
+	std::function<void(TermNode&, ContextNode&)> handler;
 
 public:
 	bool Special = {};
@@ -56,16 +57,19 @@ public:
 		: handler(f), Special(special)
 	{}
 
+	/// 667
 	void
-	operator()(const TermNode&, const ContextNode&) const;
+	operator()(TermNode&, ContextNode&) const;
 
 private:
+	/// 667
 	void
-	DoHandle(const TermNode&, const ContextNode&) const;
+	DoHandle(TermNode&, ContextNode&) const;
 };
 
+/// 667
 using FormHandler = std::function<void(TermNode::Container::iterator, size_t,
-	const TermNode&)>;
+	TermNode&)>;
 /// 664
 using LiteralHandler = std::function<bool(const ContextNode&)>;
 
@@ -75,17 +79,17 @@ using LiteralHandler = std::function<bool(const ContextNode&)>;
 void
 CleanupEmptyTerms(TermNode::Container&) ynothrow;
 
-inline PDefH(void, RegisterContextHandler, const ContextNode& node,
+/// 667
+inline PDefH(void, RegisterContextHandler, ContextNode& node,
 	const string& name, ContextHandler f)
 	ImplExpr(node[name].Value = f)
 
 void
-RegisterForm(const ContextNode&, const string&, FormHandler,
-	bool = {});
+RegisterForm(ContextNode&, const string&, FormHandler, bool = {});
 //@}
 
-/// 664
-inline PDefH(void, RegisterLiteralHandler, const ContextNode& node,
+/// 667
+inline PDefH(void, RegisterLiteralHandler, ContextNode& node,
 	const string& name, LiteralHandler f)
 	ImplExpr(node[name].Value = f)
 
@@ -109,10 +113,10 @@ public:
 
 	/*!
 	\note 可能使参数中容器的迭代器失效。
-	\since YSLib build 663
+	\since YSLib build 667
 	*/
 	static bool
-	Reduce(const TermNode&, const ContextNode&);
+	Reduce(TermNode&, ContextNode&);
 
 	/*!
 	\brief 对容器中的第二项开始逐项规约。
@@ -123,7 +127,7 @@ public:
 	\sa Reduce
 	*/
 	static void
-	ReduceArguments(TermNode::Container&, const ContextNode&);
+	ReduceArguments(TermNode::Container&, ContextNode&);
 
 	/// 665
 	ValueNode

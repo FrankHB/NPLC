@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4588
+\version r4620
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-22 15:44 +0800
+	2016-01-30 10:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -75,10 +75,12 @@ ThrowArityMismatch(size_t expected, size_t received)
 		" expected %zu, received %zu.", expected, received), Err);
 }
 
+/// 667
+//@{
 template<typename _func>
 void
 DoIntegerBinaryArithmetics(_func f, TermNode::Container::iterator i, size_t n,
-	const TermNode& term)
+	TermNode& term)
 {
 	if(n == 2)
 	{
@@ -95,7 +97,7 @@ DoIntegerBinaryArithmetics(_func f, TermNode::Container::iterator i, size_t n,
 template<typename _func>
 void
 DoIntegerNAryArithmetics(_func f, int val, TermNode::Container::iterator i,
-	size_t n, const TermNode& term)
+	size_t n, TermNode& term)
 {
 	const auto j(ystdex::make_transform(++i,
 		[](TermNode::Container::iterator i){
@@ -108,16 +110,16 @@ DoIntegerNAryArithmetics(_func f, int val, TermNode::Container::iterator i,
 
 template<typename _func>
 void
-DoUnary(_func f, TermNode::Container::iterator i, size_t n,
-	const TermNode& term)
+DoUnary(_func f, TermNode::Container::iterator i, size_t n, TermNode& term)
 {
 	if(n == 1)
 		// TODO: Assignment of void term.
 		f(Access<string>(Deref(++i)));
 	else
 		ThrowArityMismatch(1, n);
-	term.GetContainerRef().clear();
+	term.ClearContainer();
 }
+//@}
 
 bool
 ExtractModifier(TermNode::Container& con, string_view mod = "!")
@@ -150,7 +152,7 @@ ReduceHead(TermNode::Container& con)
 	//ImplExpr(ReduceHead(term.GetContainerRef()))
 
 void
-ReduceTail(const TermNode& term, const ContextNode& ctx,
+ReduceTail(TermNode& term, ContextNode& ctx,
 	TermNode::Container::iterator i)
 {
 	auto& con(term.GetContainerRef());
@@ -184,11 +186,11 @@ LoadFunctions(NPLContext& context)
 	RegisterLiteralSignal(root, "help", SSignal::Help);
 	RegisterLiteralSignal(root, "license", SSignal::License);
 	RegisterContextHandler(root, "$quote",
-		ContextHandler([](const TermNode& term, const ContextNode&){
+		ContextHandler([](TermNode& term, ContextNode&){
 		YAssert(!term.empty(), "Invalid term found.");
 	}, true));
 	RegisterContextHandler(root, "$quote1",
-		ContextHandler([](const TermNode& term, const ContextNode&){
+		ContextHandler([](TermNode& term, ContextNode&){
 		YAssert(!term.empty(), "Invalid term found.");
 
 		const auto n(term.size() - 1);
@@ -198,7 +200,7 @@ LoadFunctions(NPLContext& context)
 				" 1 argument, received %zu.", n), Err);
 	}, true));
 	RegisterContextHandler(root, "$define",
-		ContextHandler([](const TermNode& term, const ContextNode& ctx){
+		ContextHandler([](TermNode& term, ContextNode& ctx){
 		auto& con(term.GetContainerRef());
 
 		ReduceHead(con);
@@ -209,14 +211,14 @@ LoadFunctions(NPLContext& context)
 			throw LoggedEvent(ystdex::sfmt("Syntax error in definition,"
 				" no arguments are found."), Err);
 
-		auto i(con.cbegin());
+		auto i(con.begin());
 
 		if(const auto p_id = AccessPtr<string>(Deref(i)))
 		{
 			const auto& id(*p_id);
 
 			YTraceDe(Debug, "Found identifier '%s'.", id.c_str());
-			if(++i != con.cend())
+			if(++i != con.end())
 			{
 				ReduceTail(term, ctx, i);
 				// TODO: Error handling.
@@ -246,7 +248,7 @@ LoadFunctions(NPLContext& context)
 			throw LoggedEvent("List substitution is not supported yet.", Err);
 	}, true));
 	RegisterContextHandler(root, "$set",
-		ContextHandler([](const TermNode& term, const ContextNode& ctx){
+		ContextHandler([](TermNode& term, ContextNode& ctx){
 		auto& con(term.GetContainerRef());
 
 		ReduceHead(con);
@@ -254,14 +256,14 @@ LoadFunctions(NPLContext& context)
 			throw LoggedEvent(ystdex::sfmt("Syntax error in definition,"
 				" no arguments are found."), Err);
 
-		auto i(con.cbegin());
+		auto i(con.begin());
 
 		if(const auto p_id = AccessPtr<string>(Deref(i)))
 		{
 			const auto& id(*p_id);
 
 			YTraceDe(Debug, "Found identifier '%s'.", id.c_str());
-			if(++i != con.cend())
+			if(++i != con.end())
 			{
 				ReduceTail(term, ctx, i);
 				// TODO: Error handling.
@@ -274,15 +276,15 @@ LoadFunctions(NPLContext& context)
 			throw LoggedEvent("List assignment is not supported yet.", Err);
 	}, true));
 	RegisterContextHandler(root, "$lambda",
-		ContextHandler([](const TermNode& term, const ContextNode& ctx){
+		ContextHandler([](TermNode& term, ContextNode& ctx){
 		auto& con(term.GetContainerRef());
 		auto size(con.size());
 
 		YAssert(size != 0, "Invalid term found.");
 		if(size > 1)
 		{
-			auto i(con.cbegin());
-			const auto& plist_con((++i)->GetContainerRef());
+			auto i(con.begin());
+			auto& plist_con((++i)->GetContainerRef());
 			// TODO: Blocked. Use ISO C++14 lambda initializers to reduce
 			//	initialization cost by directly moving.
 			const auto p_params(make_shared<vector<string>>());
@@ -290,7 +292,7 @@ LoadFunctions(NPLContext& context)
 			YTraceDe(Debug, "Found lambda abstraction form with %zu"
 				" argument(s).", plist_con.size());
 			// TODO: Simplify?
-			std::for_each(plist_con.cbegin(), plist_con.cend(),
+			std::for_each(plist_con.begin(), plist_con.end(),
 				[&](decltype(*i)& pv){
 				p_params->push_back(Access<string>(pv));
 			});
@@ -301,7 +303,7 @@ LoadFunctions(NPLContext& context)
 			const auto p_closure(make_shared<ValueNode>(std::move(con),
 				term.GetName(), std::move(term.Value)));
 
-			term.Value = ContextHandler([=](const TermNode& app_term,
+			term.Value = ContextHandler([=](TermNode& app_term,
 				const ContextNode&){
 				const auto& params(Deref(p_params));
 				const auto n_params(params.size());
@@ -352,30 +354,30 @@ LoadFunctions(NPLContext& context)
 	}, true));
 	// NOTE: Examples.
 	RegisterForm(root, "+", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoIntegerNAryArithmetics(ystdex::plus<>(), 0, i, n, term);
 	});
 	RegisterForm(root, "add2", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		// FIXME: Overflow?
 		DoIntegerBinaryArithmetics(ystdex::plus<>(), i, n, term);
 	});
 	RegisterForm(root, "-", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		// FIXME: Underflow?
 		DoIntegerBinaryArithmetics(ystdex::minus<>(), i, n, term);
 	});
 	RegisterForm(root, "*", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		// FIXME: Overflow?
 		DoIntegerNAryArithmetics(ystdex::multiplies<>(), 1, i, n, term);
 	});
 	RegisterForm(root, "multiply2", [](TermNode::Container::iterator i,
-		size_t n, const TermNode& term){
+		size_t n, TermNode& term){
 		// FIXME: Overflow?
 		DoIntegerBinaryArithmetics(ystdex::multiplies<>(), i, n, term);	});
 	RegisterForm(root, "/", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoIntegerBinaryArithmetics([](int e1, int e2){
 			if(e2 == 0)
 				throw LoggedEvent("Runtime error: divided by zero.", Err);
@@ -383,7 +385,7 @@ LoadFunctions(NPLContext& context)
 		}, i, n, term);
 	});
 	RegisterForm(root, "%", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoIntegerBinaryArithmetics([](int e1, int e2){
 			if(e2 == 0)
 				throw LoggedEvent("Runtime error: divided by zero.", Err);
@@ -391,20 +393,20 @@ LoadFunctions(NPLContext& context)
 		}, i, n, term);
 	});
 	RegisterForm(root, "system", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoUnary([](const string& arg){
 			std::system(arg.c_str());
 		}, i, n, term);
 	});
 	RegisterForm(root, "echo", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoUnary([](const string& arg){
 			if(CheckLiteral(arg) != char())
 				std::cout << ystdex::get_mid(arg) << std::endl;
 		}, i, n, term);
 	});
 	RegisterForm(root, "parse", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoUnary([](const string& path_gbk)
 		{
 			{
@@ -424,7 +426,7 @@ LoadFunctions(NPLContext& context)
 		}, i, n, term);
 	});
 	RegisterForm(root, "print", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoUnary([](const string& path_gbk){
 			const auto& path(MBCSToMBCS(path_gbk));
 			size_t bom;
@@ -452,7 +454,7 @@ LoadFunctions(NPLContext& context)
 		}, i, n, term);
 	});
 	RegisterForm(root, "mangle", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoUnary([](const string& arg){
 			if(CheckLiteral(arg) == '"')
 			{
@@ -471,7 +473,7 @@ LoadFunctions(NPLContext& context)
 		}, i, n, term);
 	});
 	RegisterForm(root, "search", [&](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoUnary([&](const string& arg){
 			using namespace std;
 
@@ -487,14 +489,14 @@ LoadFunctions(NPLContext& context)
 		}, i, n, term);
 	});
 	RegisterForm(root, "eval", [&](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoUnary([&](const string& arg){
 			if(CheckLiteral(arg) == '\'')
 				NPLContext().Perform(ystdex::get_mid(arg));
 		}, i, n, term);
 	});
 	RegisterForm(root, "evals", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoUnary([](const string& arg){
 			if(CheckLiteral(arg) == '\'')
 			{
@@ -513,7 +515,7 @@ LoadFunctions(NPLContext& context)
 		}, i, n, term);
 	});
 	RegisterForm(root, "evalf", [](TermNode::Container::iterator i, size_t n,
-		const TermNode& term){
+		TermNode& term){
 		DoUnary([](const string& arg){
 			if(ifstream ifs{DecodeArg(arg)})
 			{

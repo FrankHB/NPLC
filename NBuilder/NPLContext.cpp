@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1568
+\version r1579
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-01-22 15:53 +0800
+	2016-01-30 10:10 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -40,7 +40,7 @@ namespace NPL
 using A1::ValueToken;
 
 void
-ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
+ContextHandler::operator()(TermNode& term, ContextNode& ctx) const
 {
 	if(Special)
 	{
@@ -60,7 +60,7 @@ ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 		if(n > 1)
 		{
 			// NOTE: Matching function calls.
-			auto i(con.cbegin());
+			auto i(con.begin());
 
 			// NOTE: Adjust null list argument application
 			//	to function call without arguments.
@@ -80,7 +80,7 @@ ContextHandler::operator()(const TermNode& term, const ContextNode& ctx) const
 }
 
 void
-ContextHandler::DoHandle(const TermNode& term, const ContextNode& ctx) const
+ContextHandler::DoHandle(TermNode& term, ContextNode& ctx) const
 {
 	try
 	{
@@ -107,11 +107,10 @@ CleanupEmptyTerms(TermNode::Container& con) ynothrow
 }
 
 void
-RegisterForm(const ContextNode& node, const string& name, FormHandler f,
-	bool special)
+RegisterForm(ContextNode& node, const string& name, FormHandler f, bool special)
 {
 	RegisterContextHandler(node, name,
-		ContextHandler([f](const TermNode& term, const ContextNode&){
+		ContextHandler([f](TermNode& term, const ContextNode&){
 		auto& con(term.GetContainerRef());
 		const auto size(con.size());
 
@@ -142,7 +141,7 @@ NPLContext::LookupName(const ValueNode& ctx, const string& id)
 }
 
 bool
-NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
+NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 {
 	using ystdex::pvoid;
 #if NPL_TraceDepth
@@ -184,7 +183,7 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 				// TODO: Insertion automatic grouping pass for separapors.
 				// NOTE: List evaluation: call by value.
 				// TODO: Form evaluation: macro expansion, etc.
-				if(Reduce(*con.cbegin(), ctx))
+				if(Reduce(*con.begin(), ctx))
 					return true;
 				if(con.empty())
 					return {};
@@ -247,14 +246,14 @@ NPLContext::Reduce(const TermNode& term, const ContextNode& ctx)
 }
 
 void
-NPLContext::ReduceArguments(TermNode::Container& con, const ContextNode& ctx)
+NPLContext::ReduceArguments(TermNode::Container& con, ContextNode& ctx)
 {
 	if(con.size() > 1)
 		// NOTE: The order of evaluation is unspecified by the language
 		//	specification. However here it can only be either left-to-right
 		//	or right-to-left unless the separators has been predicted.
-		std::for_each(std::next(con.cbegin()), con.cend(),
-			[&](decltype(*con.cend())& sub_term){
+		std::for_each(std::next(con.begin()), con.end(),
+			[&](decltype(*con.end())& sub_term){
 			NPLContext::Reduce(sub_term, ctx);
 		});
 	else
