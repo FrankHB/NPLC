@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1583
+\version r1586
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-02-01 09:51 +0800
+	2016-02-01 10:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -218,7 +218,10 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 			// NOTE: If necessary, they should have been handled in preprocess
 			//	pass.
 			if(id == "," || id == ";")
+			{
 				term.Clear();
+				return true;
+			}
 			else if(!id.empty())
 			{
 				// NOTE: Value rewriting.
