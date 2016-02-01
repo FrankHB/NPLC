@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4620
+\version r4621
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-01-30 10:11 +0800
+	2016-02-01 13:52 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -492,7 +492,7 @@ LoadFunctions(NPLContext& context)
 		TermNode& term){
 		DoUnary([&](const string& arg){
 			if(CheckLiteral(arg) == '\'')
-				NPLContext().Perform(ystdex::get_mid(arg));
+				NPLContext(context).Perform(ystdex::get_mid(arg));
 		}, i, n, term);
 	});
 	RegisterForm(root, "evals", [](TermNode::Container::iterator i, size_t n,
