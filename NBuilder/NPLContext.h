@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1291
+\version r1293
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-02-01 09:50 +0800
+	2016-02-01 13:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -95,7 +95,7 @@ inline PDefH(void, RegisterLiteralHandler, ContextNode& node,
 
 
 /// 306
-struct NPLContext : private noncopyable
+struct NPLContext
 {
 public:
 	/// 664
