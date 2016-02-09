@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4621
+\version r4624
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-02-01 13:52 +0800
+	2016-02-09 20:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -233,7 +233,7 @@ LoadFunctions(NPLContext& context)
 			}
 			else
 			{
-				TryExpr(ctx.at(id))
+				TryExpr(AccessNode(ctx, id))
 				catch(std::out_of_range& e)
 				{
 					if(!mod)
@@ -267,7 +267,7 @@ LoadFunctions(NPLContext& context)
 			{
 				ReduceTail(term, ctx, i);
 				// TODO: Error handling.
-				ctx.at(id).Value = std::move(term.Value);
+				AccessNode(ctx, id).Value = std::move(term.Value);
 			}
 			else
 				throw LoggedEvent("No argument found.");
@@ -480,7 +480,7 @@ LoadFunctions(NPLContext& context)
 			try
 			{
 				const auto& name(arg);
-				auto& node(root.at(name));
+				auto& node(AccessNode(root, name));
 				const auto& s(Access<string>(node));
 
 				cout << "Found: " << name << " = " << s << endl;

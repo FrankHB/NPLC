@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1586
+\version r1594
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-02-01 10:02 +0800
+	2016-02-09 20:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -126,18 +126,15 @@ RegisterForm(ContextNode& node, const string& name, FormHandler f, bool special)
 ValueObject
 NPLContext::FetchValue(const ValueNode& ctx, const string& name)
 {
-	if(auto p_id = LookupName(ctx, name))
-		return p_id->Value;
-	return ValueObject();
+	return ystdex::call_value_or<ValueObject>(
+		std::mem_fn(&ValueNode::Value),
+		LookupName(ctx, name));
 }
 
-const ValueNode*
+observer_ptr<const ValueNode>
 NPLContext::LookupName(const ValueNode& ctx, const string& id)
 {
-	TryRet(&ctx.at(id))
-	CatchIgnore(std::out_of_range&)
-	CatchIgnore(ystdex::bad_any_cast&)
-	return {};
+	return AccessNodePtr(ctx, id);
 }
 
 bool
