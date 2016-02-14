@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1596
+\version r1598
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-02-14 18:12 +0800
+	2016-02-14 18:16 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -177,7 +177,7 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 			}
 			else
 			{
-				// TODO: Insertion automatic grouping pass for separapors.
+				AccessChild<EvaluationPass>(ctx, "__$$")(term, ctx);
 				// NOTE: List evaluation: call by value.
 				// TODO: Form evaluation: macro expansion, etc.
 				if(Reduce(*con.begin(), ctx))
@@ -272,6 +272,7 @@ NPLContext::Perform(const string& unit)
 #if NPL_TraceDepth
 	Root["__depth"].Value = size_t();
 #endif
+	Root["__$$"].Value = ListTermPreprocess;
 	Preprocess(term);
 	Reduce(term, Root);
 	// TODO: Merge result to 'Root'?
