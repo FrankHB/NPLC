@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1295
+\version r1304
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-02-09 20:23 +0800
+	2016-02-14 18:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -30,6 +30,7 @@
 
 #include <NPL/YModules.h>
 #include YFM_NPL_SContext
+#include YFM_YSLib_Core_YEvent
 
 namespace NPL
 {
@@ -94,14 +95,22 @@ inline PDefH(void, RegisterLiteralHandler, ContextNode& node,
 	ImplExpr(node[name].Value = f)
 
 
+/// 673
+using TermPass = GEvent<void(TermNode&)>;
+/// 673
+using EvaluationPass = GEvent<void(TermNode&, ContextNode&)>;
+
+
 /// 306
 struct NPLContext
 {
 public:
 	/// 664
 	ContextNode Root;
-	/// 667
-	std::function<void(TermNode&)> Preprocess;
+	/// 673
+	TermPass Preprocess;
+	/// 673
+	EvaluationPass ListTermPreprocess;
 
 	NPLContext() = default;
 
