@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r221
+\version r232
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-01-22 14:25 +0800
+	2016-02-15 15:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -69,7 +69,17 @@ PrintError(WConsole& wc, const LoggedEvent& e)
 		<< e.what() << std::endl;
 }
 
-}//unnamed namespace
+} // unnamed namespace;
+
+
+void
+LogTree(const ValueNode& node, Logger::Level lv)
+{
+	std::ostringstream oss;
+
+	PrintNode(oss, node, LiteralizeEscapeNodeLiteral);
+	YTraceDe(lv, "%s", oss.str().c_str());
+}
 
 
 Interpreter::Interpreter(std::function<void(NPLContext&)> loader)
@@ -128,13 +138,10 @@ Interpreter::Process()
 		const auto res(context.Perform(line));
 
 #if NPL_TracePerform
-		std::ostringstream oss;
-
 	//	wc.UpdateForeColor(InfoColor);
 	//	cout << "Unrecognized reduced token list:" << endl;
 		wc.UpdateForeColor(ReducedColor);
-		PrintNode(oss, res, LiteralizeEscapeNodeLiteral);
-		YTraceDe(Debug, "%s", oss.str().c_str());
+		LogTree(res);
 #endif
 	}
 	catch(SSignal e)

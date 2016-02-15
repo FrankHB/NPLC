@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r107
+\version r110
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-01-17 20:41 +0800
+	2016-02-15 15:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -51,6 +51,11 @@ enum class SSignal
 	Help,
 	License
 };
+
+
+/// 673
+void
+LogTree(const ValueNode&, Logger::Level = Debug);
 
 
 /*!
