@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4624
+\version r4687
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-02-09 20:17 +0800
+	2016-02-15 16:16 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -36,6 +36,74 @@
 #include YFM_YCLib_Debug
 #include YFM_Win32_YCLib_MinGW32
 #include "Interpreter.h"
+
+namespace NPL
+{
+
+void
+ThrowArityMismatch(size_t expected, size_t received)
+{
+	throw LoggedEvent(ystdex::sfmt("Arity mismatch:"
+		" expected %zu, received %zu.", expected, received), Err);
+}
+
+
+void
+ReduceHead(TermNode::Container& con) ynothrowv
+{
+	YAssert(!con.empty(), "Invalid term found.");
+	con.erase(con.cbegin());
+}
+
+
+ValueNode
+TransformForSeperator(const TermNode& term, const ValueObject& pfx,
+	const ValueObject& delim, const string& name)
+{
+	auto res(MakeNode(name, term.Value));
+
+	if(!term.empty())
+	{
+		res += MakeNode(MakeIndex(res), pfx);
+		ystdex::split(term.begin(), term.end(),
+			[&](const TermNode& node) -> bool{
+			return node.Value == delim;
+		}, [&](TermNode::const_iterator b, TermNode::const_iterator e){
+			auto child(MakeNode(MakeIndex(res)));
+
+			while(b != e)
+			{
+				child += MakeNode(MakeIndex(child), b->Value);
+				++b;
+			}
+			res += std::move(child);
+		});
+	}
+	return res;
+}
+
+ValueNode
+TransformForSeperatorRecursive(const TermNode& term, const ValueObject& pfx,
+	const ValueObject& delim, const string& name)
+{
+	auto res(MakeNode(name, term.Value));
+
+	if(!term.empty())
+	{
+		res += MakeNode(MakeIndex(res), pfx);
+		ystdex::split(term.begin(), term.end(),
+			[&](const TermNode& node) -> bool{
+			return node.Value == delim;
+		}, [&](TermNode::const_iterator b, TermNode::const_iterator e){
+			while(b != e)
+				res += TransformForSeperatorRecursive(*b++, pfx, delim,
+					MakeIndex(res));
+		});
+	}
+	return res;
+}
+
+} // namespace NPL;
 
 using namespace NPL;
 using namespace YSLib;
@@ -62,17 +130,6 @@ void ParseOutput(LexicalAnalyzer& lex)
 			<< "* u8 length: " << str.size() << endl;
 	}
 	cout << rlst.size() << " token(s) parsed." <<endl;
-}
-
-/// 664
-namespace
-{
-
-YB_NORETURN void
-ThrowArityMismatch(size_t expected, size_t received)
-{
-	throw LoggedEvent(ystdex::sfmt("Arity mismatch:"
-		" expected %zu, received %zu.", expected, received), Err);
 }
 
 /// 667
@@ -143,15 +200,6 @@ ExtractModifier(TermNode::Container& con, string_view mod = "!")
 	//ImplRet(ExtractModifier(term.GetContainerRef(), mod))
 
 void
-ReduceHead(TermNode::Container& con)
-{
-	YAssert(!con.empty(), "Invalid term found.");
-	con.erase(con.cbegin());
-}
-//PDefH(void, ReduceHead, const TermNode& term)
-	//ImplExpr(ReduceHead(term.GetContainerRef()))
-
-void
 ReduceTail(TermNode& term, ContextNode& ctx,
 	TermNode::Container::iterator i)
 {
@@ -169,8 +217,6 @@ RegisterLiteralSignal(ContextNode& node, const string& name, SSignal sig)
 		throw sig;
 	});
 }
-
-} // unnamed namespace;
 
 /// 328
 void
