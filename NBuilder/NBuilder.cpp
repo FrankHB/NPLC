@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4687
+\version r4689
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-02-15 16:16 +0800
+	2016-02-20 12:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -261,7 +261,7 @@ LoadFunctions(NPLContext& context)
 
 		if(const auto p_id = AccessPtr<string>(Deref(i)))
 		{
-			const auto& id(*p_id);
+			const auto id(*p_id);
 
 			YTraceDe(Debug, "Found identifier '%s'.", id.c_str());
 			if(++i != con.end())
@@ -306,7 +306,7 @@ LoadFunctions(NPLContext& context)
 
 		if(const auto p_id = AccessPtr<string>(Deref(i)))
 		{
-			const auto& id(*p_id);
+			const auto id(*p_id);
 
 			YTraceDe(Debug, "Found identifier '%s'.", id.c_str());
 			if(++i != con.end())
