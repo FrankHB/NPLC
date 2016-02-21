@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4689
+\version r4695
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-02-20 12:23 +0800
+	2016-02-21 19:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -60,20 +60,20 @@ ValueNode
 TransformForSeperator(const TermNode& term, const ValueObject& pfx,
 	const ValueObject& delim, const string& name)
 {
-	auto res(MakeNode(name, term.Value));
+	auto res(AsNode(name, term.Value));
 
 	if(!term.empty())
 	{
-		res += MakeNode(MakeIndex(res), pfx);
+		res += AsNode(MakeIndex(res), pfx);
 		ystdex::split(term.begin(), term.end(),
 			[&](const TermNode& node) -> bool{
 			return node.Value == delim;
 		}, [&](TermNode::const_iterator b, TermNode::const_iterator e){
-			auto child(MakeNode(MakeIndex(res)));
+			auto child(AsNode(MakeIndex(res)));
 
 			while(b != e)
 			{
-				child += MakeNode(MakeIndex(child), b->Value);
+				child += AsNode(MakeIndex(child), b->Value);
 				++b;
 			}
 			res += std::move(child);
@@ -86,11 +86,11 @@ ValueNode
 TransformForSeperatorRecursive(const TermNode& term, const ValueObject& pfx,
 	const ValueObject& delim, const string& name)
 {
-	auto res(MakeNode(name, term.Value));
+	auto res(AsNode(name, term.Value));
 
 	if(!term.empty())
 	{
-		res += MakeNode(MakeIndex(res), pfx);
+		res += AsNode(MakeIndex(res), pfx);
 		ystdex::split(term.begin(), term.end(),
 			[&](const TermNode& node) -> bool{
 			return node.Value == delim;
