@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1598
+\version r1599
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-02-14 18:16 +0800
+	2016-02-22 15:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -172,7 +172,7 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 			if(n == 1)
 			{
 				// NOTE: List with single element shall be reduced to its value.
-				Deref(con.begin()).SwapContent(term);
+				TermNode(std::move(Deref(con.begin()))).SwapContent(term);
 				return Reduce(term, ctx);
 			}
 			else
