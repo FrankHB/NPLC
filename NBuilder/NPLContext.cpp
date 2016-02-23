@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1599
+\version r1600
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-02-22 15:53 +0800
+	2016-02-23 14:18 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -85,7 +85,7 @@ ContextHandler::DoHandle(TermNode& term, ContextNode& ctx) const
 	try
 	{
 		if(!term.empty())
-			handler(term, ctx);
+			Handler(term, ctx);
 		else
 			// TODO: Use more specific exceptions.
 			throw std::invalid_argument("Empty term found.");

@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1304
+\version r1308
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-02-14 18:11 +0800
+	2016-02-23 14:18 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -46,16 +46,14 @@ using ContextNode = ValueNode;
 //@{
 struct ContextHandler
 {
-private:
-	/// 667
-	std::function<void(TermNode&, ContextNode&)> handler;
-
 public:
+	/// 674
+	GHEvent<void(TermNode&, ContextNode&)> Handler;
 	bool Special = {};
 
 	template<typename _func>
 	ContextHandler(_func f, bool special = {})
-		: handler(f), Special(special)
+		: Handler(f), Special(special)
 	{}
 
 	/// 667
