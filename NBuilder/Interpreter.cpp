@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r232
+\version r242
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-02-15 15:15 +0800
+	2016-02-23 17:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -77,7 +77,18 @@ LogTree(const ValueNode& node, Logger::Level lv)
 {
 	std::ostringstream oss;
 
-	PrintNode(oss, node, LiteralizeEscapeNodeLiteral);
+	PrintNode(oss, node, [](const ValueNode& node) -> string{
+		return EscapeLiteral([&]() -> string{
+			if(const auto p = AccessPtr<string>(node))
+				return *p;
+
+			const auto& t(node.Value.GetType());
+
+			if(t != typeid(void))
+				return ystdex::quote(string(t.name()), '[', ']');
+			throw ystdex::bad_any_cast();
+		}());
+	});
 	YTraceDe(lv, "%s", oss.str().c_str());
 }
 
