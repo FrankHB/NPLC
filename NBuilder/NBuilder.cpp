@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4696
+\version r4700
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-02-23 09:45 +0800
+	2016-02-23 14:19 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -232,11 +232,11 @@ LoadFunctions(NPLContext& context)
 	RegisterLiteralSignal(root, "help", SSignal::Help);
 	RegisterLiteralSignal(root, "license", SSignal::License);
 	RegisterContextHandler(root, "$quote",
-		ContextHandler([](TermNode& term, ContextNode&){
+		ContextHandler([](TermNode& term){
 		YAssert(!term.empty(), "Invalid term found.");
 	}, true));
 	RegisterContextHandler(root, "$quote1",
-		ContextHandler([](TermNode& term, ContextNode&){
+		ContextHandler([](TermNode& term){
 		YAssert(!term.empty(), "Invalid term found.");
 
 		const auto n(term.size() - 1);
@@ -349,8 +349,7 @@ LoadFunctions(NPLContext& context)
 			const auto p_closure(make_shared<ValueNode>(std::move(con),
 				term.GetName(), std::move(term.Value)));
 
-			term.Value = ContextHandler([=](TermNode& app_term,
-				const ContextNode&){
+			term.Value = ContextHandler([=](TermNode& app_term){
 				const auto& params(Deref(p_params));
 				const auto n_params(params.size());
 				// TODO: Optimize for performance.
