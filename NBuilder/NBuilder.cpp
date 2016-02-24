@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4700
+\version r4703
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-02-23 14:19 +0800
+	2016-02-24 09:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -49,7 +49,7 @@ ThrowArityMismatch(size_t expected, size_t received)
 
 
 void
-ReduceHead(TermNode::Container& con) ynothrowv
+RemoveHead(TermNode::Container& con) ynothrowv
 {
 	YAssert(!con.empty(), "Invalid term found.");
 	con.erase(con.cbegin());
@@ -249,7 +249,7 @@ LoadFunctions(NPLContext& context)
 		ContextHandler([](TermNode& term, ContextNode& ctx){
 		auto& con(term.GetContainerRef());
 
-		ReduceHead(con);
+		RemoveHead(con);
 
 		const bool mod(ExtractModifier(con));
 
@@ -297,7 +297,7 @@ LoadFunctions(NPLContext& context)
 		ContextHandler([](TermNode& term, ContextNode& ctx){
 		auto& con(term.GetContainerRef());
 
-		ReduceHead(con);
+		RemoveHead(con);
 		if(con.empty())
 			throw LoggedEvent(ystdex::sfmt("Syntax error in definition,"
 				" no arguments are found."), Err);
