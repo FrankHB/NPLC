@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1600
+\version r1605
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-02-23 14:18 +0800
+	2016-02-23 20:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -39,15 +39,13 @@ namespace NPL
 
 using A1::ValueToken;
 
+// TODO: Is it worth matching specific builtin special forms in handlers?
+
 void
 ContextHandler::operator()(TermNode& term, ContextNode& ctx) const
 {
 	if(Special)
-	{
-		// TODO: Is it worth matching specific builtin special forms here?
-		YTraceDe(Debug, "Found special form.");
 		DoHandle(term, ctx);
-	}
 	else
 	{
 		auto& con(term.GetContainerRef());
