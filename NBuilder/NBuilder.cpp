@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4704
+\version r4731
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-02-24 09:38 +0800
+	2016-02-24 09:39 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -199,6 +199,15 @@ ExtractModifier(TermNode::Container& con, string_view mod = "!")
 //PDefH(bool, ExtractModifier, const TermNode& term, string_view mod = "!")
 	//ImplRet(ExtractModifier(term.GetContainerRef(), mod))
 
+/// 674
+void
+RemoveHeadAndReduceAll(TermNode& term, ContextNode& ctx)
+{
+	RemoveHead(term.GetContainerRef());
+	std::for_each(term.begin(), term.end(),
+		std::bind(NPLContext::Reduce, std::placeholders::_1, std::ref(ctx)));
+}
+
 void
 ReduceTail(TermNode& term, ContextNode& ctx,
 	TermNode::Container::iterator i)
@@ -218,6 +227,19 @@ RegisterLiteralSignal(ContextNode& node, const string& name, SSignal sig)
 	});
 }
 
+/// 674
+void
+TransformTermForSeperator(TermNode& term,
+	const ValueObject& pfx, const ValueObject& delim)
+{
+	using ystdex::get_value;
+
+	if(std::find_if(term.begin(), term.end(), [&](const ValueNode& node){
+		return node.Value == delim;
+	}) != term.end())
+		term = TransformForSeperator(term, pfx, delim);
+}
+
 /// 328
 void
 LoadFunctions(NPLContext& context)
@@ -226,6 +248,14 @@ LoadFunctions(NPLContext& context)
 	using namespace std::placeholders;
 	auto& root(context.Root);
 
+	context.ListTermPreprocess += std::bind(TransformTermForSeperator, _1,
+		string("$;"), string(";"));
+	context.ListTermPreprocess += std::bind(TransformTermForSeperator, _1,
+		string("$,"), string(","));
+	RegisterContextHandler(root, "$;",
+		ContextHandler(RemoveHeadAndReduceAll, true));
+	RegisterContextHandler(root, "$,",
+		ContextHandler(RemoveHeadAndReduceAll, true));
 	RegisterLiteralSignal(root, "exit", SSignal::Exit);
 	RegisterLiteralSignal(root, "cls", SSignal::ClearScreen);
 	RegisterLiteralSignal(root, "about", SSignal::About);
