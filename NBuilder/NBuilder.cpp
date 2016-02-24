@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4703
+\version r4704
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-02-24 09:23 +0800
+	2016-02-24 09:38 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -73,7 +73,7 @@ TransformForSeperator(const TermNode& term, const ValueObject& pfx,
 
 			while(b != e)
 			{
-				child += AsNode(MakeIndex(child), b->Value);
+				child += {b->GetContainer(), MakeIndex(child), b->Value};
 				++b;
 			}
 			res += std::move(child);
