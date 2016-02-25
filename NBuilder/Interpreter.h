@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r110
+\version r128
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-02-15 15:15 +0800
+	2016-02-25 11:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -40,7 +40,10 @@ namespace NPL
 
 /// 592
 using namespace YSLib::Consoles;
-
+/// 674
+using YSLib::Logger;
+/// 674
+using A1::NPLContext;
 
 /// 304
 enum class SSignal
@@ -55,7 +58,7 @@ enum class SSignal
 
 /// 673
 void
-LogTree(const ValueNode&, Logger::Level = Debug);
+LogTree(const ValueNode&, Logger::Level = YSLib::Debug);
 
 
 /*!
@@ -73,9 +76,10 @@ class Interpreter
 private:
 	/// 520
 	platform_ex::WConsole wc;
-	/// 662
-	RecordLevel err_threshold;
-	YSLib::string line;
+	/// 674
+	YSLib::RecordLevel err_threshold;
+	/// 674
+	string line;
 	NPLContext context;
 
 public:

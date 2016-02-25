@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r1892
+\version r1952
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2016-02-24 09:23 +0800
+	2016-02-25 11:18 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -28,37 +28,94 @@
 #ifndef INC_NPL_NBuilder_h_
 #define INC_NPL_NBuilder_h_
 
-#include "NPLContext.h"
-#include YFM_YSLib_Core_YString
+#include "Interpreter.h"
 
 namespace NPL
 {
 
+/// 674
+using namespace YSLib;
+
+namespace A1
+{
+
 /// 673
-//@{
-using YSLib::ValueObject;
-
-
 YB_NORETURN void
 ThrowArityMismatch(size_t, size_t);
 
 
 /// 674
+//@{
+bool
+ExtractModifier(TermNode::Container&, const ValueObject& = string("!"));
+inline PDefH(bool, ExtractModifier, const TermNode& term,
+	const ValueObject& mod = string("!"))
+	ImplRet(ExtractModifier(term.GetContainer(), mod))
+
 void
-RemoveHead(TermNode::Container&) ynothrowv;
-/// 674
-inline PDefH(void, RemoveHead, TermNode& term) ynothrowv
-	ImplExpr(RemoveHead(term.GetContainerRef()))
+ReduceTail(TermNode&, ContextNode&, TNIter);
+
+void
+RemoveHeadAndReduceAll(TermNode&, ContextNode&);
+
+void
+RegisterLiteralSignal(ContextNode&, const string&, SSignal);
 
 
-ValueNode
+TermNode
 TransformForSeperator(const TermNode&, const ValueObject&, const ValueObject&,
 	const string& = {});
 
-ValueNode
+TermNode
 TransformForSeperatorRecursive(const TermNode&, const ValueObject&,
 	const ValueObject&, const string& = {});
+
+void
+TransformTermForSeperator(TermNode&, const ValueObject&, const ValueObject&);
+
+
+template<typename _func>
+void
+DoIntegerBinaryArithmetics(_func f, TNIter i, size_t n, TermNode& term)
+{
+	if(n == 2)
+	{
+		const auto e1(std::stoi(Access<string>(Deref(++i))));
+
+		// TODO: Remove 'to_string'?
+		term.Value
+			= to_string(f(e1, std::stoi(Access<string>(Deref(++i)))));
+	}
+	else
+		ThrowArityMismatch(2, n);
+}
+
+template<typename _func>
+void
+DoIntegerNAryArithmetics(_func f, int val, TNIter i, size_t n, TermNode& term)
+{
+	const auto j(ystdex::make_transform(++i, [](TNIter i){
+		return std::stoi(Access<string>(Deref(i)));
+	}));
+
+	// FIXME: Overflow?
+	term.Value = to_string(std::accumulate(j, std::next(j, n), val, f));
+}
+
+template<typename _func>
+void
+DoUnary(_func f, TNIter i, size_t n, TermNode& term)
+{
+	if(n == 1)
+		// TODO: Assignment of void term.
+		f(Access<string>(Deref(++i)));
+	else
+		ThrowArityMismatch(1, n);
+	term.ClearContainer();
+}
 //@}
+
+} // namespace A1;
 
 } // namespace NPL;
 

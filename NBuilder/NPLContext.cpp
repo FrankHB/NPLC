@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1605
+\version r1678
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329 。
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-02-23 20:25 +0800
+	2016-02-25 11:19 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -37,78 +37,59 @@
 namespace NPL
 {
 
-using A1::ValueToken;
+/// 674
+using namespace YSLib;
 
-// TODO: Is it worth matching specific builtin special forms in handlers?
-
-void
-ContextHandler::operator()(TermNode& term, ContextNode& ctx) const
+namespace A1
 {
-	if(Special)
-		DoHandle(term, ctx);
-	else
-	{
-		auto& con(term.GetContainerRef());
 
-		// NOTE: Arguments evaluation: applicative order.
-		NPLContext::ReduceArguments(con, ctx);
+/// 674
+namespace
+{
 
-		const auto n(con.size());
-
-		if(n > 1)
-		{
-			// NOTE: Matching function calls.
-			auto i(con.begin());
-
-			// NOTE: Adjust null list argument application
-			//	to function call without arguments.
-			// TODO: Improve performance of comparison?
-			if(n == 2 && Deref(++i).Value == ValueToken::Null)
-				con.erase(i);
-			DoHandle(term, ctx);
-		}
-		// TODO: Unreduced form check.
-#if 0
-		if(n == 0)
-			YTraceDe(Warning, "Empty reduced form found.");
-		else
-			YTraceDe(Warning, "%zu term(s) not reduced found.", n);
+yconstexpr auto ListTermName("__$$");
+#if NPL_TraceDepth
+yconstexpr auto DepthName("__depth");
 #endif
-	}
-}
+
+} // unnamed namespace;
 
 void
-ContextHandler::DoHandle(TermNode& term, ContextNode& ctx) const
+FunctionContextHandler::operator()(TermNode& term, ContextNode& ctx) const
 {
-	try
+	auto& con(term.GetContainerRef());
+
+	// NOTE: Arguments evaluation: applicative order.
+	NPLContext::ReduceArguments(con, ctx);
+
+	const auto n(con.size());
+
+	if(n > 1)
 	{
-		if(!term.empty())
-			Handler(term, ctx);
-		else
-			// TODO: Use more specific exceptions.
-			throw std::invalid_argument("Empty term found.");
+		// NOTE: Matching function calls.
+		auto i(con.begin());
+
+		// NOTE: Adjust null list argument application
+		//	to function call without arguments.
+		// TODO: Improve performance of comparison?
+		if(n == 2 && Deref(++i).Value == ValueToken::Null)
+			con.erase(i);
+		Handler(term, ctx);
 	}
-	CatchThrow(ystdex::bad_any_cast& e, LoggedEvent(
-		ystdex::sfmt("Mismatched types ('%s', '%s') found.",
-		e.from(), e.to()), Warning))
-	// TODO: Use nest exceptions?
-	CatchThrow(std::exception& e, LoggedEvent(e.what(), Err))
+	// TODO: Unreduced form check.
+#if 0
+	if(n == 0)
+		YTraceDe(Warning, "Empty reduced form found.");
+	else
+		YTraceDe(Warning, "%zu term(s) not reduced found.", n);
+#endif
 }
 
 
-void
-CleanupEmptyTerms(TermNode::Container& con) ynothrow
+FunctionContextHandler
+FunctionFormHandler::Wrap(std::function<void(TNIter, size_t, TermNode&)> f)
 {
-	ystdex::erase_all_if(con, [](const TermNode& term) ynothrow{
-		return !term;
-	});
-}
-
-void
-RegisterForm(ContextNode& node, const string& name, FormHandler f, bool special)
-{
-	RegisterContextHandler(node, name,
-		ContextHandler([f](TermNode& term, const ContextNode&){
+	return [f](TermNode& term, const ContextNode&){
 		auto& con(term.GetContainerRef());
 		const auto size(con.size());
 
@@ -117,20 +98,19 @@ RegisterForm(ContextNode& node, const string& name, FormHandler f, bool special)
 		//	copied as the parameters, unless the terms are prevented to be
 		//	evaluated immediately by some special tags in reduction.
 		f(con.begin(), size - 1, term);
-	}, special));
+	};
 }
 
 
 ValueObject
-NPLContext::FetchValue(const ValueNode& ctx, const string& name)
+NPLContext::FetchValue(const ContextNode& ctx, const string& name)
 {
 	return ystdex::call_value_or<ValueObject>(
-		std::mem_fn(&ValueNode::Value),
-		LookupName(ctx, name));
+		std::mem_fn(&ValueNode::Value), LookupName(ctx, name));
 }
 
 observer_ptr<const ValueNode>
-NPLContext::LookupName(const ValueNode& ctx, const string& id)
+NPLContext::LookupName(const ContextNode& ctx, const string& id)
 {
 	return AccessNodePtr(ctx, id);
 }
@@ -140,7 +120,7 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 {
 	using ystdex::pvoid;
 #if NPL_TraceDepth
-	auto& depth(AccessChild<size_t>(ctx, "__depth"));
+	auto& depth(AccessChild<size_t>(ctx, DepthName));
 
 	YTraceDe(Informative, "Depth = %zu, context = %p, semantics = %p.", depth,
 		pvoid(&ctx), pvoid(&term));
@@ -158,7 +138,7 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 		// XXX: Continuations?
 	//	if(reducible)
 		//	k(term);
-		CleanupEmptyTerms(con);
+		YSLib::RemoveEmptyChildren(con);
 		// NOTE: Stop on got a normal form.
 		return reducible && !con.empty();
 	}, [&]() -> bool{
@@ -175,7 +155,7 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 			}
 			else
 			{
-				AccessChild<EvaluationPass>(ctx, "__$$")(term, ctx);
+				AccessChild<EvaluationPass>(ctx, ListTermName)(term, ctx);
 				// NOTE: List evaluation: call by value.
 				// TODO: Form evaluation: macro expansion, etc.
 				if(Reduce(*con.begin(), ctx))
@@ -259,7 +239,7 @@ NPLContext::ReduceArguments(TermNode::Container& con, ContextNode& ctx)
 		throw LoggedEvent("Invalid term to handle found.", Err);
 }
 
-ValueNode
+TermNode
 NPLContext::Perform(const string& unit)
 {
 	if(unit.empty())
@@ -268,14 +248,16 @@ NPLContext::Perform(const string& unit)
 	auto term(SContext::Analyze(Session(unit)));
 
 #if NPL_TraceDepth
-	Root["__depth"].Value = size_t();
+	Root[DepthName].Value = size_t();
 #endif
-	Root["__$$"].Value = ListTermPreprocess;
+	Root[ListTermName].Value = ListTermPreprocess;
 	Preprocess(term);
 	Reduce(term, Root);
 	// TODO: Merge result to 'Root'?
 	return term;
 }
+
+} // namespace A1;
 
 } // namespace NPL;
 
