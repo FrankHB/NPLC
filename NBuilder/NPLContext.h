@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1367
+\version r1377
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-02-25 11:20 +0800
+	2016-02-27 01:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -34,11 +34,6 @@
 
 namespace NPL
 {
-
-/// 674
-using YSLib::ValueObject;
-/// 674
-using YSLib::observer_ptr;
 
 namespace A1
 {
@@ -107,14 +102,6 @@ public:
 	EvaluationPass ListTermPreprocess;
 
 	NPLContext() = default;
-
-	/// 674
-	static ValueObject
-	FetchValue(const ContextNode&, const string&);
-
-	/// 674
-	static observer_ptr<const ValueNode>
-	LookupName(const ContextNode&, const string&);
 
 	/*!
 	\note 可能使参数中容器的迭代器失效。

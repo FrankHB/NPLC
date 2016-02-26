@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1678
+\version r1690
 \author FrankHB <frankhb1989@gmail.com>
-\since YSLib build 329 。
+\since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-02-25 11:19 +0800
+	2016-02-27 01:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -101,19 +101,6 @@ FunctionFormHandler::Wrap(std::function<void(TNIter, size_t, TermNode&)> f)
 	};
 }
 
-
-ValueObject
-NPLContext::FetchValue(const ContextNode& ctx, const string& name)
-{
-	return ystdex::call_value_or<ValueObject>(
-		std::mem_fn(&ValueNode::Value), LookupName(ctx, name));
-}
-
-observer_ptr<const ValueNode>
-NPLContext::LookupName(const ContextNode& ctx, const string& id)
-{
-	return AccessNodePtr(ctx, id);
-}
 
 bool
 NPLContext::Reduce(TermNode& term, ContextNode& ctx)
