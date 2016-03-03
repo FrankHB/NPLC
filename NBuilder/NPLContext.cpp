@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1692
+\version r1695
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-03-02 15:59 +0800
+	2016-03-03 23:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -234,11 +234,13 @@ NPLContext::Perform(const string& unit)
 		throw LoggedEvent("Empty token list found;", Alert);
 
 	auto term(SContext::Analyze(Session(unit)));
+	using namespace std::placeholders;
 
 #if NPL_TraceDepth
 	Root[DepthName].Value = size_t();
 #endif
-	Root[ListTermName].Value = ListTermPreprocess;
+	Root[ListTermName].Value
+		= EvaluationPasses(std::bind(std::ref(ListTermPreprocess), _1, _2));
 	Preprocess(term);
 	Reduce(term, Root);
 	// TODO: Merge result to 'Root'?
