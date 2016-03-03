@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r1952
+\version r1954
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2016-02-25 11:18 +0800
+	2016-03-02 15:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -70,7 +70,8 @@ TermNode
 TransformForSeperatorRecursive(const TermNode&, const ValueObject&,
 	const ValueObject&, const string& = {});
 
-void
+/// 675
+bool
 TransformTermForSeperator(TermNode&, const ValueObject&, const ValueObject&);
 
 

@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1377
+\version r1397
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-02-27 01:31 +0800
+	2016-03-02 19:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -37,6 +37,9 @@ namespace NPL
 
 namespace A1
 {
+
+/// 675
+using ystdex::optional;
 
 /// 674
 //@{
@@ -79,14 +82,26 @@ RegisterFunction(ContextNode& node, const string& name, _func f)
 }
 //@}
 
-/// 674
+/// 675
 //@{
+struct PassesCombiner
+{
+	template<typename _tIn>
+	bool
+	operator()(_tIn first, _tIn last) const
+	{
+		return ystdex::fast_any_of(first, last, ystdex::indirect<>());
+	}
+};
+
+
 template<typename... _tParams>
-using GPass = YSLib::GEvent<void(_tParams...)>;
+using GPasses = YSLib::GEvent<bool(_tParams...),
+	YSLib::GCombinerInvoker<bool, PassesCombiner>>;
 
-using TermPass = GPass<TermNode&>;
+using TermPasses = GPasses<TermNode&>;
 
-using EvaluationPass = GPass<TermNode&, ContextNode&>;
+using EvaluationPasses = GPasses<TermNode&, ContextNode&>;
 //@}
 
 
@@ -96,10 +111,10 @@ struct NPLContext
 public:
 	/// 664
 	ContextNode Root;
-	/// 673
-	TermPass Preprocess;
-	/// 673
-	EvaluationPass ListTermPreprocess;
+	/// 675
+	TermPasses Preprocess;
+	/// 675
+	EvaluationPasses ListTermPreprocess;
 
 	NPLContext() = default;
 
