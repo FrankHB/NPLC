@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1722
+\version r1761
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-03-03 23:53 +0800
+	2016-03-06 02:27 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -147,29 +147,8 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 				return Reduce(term, ctx);
 			}
 			else
-			{
 				// NOTE: List evaluation.
-				if(AccessChild<EvaluationPasses>(ctx, ListTermName)(term, ctx))
-					return true;
-				// TODO: Form evaluation: macro expansion, etc.
-				if(!con.empty())
-				{
-					const auto& fm(Deref(con.cbegin()));
-
-					if(const auto p_handler = AccessPtr<ContextHandler>(fm))
-						(*p_handler)(term, ctx);
-					else
-					{
-						const auto p(AccessPtr<string>(fm));
-
-						// TODO: Capture contextual information in error.
-						throw LoggedEvent(ystdex::sfmt("No matching form '%s'"
-							" with %zu argument(s) found.", p ? p->c_str()
-							: "#<unknown>", n), Err);
-					}
-				}
-				return {};
-			}
+				return AccessChild<EvaluationPasses>(ctx, ListTermName)(term, ctx);
 		}
 		else if(!term.Value)
 			// NOTE: Empty list.
@@ -243,13 +222,36 @@ NPLContext::Perform(const string& unit)
 #if NPL_TraceDepth
 	Root[DepthName].Value = size_t();
 #endif
-	ListTermPreprocess.Add([](TermNode& term, ContextNode& ctx){
+	Root[ListTermName].Value = EvaluationPasses();
+
+	auto& passes(AccessChild<EvaluationPasses>(Root, ListTermName));
+
+	passes += std::bind(std::ref(ListTermPreprocess), _1, _2);
+	passes += [](TermNode& term, ContextNode& ctx){
 		// NOTE: Quick strictness analysis, to call by value unconditionally for
 		//	first term only.
 		return Reduce(Deref(term.begin()), ctx);
-	}, 0);
-	Root[ListTermName].Value
-		= EvaluationPasses(std::bind(std::ref(ListTermPreprocess), _1, _2));
+	};
+	passes += [](TermNode& term, ContextNode& ctx){
+		// TODO: Form evaluation: macro expansion, etc.
+		if(!term.empty())
+		{
+			const auto& fm(Deref(ystdex::as_const(term).begin()));
+
+			if(const auto p_handler = AccessPtr<ContextHandler>(fm))
+				(*p_handler)(term, ctx);
+			else
+			{
+				const auto p(AccessPtr<string>(fm));
+
+				// TODO: Capture contextual information in error.
+				throw LoggedEvent(ystdex::sfmt("No matching form '%s'"
+					" with %zu argument(s) found.", p ? p->c_str()
+					: "#<unknown>", term.size()), Err);
+			}
+		}
+		return false;
+	};
 	Preprocess(term);
 	Reduce(term, Root);
 	// TODO: Merge result to 'Root'?
