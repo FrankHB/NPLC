@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1761
+\version r1786
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-03-06 02:27 +0800
+	2016-03-06 02:42 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -34,11 +34,13 @@
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond;
 
-namespace NPL
-{
-
 /// 674
 using namespace YSLib;
+/// 676
+using namespace std::placeholders;
+
+namespace NPL
+{
 
 namespace A1
 {
@@ -109,6 +111,18 @@ FunctionFormHandler::Wrap(std::function<void(TNIter, size_t, TermNode&)> f)
 
 
 bool
+DetectReducible(TermNode::Container& con, bool reducible)
+{
+	// TODO: Use explicit continuation parameters?
+//	if(reducible)
+	//	k(term);
+	YSLib::RemoveEmptyChildren(con);
+	// NOTE: Only stopping on getting a normal form.
+	return reducible && !con.empty();
+}
+
+
+bool
 NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 {
 	using ystdex::pvoid;
@@ -126,15 +140,8 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 	auto& con(term.GetContainerRef());
 
 	// NOTE: Rewriting loop until the normal form is got.
-	return ystdex::retry_on_cond([&](bool reducible) ynothrow{
-		// TODO: Simplify.
-		// XXX: Continuations?
-	//	if(reducible)
-		//	k(term);
-		YSLib::RemoveEmptyChildren(con);
-		// NOTE: Stop on got a normal form.
-		return reducible && !con.empty();
-	}, [&]() -> bool{
+	return ystdex::retry_on_cond(std::bind(DetectReducible, std::ref(con), _1),
+		[&]() -> bool{
 		if(!con.empty())
 		{
 			auto n(con.size());
@@ -217,7 +224,6 @@ NPLContext::Perform(const string& unit)
 		throw LoggedEvent("Empty token list found;", Alert);
 
 	auto term(SContext::Analyze(Session(unit)));
-	using namespace std::placeholders;
 
 #if NPL_TraceDepth
 	Root[DepthName].Value = size_t();
