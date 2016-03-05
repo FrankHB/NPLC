@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1786
+\version r1799
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-03-06 02:42 +0800
+	2016-03-06 02:46 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -111,14 +111,14 @@ FunctionFormHandler::Wrap(std::function<void(TNIter, size_t, TermNode&)> f)
 
 
 bool
-DetectReducible(TermNode::Container& con, bool reducible)
+DetectReducible(TermNode& term, bool reducible)
 {
 	// TODO: Use explicit continuation parameters?
 //	if(reducible)
 	//	k(term);
-	YSLib::RemoveEmptyChildren(con);
+	YSLib::RemoveEmptyChildren(term.GetContainerRef());
 	// NOTE: Only stopping on getting a normal form.
-	return reducible && !con.empty();
+	return reducible && !term.empty();
 }
 
 
@@ -137,25 +137,21 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 		--depth;
 	}));
 #endif
-	auto& con(term.GetContainerRef());
-
 	// NOTE: Rewriting loop until the normal form is got.
-	return ystdex::retry_on_cond(std::bind(DetectReducible, std::ref(con), _1),
+	return ystdex::retry_on_cond(std::bind(DetectReducible, std::ref(term), _1),
 		[&]() -> bool{
-		if(!con.empty())
+		if(!term.empty())
 		{
-			auto n(con.size());
-
-			YAssert(n != 0, "Invalid node found.");
-			if(n == 1)
-			{
-				// NOTE: List with single element shall be reduced to its value.
-				LiftTerm(term, Deref(con.begin()));
-				return Reduce(term, ctx);
-			}
-			else
+			YAssert(term.size() != 0, "Invalid node found.");
+			if(term.size() != 1)
 				// NOTE: List evaluation.
 				return AccessChild<EvaluationPasses>(ctx, ListTermName)(term, ctx);
+			else
+			{
+				// NOTE: List with single element shall be reduced to its value.
+				LiftTerm(term, Deref(term.begin()));
+				return Reduce(term, ctx);
+			}
 		}
 		else if(!term.Value)
 			// NOTE: Empty list.
