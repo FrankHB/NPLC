@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1799
+\version r1849
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-03-06 02:46 +0800
+	2016-03-06 18:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -50,6 +50,8 @@ namespace
 {
 
 yconstexpr auto ListTermName("__$$");
+/// 675
+yconstexpr auto LeafTermName("__$$@");
 #if NPL_TraceDepth
 yconstexpr auto DepthName("__depth");
 #endif
@@ -122,6 +124,10 @@ DetectReducible(TermNode& term, bool reducible)
 }
 
 
+NPLContext::NPLContext()
+	: Root(SetupRoot(std::bind(std::ref(ListTermPreprocess), _1, _2)))
+{}
+
 bool
 NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 {
@@ -159,7 +165,79 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 		else if(AccessPtr<ValueToken>(term))
 			// TODO: Handle special value token.
 			;
-		else if(const auto p = AccessPtr<string>(term))
+		else
+			return AccessChild<EvaluationPasses>(ctx, LeafTermName)(term, ctx);
+		// NOTE: Exited loop has produced normal form by default.
+		return {};
+	});
+}
+
+void
+NPLContext::ReduceArguments(TermNode::Container& con, ContextNode& ctx)
+{
+	if(con.size() > 1)
+		// NOTE: The order of evaluation is unspecified by the language
+		//	specification. However here it can only be either left-to-right
+		//	or right-to-left unless the separators has been predicted.
+		std::for_each(std::next(con.begin()), con.end(),
+			[&](decltype(*con.end())& sub_term){
+			NPLContext::Reduce(sub_term, ctx);
+		});
+	else
+		throw LoggedEvent("Invalid term to handle found.", Err);
+}
+
+TermNode
+NPLContext::Perform(const string& unit)
+{
+	if(unit.empty())
+		throw LoggedEvent("Empty token list found;", Alert);
+
+	auto term(SContext::Analyze(Session(unit)));
+
+	Preprocess(term);
+	Reduce(term, Root);
+	// TODO: Merge result to 'Root'?
+	return term;
+}
+
+ContextNode
+NPLContext::SetupRoot(EvaluationPasses passes)
+{
+	ContextNode root;
+
+#if NPL_TraceDepth
+	root[DepthName].Value = size_t();
+#endif
+	passes += [](TermNode& term, ContextNode& ctx){
+		// NOTE: Quick strictness analysis, to call by value unconditionally for
+		//	first term only.
+		return Reduce(Deref(term.begin()), ctx);
+	};
+	passes += [](TermNode& term, ContextNode& ctx){
+		// TODO: Form evaluation: macro expansion, etc.
+		if(!term.empty())
+		{
+			const auto& fm(Deref(ystdex::as_const(term).begin()));
+
+			if(const auto p_handler = AccessPtr<ContextHandler>(fm))
+				(*p_handler)(term, ctx);
+			else
+			{
+				const auto p(AccessPtr<string>(fm));
+
+				// TODO: Capture contextual information in error.
+				throw LoggedEvent(ystdex::sfmt("No matching form '%s'"
+					" with %zu argument(s) found.", p ? p->c_str()
+					: "#<unknown>", term.size()), Err);
+			}
+		}
+		return false;
+	};
+	root[ListTermName].Value = std::move(passes);
+	root[LeafTermName].Value
+		= EvaluationPasses([](TermNode& term, ContextNode& ctx) -> bool{
+		if(const auto p = AccessPtr<string>(term))
 		{
 			// NOTE: String node of identifier.
 			auto& id(*p);
@@ -191,73 +269,10 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 			}
 			// XXX: Empty token is ignored.
 			// XXX: Remained reducible?
-			return {};
 		}
-		// NOTE: Exited loop has produced normal form by default.
 		return {};
 	});
-}
-
-void
-NPLContext::ReduceArguments(TermNode::Container& con, ContextNode& ctx)
-{
-	if(con.size() > 1)
-		// NOTE: The order of evaluation is unspecified by the language
-		//	specification. However here it can only be either left-to-right
-		//	or right-to-left unless the separators has been predicted.
-		std::for_each(std::next(con.begin()), con.end(),
-			[&](decltype(*con.end())& sub_term){
-			NPLContext::Reduce(sub_term, ctx);
-		});
-	else
-		throw LoggedEvent("Invalid term to handle found.", Err);
-}
-
-TermNode
-NPLContext::Perform(const string& unit)
-{
-	if(unit.empty())
-		throw LoggedEvent("Empty token list found;", Alert);
-
-	auto term(SContext::Analyze(Session(unit)));
-
-#if NPL_TraceDepth
-	Root[DepthName].Value = size_t();
-#endif
-	Root[ListTermName].Value = EvaluationPasses();
-
-	auto& passes(AccessChild<EvaluationPasses>(Root, ListTermName));
-
-	passes += std::bind(std::ref(ListTermPreprocess), _1, _2);
-	passes += [](TermNode& term, ContextNode& ctx){
-		// NOTE: Quick strictness analysis, to call by value unconditionally for
-		//	first term only.
-		return Reduce(Deref(term.begin()), ctx);
-	};
-	passes += [](TermNode& term, ContextNode& ctx){
-		// TODO: Form evaluation: macro expansion, etc.
-		if(!term.empty())
-		{
-			const auto& fm(Deref(ystdex::as_const(term).begin()));
-
-			if(const auto p_handler = AccessPtr<ContextHandler>(fm))
-				(*p_handler)(term, ctx);
-			else
-			{
-				const auto p(AccessPtr<string>(fm));
-
-				// TODO: Capture contextual information in error.
-				throw LoggedEvent(ystdex::sfmt("No matching form '%s'"
-					" with %zu argument(s) found.", p ? p->c_str()
-					: "#<unknown>", term.size()), Err);
-			}
-		}
-		return false;
-	};
-	Preprocess(term);
-	Reduce(term, Root);
-	// TODO: Merge result to 'Root'?
-	return term;
+	return root;
 }
 
 } // namespace A1;
