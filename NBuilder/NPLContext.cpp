@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1849
+\version r1886
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-03-06 18:08 +0800
+	2016-03-08 10:27 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -31,7 +31,7 @@
 #include <iostream>
 #include YFM_NPL_NPLA1
 #include <ystdex/cast.hpp> // for ystdex::pvoid;
-#include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
+#include <ystdex/scope_guard.hpp> // for ystdex::share_guard;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond;
 
 /// 674
@@ -52,6 +52,8 @@ namespace
 yconstexpr auto ListTermName("__$$");
 /// 675
 yconstexpr auto LeafTermName("__$$@");
+/// 676
+yconstexpr auto GuardName("__$!");
 #if NPL_TraceDepth
 yconstexpr auto DepthName("__depth");
 #endif
@@ -112,18 +114,6 @@ FunctionFormHandler::Wrap(std::function<void(TNIter, size_t, TermNode&)> f)
 }
 
 
-bool
-DetectReducible(TermNode& term, bool reducible)
-{
-	// TODO: Use explicit continuation parameters?
-//	if(reducible)
-	//	k(term);
-	YSLib::RemoveEmptyChildren(term.GetContainerRef());
-	// NOTE: Only stopping on getting a normal form.
-	return reducible && !term.empty();
-}
-
-
 NPLContext::NPLContext()
 	: Root(SetupRoot(std::bind(std::ref(ListTermPreprocess), _1, _2)))
 {}
@@ -131,18 +121,8 @@ NPLContext::NPLContext()
 bool
 NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 {
-	using ystdex::pvoid;
-#if NPL_TraceDepth
-	auto& depth(AccessChild<size_t>(ctx, DepthName));
+	const auto gd(AccessChild<GuardPasses>(ctx, GuardName)(term, ctx));
 
-	YTraceDe(Informative, "Depth = %zu, context = %p, semantics = %p.", depth,
-		pvoid(&ctx), pvoid(&term));
-	++depth;
-
-	const auto gd(ystdex::make_guard([&]() ynothrow{
-		--depth;
-	}));
-#endif
 	// NOTE: Rewriting loop until the normal form is got.
 	return ystdex::retry_on_cond(std::bind(DetectReducible, std::ref(term), _1),
 		[&]() -> bool{
@@ -206,8 +186,22 @@ NPLContext::SetupRoot(EvaluationPasses passes)
 {
 	ContextNode root;
 
+	root[GuardName].Value = GuardPasses();
 #if NPL_TraceDepth
-	root[DepthName].Value = size_t();
+	yunseq(
+	root[DepthName].Value = size_t(),
+	root[GuardName].Value = GuardPasses([](TermNode& term, ContextNode& ctx){
+		using ystdex::pvoid;
+		auto& depth(AccessChild<size_t>(ctx, DepthName));
+
+		YTraceDe(Informative, "Depth = %zu, context = %p, semantics = %p.",
+			depth, pvoid(&ctx), pvoid(&term));
+		++depth;
+		return ystdex::share_guard([&](void*) ynothrow{
+			--depth;
+		});
+	})
+	);
 #endif
 	passes += [](TermNode& term, ContextNode& ctx){
 		// NOTE: Quick strictness analysis, to call by value unconditionally for

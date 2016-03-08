@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1406
+\version r1426
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-03-06 18:08 +0800
+	2016-03-08 10:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -81,33 +81,6 @@ RegisterFunction(ContextNode& node, const string& name, _func f)
 	RegisterContextHandler(node, name, FunctionFormHandler(f));
 }
 //@}
-
-/// 675
-//@{
-struct PassesCombiner
-{
-	template<typename _tIn>
-	bool
-	operator()(_tIn first, _tIn last) const
-	{
-		return ystdex::fast_any_of(first, last, ystdex::indirect<>());
-	}
-};
-
-
-template<typename... _tParams>
-using GPasses = YSLib::GEvent<bool(_tParams...),
-	YSLib::GCombinerInvoker<bool, PassesCombiner>>;
-
-using TermPasses = GPasses<TermNode&>;
-
-using EvaluationPasses = GPasses<TermNode&, ContextNode&>;
-//@}
-
-
-/// 676
-bool
-DetectReducible(TermNode&, bool);
 
 
 /// 306
