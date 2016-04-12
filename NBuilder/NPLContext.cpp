@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1886
+\version r1922
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-03-08 10:27 +0800
+	2016-04-12 22:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -49,20 +49,31 @@ namespace A1
 namespace
 {
 
-yconstexpr auto ListTermName("__$$");
-/// 675
-yconstexpr auto LeafTermName("__$$@");
 /// 676
-yconstexpr auto GuardName("__$!");
+//@{
 #if NPL_TraceDepth
-yconstexpr auto DepthName("__depth");
-#endif
-
 void
-LiftTerm(TermNode& term, TermNode& tm)
+SetupTraceDepth(ContextNode& ctx)
 {
-	TermNode(std::move(tm)).SwapContent(term);
+	static yconstexpr const auto DepthName("__depth");
+
+	yunseq(
+	ctx.Place<size_t>(DepthName),
+	AccessGuardPassesRef(ctx) = [](TermNode& term, ContextNode& ctx){
+		using ystdex::pvoid;
+		auto& depth(AccessChild<size_t>(ctx, DepthName));
+
+		YTraceDe(Informative, "Depth = %zu, context = %p, semantics = %p.",
+			depth, pvoid(&ctx), pvoid(&term));
+		++depth;
+		return ystdex::share_guard([&](void*) ynothrow{
+			--depth;
+		});
+	}
+	);
 }
+#endif
+//@}
 
 } // unnamed namespace;
 
@@ -121,7 +132,7 @@ NPLContext::NPLContext()
 bool
 NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 {
-	const auto gd(AccessChild<GuardPasses>(ctx, GuardName)(term, ctx));
+	const auto gd(EvaluateGuard(term, ctx));
 
 	// NOTE: Rewriting loop until the normal form is got.
 	return ystdex::retry_on_cond(std::bind(DetectReducible, std::ref(term), _1),
@@ -131,7 +142,7 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 			YAssert(term.size() != 0, "Invalid node found.");
 			if(term.size() != 1)
 				// NOTE: List evaluation.
-				return AccessChild<EvaluationPasses>(ctx, ListTermName)(term, ctx);
+				return EvaluateListPasses(term, ctx);
 			else
 			{
 				// NOTE: List with single element shall be reduced to its value.
@@ -146,7 +157,7 @@ NPLContext::Reduce(TermNode& term, ContextNode& ctx)
 			// TODO: Handle special value token.
 			;
 		else
-			return AccessChild<EvaluationPasses>(ctx, LeafTermName)(term, ctx);
+			return EvaluateLeafPasses(term, ctx);
 		// NOTE: Exited loop has produced normal form by default.
 		return {};
 	});
@@ -185,23 +196,8 @@ ContextNode
 NPLContext::SetupRoot(EvaluationPasses passes)
 {
 	ContextNode root;
-
-	root[GuardName].Value = GuardPasses();
 #if NPL_TraceDepth
-	yunseq(
-	root[DepthName].Value = size_t(),
-	root[GuardName].Value = GuardPasses([](TermNode& term, ContextNode& ctx){
-		using ystdex::pvoid;
-		auto& depth(AccessChild<size_t>(ctx, DepthName));
-
-		YTraceDe(Informative, "Depth = %zu, context = %p, semantics = %p.",
-			depth, pvoid(&ctx), pvoid(&term));
-		++depth;
-		return ystdex::share_guard([&](void*) ynothrow{
-			--depth;
-		});
-	})
-	);
+	SetupTraceDepth(root);
 #endif
 	passes += [](TermNode& term, ContextNode& ctx){
 		// NOTE: Quick strictness analysis, to call by value unconditionally for
@@ -228,9 +224,8 @@ NPLContext::SetupRoot(EvaluationPasses passes)
 		}
 		return false;
 	};
-	root[ListTermName].Value = std::move(passes);
-	root[LeafTermName].Value
-		= EvaluationPasses([](TermNode& term, ContextNode& ctx) -> bool{
+	AccessListPassesRef(root) = std::move(passes);
+	AccessLeafPassesRef(root) = [](TermNode& term, ContextNode& ctx) -> bool{
 		if(const auto p = AccessPtr<string>(term))
 		{
 			// NOTE: String node of identifier.
@@ -265,7 +260,7 @@ NPLContext::SetupRoot(EvaluationPasses passes)
 			// XXX: Remained reducible?
 		}
 		return {};
-	});
+	};
 	return root;
 }
 
