@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r1922
+\version r2000
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-04-12 22:00 +0800
+	2016-04-16 11:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -30,9 +30,6 @@
 #include <ystdex/container.hpp>
 #include <iostream>
 #include YFM_NPL_NPLA1
-#include <ystdex/cast.hpp> // for ystdex::pvoid;
-#include <ystdex/scope_guard.hpp> // for ystdex::share_guard;
-#include <ystdex/functional.hpp> // for ystdex::retry_on_cond;
 
 /// 674
 using namespace YSLib;
@@ -45,45 +42,13 @@ namespace NPL
 namespace A1
 {
 
-/// 674
-namespace
-{
-
-/// 676
-//@{
-#if NPL_TraceDepth
-void
-SetupTraceDepth(ContextNode& ctx)
-{
-	static yconstexpr const auto DepthName("__depth");
-
-	yunseq(
-	ctx.Place<size_t>(DepthName),
-	AccessGuardPassesRef(ctx) = [](TermNode& term, ContextNode& ctx){
-		using ystdex::pvoid;
-		auto& depth(AccessChild<size_t>(ctx, DepthName));
-
-		YTraceDe(Informative, "Depth = %zu, context = %p, semantics = %p.",
-			depth, pvoid(&ctx), pvoid(&term));
-		++depth;
-		return ystdex::share_guard([&](void*) ynothrow{
-			--depth;
-		});
-	}
-	);
-}
-#endif
-//@}
-
-} // unnamed namespace;
-
 void
 FunctionContextHandler::operator()(TermNode& term, ContextNode& ctx) const
 {
 	auto& con(term.GetContainerRef());
 
 	// NOTE: Arguments evaluation: applicative order.
-	NPLContext::ReduceArguments(con, ctx);
+	ReduceArguments(con, ctx);
 
 	const auto n(con.size());
 
@@ -129,55 +94,6 @@ NPLContext::NPLContext()
 	: Root(SetupRoot(std::bind(std::ref(ListTermPreprocess), _1, _2)))
 {}
 
-bool
-NPLContext::Reduce(TermNode& term, ContextNode& ctx)
-{
-	const auto gd(EvaluateGuard(term, ctx));
-
-	// NOTE: Rewriting loop until the normal form is got.
-	return ystdex::retry_on_cond(std::bind(DetectReducible, std::ref(term), _1),
-		[&]() -> bool{
-		if(!term.empty())
-		{
-			YAssert(term.size() != 0, "Invalid node found.");
-			if(term.size() != 1)
-				// NOTE: List evaluation.
-				return EvaluateListPasses(term, ctx);
-			else
-			{
-				// NOTE: List with single element shall be reduced to its value.
-				LiftTerm(term, Deref(term.begin()));
-				return Reduce(term, ctx);
-			}
-		}
-		else if(!term.Value)
-			// NOTE: Empty list.
-			term.Value = ValueToken::Null;
-		else if(AccessPtr<ValueToken>(term))
-			// TODO: Handle special value token.
-			;
-		else
-			return EvaluateLeafPasses(term, ctx);
-		// NOTE: Exited loop has produced normal form by default.
-		return {};
-	});
-}
-
-void
-NPLContext::ReduceArguments(TermNode::Container& con, ContextNode& ctx)
-{
-	if(con.size() > 1)
-		// NOTE: The order of evaluation is unspecified by the language
-		//	specification. However here it can only be either left-to-right
-		//	or right-to-left unless the separators has been predicted.
-		std::for_each(std::next(con.begin()), con.end(),
-			[&](decltype(*con.end())& sub_term){
-			NPLContext::Reduce(sub_term, ctx);
-		});
-	else
-		throw LoggedEvent("Invalid term to handle found.", Err);
-}
-
 TermNode
 NPLContext::Perform(const string& unit)
 {
@@ -188,7 +104,6 @@ NPLContext::Perform(const string& unit)
 
 	Preprocess(term);
 	Reduce(term, Root);
-	// TODO: Merge result to 'Root'?
 	return term;
 }
 

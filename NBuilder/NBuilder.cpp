@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4884
+\version r4888
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-03-02 15:57 +0800
+	2016-04-15 03:29 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -75,7 +75,7 @@ ReduceTail(TermNode& term, ContextNode& ctx, TNIter i)
 	auto& con(term.GetContainerRef());
 
 	con.erase(con.begin(), i);
-	NPLContext::Reduce(term, ctx);
+	Reduce(term, ctx);
 }
 
 void
@@ -83,7 +83,7 @@ RemoveHeadAndReduceAll(TermNode& term, ContextNode& ctx)
 {
 	RemoveHead(term.GetContainerRef());
 	std::for_each(term.begin(), term.end(),
-		std::bind(NPLContext::Reduce, std::placeholders::_1, std::ref(ctx)));
+		std::bind(Reduce, std::placeholders::_1, std::ref(ctx)));
 }
 
 void
@@ -310,7 +310,7 @@ LoadFunctions(NPLContext& context)
 		{
 			auto i(con.begin());
 			auto& plist_con((++i)->GetContainerRef());
-			// TODO: Blocked. Use ISO C++14 lambda initializers to reduce
+			// TODO: Blocked. Use C++14 lambda initializers to reduce
 			//	initialization cost by directly moving.
 			const auto p_params(make_shared<vector<string>>());
 
@@ -363,7 +363,7 @@ LoadFunctions(NPLContext& context)
 					// TODO: Test for normal form?
 					// XXX: Term reused.
 					// FIXME: Return value?
-					NPLContext::Reduce(app_term, app_ctx);
+					A1::Reduce(app_term, app_ctx);
 				//	app_term.GetContainerRef().clear();
 				}
 				else
