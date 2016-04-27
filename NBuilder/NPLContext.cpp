@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2000
+\version r2006
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-04-16 11:45 +0800
+	2016-04-27 15:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -114,11 +114,7 @@ NPLContext::SetupRoot(EvaluationPasses passes)
 #if NPL_TraceDepth
 	SetupTraceDepth(root);
 #endif
-	passes += [](TermNode& term, ContextNode& ctx){
-		// NOTE: Quick strictness analysis, to call by value unconditionally for
-		//	first term only.
-		return Reduce(Deref(term.begin()), ctx);
-	};
+	passes += ReduceFirst,
 	passes += [](TermNode& term, ContextNode& ctx){
 		// TODO: Form evaluation: macro expansion, etc.
 		if(!term.empty())
