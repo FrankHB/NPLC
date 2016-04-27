@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r244
+\version r247
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-02-25 09:13 +0800
+	2016-04-27 15:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,7 +29,8 @@
 #include <Helper/YModules.h>
 #include <iostream>
 #include YFM_YCLib_YCommon
-#include YFM_Helper_Initialization
+#include YFM_Helper_Environment
+#include YFM_YSLib_Service_TextFile
 
 using namespace YSLib;
 
@@ -100,7 +101,7 @@ Interpreter::Interpreter(std::function<void(NPLContext&)> loader)
 
 	wc.UpdateForeColor(TitleColor);
 	cout << title << endl << "Initializing...";
-	YSLib::InitializeInstalled();
+	p_env.reset(new Environment());
 	loader(context);
 	cout << "NPLC initialization OK!" << endl << endl;
 	wc.UpdateForeColor(InfoColor);
