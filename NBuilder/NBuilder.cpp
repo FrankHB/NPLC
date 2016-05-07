@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4889
+\version r4891
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-04-27 15:57 +0800
+	2016-05-07 18:52 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -336,6 +336,8 @@ LoadFunctions(NPLContext& context)
 				auto app_ctx(Deref(p_ctx));
 				const auto n_terms(app_term.size());
 
+				// NOTE: Arguments evaluation: applicative order.
+				ReduceArguments(app_term.GetContainerRef(), app_ctx);
 				YTraceDe(Debug, "Lambda called, with %ld shared context(s),"
 					" %zu parameter(s).", p_ctx.use_count(), n_params);
 				if(n_terms == 0)
