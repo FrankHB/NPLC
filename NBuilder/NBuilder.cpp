@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4891
+\version r4894
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-05-07 18:52 +0800
+	2016-05-08 03:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -105,12 +105,12 @@ TransformForSeperator(const TermNode& term, const ValueObject& pfx,
 
 	if(!term.empty())
 	{
-		res += AsNode(MakeIndex(res), pfx);
+		res += AsIndexNode(res, pfx);
 		ystdex::split(term.begin(), term.end(),
 			[&](const TermNode& node) -> bool{
 			return node.Value == delim;
 		}, [&](TNCIter b, TNCIter e){
-			auto child(AsNode(MakeIndex(res)));
+			auto child(AsIndexNode(res));
 
 			while(b != e)
 			{
@@ -131,7 +131,7 @@ TransformForSeperatorRecursive(const TermNode& term, const ValueObject& pfx,
 
 	if(!term.empty())
 	{
-		res += AsNode(MakeIndex(res), pfx);
+		res += AsIndexNode(res, pfx);
 		ystdex::split(term.begin(), term.end(),
 			[&](const TermNode& node) -> bool{
 			return node.Value == delim;
