@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4894
+\version r4906
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-05-08 03:36 +0800
+	2016-05-08 17:37 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -106,10 +106,8 @@ TransformForSeperator(const TermNode& term, const ValueObject& pfx,
 	if(!term.empty())
 	{
 		res += AsIndexNode(res, pfx);
-		ystdex::split(term.begin(), term.end(),
-			[&](const TermNode& node) -> bool{
-			return node.Value == delim;
-		}, [&](TNCIter b, TNCIter e){
+		ystdex::split(term.begin(), term.end(), std::bind(HasValue,
+			std::placeholders::_1, std::ref(delim)), [&](TNCIter b, TNCIter e){
 			auto child(AsIndexNode(res));
 
 			while(b != e)
@@ -132,10 +130,8 @@ TransformForSeperatorRecursive(const TermNode& term, const ValueObject& pfx,
 	if(!term.empty())
 	{
 		res += AsIndexNode(res, pfx);
-		ystdex::split(term.begin(), term.end(),
-			[&](const TermNode& node) -> bool{
-			return node.Value == delim;
-		}, [&](TNCIter b, TNCIter e){
+		ystdex::split(term.begin(), term.end(), std::bind(HasValue,
+			std::placeholders::_1, std::ref(delim)), [&](TNCIter b, TNCIter e){
 			while(b != e)
 				res += TransformForSeperatorRecursive(*b++, pfx, delim,
 					MakeIndex(res));
@@ -148,11 +144,8 @@ bool
 TransformTermForSeperator(TermNode& term, const ValueObject& pfx,
 	const ValueObject& delim)
 {
-	using ystdex::get_value;
-
-	if(std::find_if(term.begin(), term.end(), [&](const TermNode& node){
-		return node.Value == delim;
-	}) != term.end())
+	if(std::find_if(term.begin(), term.end(), std::bind(HasValue,
+		std::placeholders::_1, std::ref(delim))) != term.end())
 		term = TransformForSeperator(term, pfx, delim);
 	return {};
 }
