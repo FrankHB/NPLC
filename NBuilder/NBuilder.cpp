@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4912
+\version r4921
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-05-09 13:49 +0800
+	2016-05-09 14:19 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -207,8 +207,8 @@ LoadFunctions(NPLContext& context)
 		const auto n(term.size() - 1);
 
 		if(n != 1)
-			throw LoggedEvent(ystdex::sfmt("Syntax error in '$quote1': expected"
-				" 1 argument, received %zu.", n), Err);
+			throw InvalidSyntax(ystdex::sfmt("Syntax error in '$quote1': expected"
+				" 1 argument, received %zu.", n));
 	}));
 	RegisterContextHandler(root, "$define",
 		FormContextHandler([](TermNode& term, ContextNode& ctx){
@@ -219,8 +219,8 @@ LoadFunctions(NPLContext& context)
 		const bool mod(ExtractModifier(con));
 
 		if(con.empty())
-			throw LoggedEvent(ystdex::sfmt("Syntax error in definition,"
-				" no arguments are found."), Err);
+			throw InvalidSyntax(ystdex::sfmt(
+				"Syntax error in definition, no arguments are found."));
 
 		auto i(con.begin());
 
@@ -264,8 +264,8 @@ LoadFunctions(NPLContext& context)
 
 		RemoveHead(con);
 		if(con.empty())
-			throw LoggedEvent(ystdex::sfmt("Syntax error in definition,"
-				" no arguments are found."), Err);
+			throw InvalidSyntax(ystdex::sfmt(
+				"Syntax error in definition, no arguments are found."));
 
 		auto i(con.begin());
 
@@ -360,9 +360,8 @@ LoadFunctions(NPLContext& context)
 			con.clear();
 		}
 		else
-			// TODO: Use proper exception type for syntax error.
-			throw LoggedEvent(ystdex::sfmt(
-				"Syntax error in lambda abstraction."), Err);
+			throw InvalidSyntax(
+				ystdex::sfmt("Syntax error in lambda abstraction."));
 	}));
 	// NOTE: Examples.
 	RegisterFunction(root, "+", [](TNIter i, size_t n,
