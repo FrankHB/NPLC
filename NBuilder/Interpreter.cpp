@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r247
+\version r259
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-04-27 15:57 +0800
+	2016-05-09 13:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -53,19 +53,12 @@ namespace
 /// 520
 using namespace platform_ex;
 
-#if 0
-void
-PrintError(WConsole& wc, const char* s)
+/// 691
+YB_NONNULL(3) void
+PrintError(WConsole& wc, const LoggedEvent& e, const char* name = "Error")
 {
 	wc.UpdateForeColor(ErrorColor);
-	std::cerr << s << std::endl;
-}
-#endif
-void
-PrintError(WConsole& wc, const LoggedEvent& e)
-{
-	wc.UpdateForeColor(ErrorColor);
-	std::cerr << "Error<" << unsigned(e.GetLevel()) << ">: "
+	std::cerr << name << "<" << unsigned(e.GetLevel()) << ">: "
 		<< e.what() << std::endl;
 }
 
@@ -162,6 +155,7 @@ Interpreter::Process()
 		wc.UpdateForeColor(SignalColor);
 		HandleSignal(e);
 	}
+	CatchExpr(NPLException& e, PrintError(wc, e, "NPLException"))
 	catch(LoggedEvent& e)
 	{
 		const auto l(e.GetLevel());
