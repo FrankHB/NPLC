@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4906
+\version r4912
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-05-08 17:37 +0800
+	2016-05-09 13:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -42,14 +42,6 @@ namespace NPL
 
 namespace A1
 {
-
-void
-ThrowArityMismatch(size_t expected, size_t received)
-{
-	throw LoggedEvent(ystdex::sfmt("Arity mismatch:"
-		" expected %zu, received %zu.", expected, received), Err);
-}
-
 
 bool
 ExtractModifier(TermNode::Container& con, const ValueObject& mod)
