@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2007
+\version r2012
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-05-07 18:57 +0800
+	2016-05-09 15:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -98,7 +98,7 @@ TermNode
 NPLContext::Perform(const string& unit)
 {
 	if(unit.empty())
-		throw LoggedEvent("Empty token list found;", Alert);
+		throw LoggedEvent("Empty token list found.", Alert);
 
 	auto term(SContext::Analyze(Session(unit)));
 
@@ -128,9 +128,9 @@ NPLContext::SetupRoot(EvaluationPasses passes)
 				const auto p(AccessPtr<string>(fm));
 
 				// TODO: Capture contextual information in error.
-				throw LoggedEvent(ystdex::sfmt("No matching form '%s'"
+				throw ListReductionFailure(ystdex::sfmt("No matching form '%s'"
 					" with %zu argument(s) found.", p ? p->c_str()
-					: "#<unknown>", term.size()), Err);
+					: "#<unknown>", term.size()));
 			}
 		}
 		return false;
@@ -163,8 +163,8 @@ NPLContext::SetupRoot(EvaluationPasses passes)
 							return (*p_handler)(ctx);
 					}
 					else
-						throw LoggedEvent(ystdex::sfmt("Undeclared identifier"
-							" '%s' found", id.c_str()), Err);
+						throw UndeclaredIdentifier(ystdex::sfmt(
+							"Undeclared identifier '%s' found", id.c_str()));
 				}
 			}
 			// XXX: Empty token is ignored.
