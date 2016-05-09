@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r259
+\version r261
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-05-09 13:43 +0800
+	2016-05-09 15:47 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -58,8 +58,8 @@ YB_NONNULL(3) void
 PrintError(WConsole& wc, const LoggedEvent& e, const char* name = "Error")
 {
 	wc.UpdateForeColor(ErrorColor);
-	std::cerr << name << "<" << unsigned(e.GetLevel()) << ">: "
-		<< e.what() << std::endl;
+	std::cerr << name << "[" << typeid(e).name() << "]" << "<"
+		<< unsigned(e.GetLevel()) << ">: " << e.what() << std::endl;
 }
 
 } // unnamed namespace;
