@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4925
+\version r4931
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-05-09 15:49 +0800
+	2016-05-13 18:33 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -387,16 +387,16 @@ LoadFunctions(NPLContext& context)
 	});
 	RegisterFunction(root, "/", [](TNIter i, size_t n, TermNode& term){
 		DoIntegerBinaryArithmetics([](int e1, int e2){
-			if(e2 == 0)
-				throw LoggedEvent("Runtime error: divided by zero.", Err);
-			return e1 / e2;
+			if(e2 != 0)
+				return e1 / e2;
+			throw std::domain_error("Runtime error: divided by zero.");
 		}, i, n, term);
 	});
 	RegisterFunction(root, "%", [](TNIter i, size_t n, TermNode& term){
 		DoIntegerBinaryArithmetics([](int e1, int e2){
-			if(e2 == 0)
-				throw LoggedEvent("Runtime error: divided by zero.", Err);
-			return e1 % e2;
+			if(e2 != 0)
+				return e1 % e2;
+			throw std::domain_error("Runtime error: divided by zero.");
 		}, i, n, term);
 	});
 	RegisterFunction(root, "system", [](TNIter i, size_t n, TermNode& term){
