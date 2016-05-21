@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r261
+\version r264
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-05-09 15:47 +0800
+	2016-05-21 19:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -86,7 +86,8 @@ LogTree(const ValueNode& node, Logger::Level lv)
 }
 
 
-Interpreter::Interpreter(std::function<void(NPLContext&)> loader)
+Interpreter::Interpreter(Application& app,
+	std::function<void(NPLContext&)> loader)
 	: wc(), err_threshold(RecordLevel(0x10)), line(), context()
 {
 	using namespace std;
@@ -94,7 +95,7 @@ Interpreter::Interpreter(std::function<void(NPLContext&)> loader)
 
 	wc.UpdateForeColor(TitleColor);
 	cout << title << endl << "Initializing...";
-	p_env.reset(new Environment());
+	p_env.reset(new Environment(app));
 	loader(context);
 	cout << "NPLC initialization OK!" << endl << endl;
 	wc.UpdateForeColor(InfoColor);
