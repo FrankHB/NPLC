@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r264
+\version r271
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-05-21 19:31 +0800
+	2016-05-26 02:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -171,13 +171,15 @@ Interpreter::Process()
 std::istream&
 Interpreter::WaitForLine()
 {
-	using namespace std;
-	using namespace platform_ex;
-
+	return WaitForLine(std::cin, std::cout);
+}
+std::istream&
+Interpreter::WaitForLine(std::istream& is, std::ostream& os)
+{
 	wc.UpdateForeColor(PromptColor);
-	cout << prompt;
+	os << prompt;
 	wc.UpdateForeColor(DefaultColor);
-	return getline(cin, line);
+	return std::getline(is, line);
 }
 
 } // namespace NPL;

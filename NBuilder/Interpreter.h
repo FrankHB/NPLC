@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r134
+\version r137
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-05-21 19:31 +0800
+	2016-05-26 02:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -97,6 +97,9 @@ public:
 
 	std::istream&
 	WaitForLine();
+	/// 696
+	std::istream&
+	WaitForLine(std::istream&, std::ostream&);
 };
 
 } // namespace NPL;
