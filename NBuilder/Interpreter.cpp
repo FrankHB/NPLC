@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r271
+\version r272
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-05-26 02:36 +0800
+	2016-05-26 09:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -77,7 +77,7 @@ LogTree(const ValueNode& node, Logger::Level lv)
 
 			const auto& t(node.Value.GetType());
 
-			if(t != typeid(void))
+			if(t != ystdex::type_id<void>())
 				return ystdex::quote(string(t.name()), '[', ']');
 			throw ystdex::bad_any_cast();
 		}());
