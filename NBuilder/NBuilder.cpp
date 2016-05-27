@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4933
+\version r4981
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-05-21 19:31 +0800
+	2016-05-28 01:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -88,60 +88,6 @@ RegisterLiteralSignal(ContextNode& node, const string& name, SSignal sig)
 	});
 }
 
-
-TermNode
-TransformForSeperator(const TermNode& term, const ValueObject& pfx,
-	const ValueObject& delim, const string& name)
-{
-	auto res(AsNode(name, term.Value));
-
-	if(!term.empty())
-	{
-		res += AsIndexNode(res, pfx);
-		ystdex::split(term.begin(), term.end(), std::bind(HasValue,
-			std::placeholders::_1, std::ref(delim)), [&](TNCIter b, TNCIter e){
-			auto child(AsIndexNode(res));
-
-			while(b != e)
-			{
-				child += {b->GetContainer(), MakeIndex(child), b->Value};
-				++b;
-			}
-			res += std::move(child);
-		});
-	}
-	return res;
-}
-
-TermNode
-TransformForSeperatorRecursive(const TermNode& term, const ValueObject& pfx,
-	const ValueObject& delim, const string& name)
-{
-	auto res(AsNode(name, term.Value));
-
-	if(!term.empty())
-	{
-		res += AsIndexNode(res, pfx);
-		ystdex::split(term.begin(), term.end(), std::bind(HasValue,
-			std::placeholders::_1, std::ref(delim)), [&](TNCIter b, TNCIter e){
-			while(b != e)
-				res += TransformForSeperatorRecursive(*b++, pfx, delim,
-					MakeIndex(res));
-		});
-	}
-	return res;
-}
-
-bool
-TransformTermForSeperator(TermNode& term, const ValueObject& pfx,
-	const ValueObject& delim)
-{
-	if(std::find_if(term.begin(), term.end(), std::bind(HasValue,
-		std::placeholders::_1, std::ref(delim))) != term.end())
-		term = TransformForSeperator(term, pfx, delim);
-	return {};
-}
-
 } // namespace A1;
 
 } // namespace NPL;
@@ -183,9 +129,9 @@ LoadFunctions(NPLContext& context)
 	using namespace std::placeholders;
 	auto& root(context.Root);
 
-	context.ListTermPreprocess += std::bind(TransformTermForSeperator, _1,
+	context.ListTermPreprocess += std::bind(ReplaceTermForSeperator, _1,
 		string("$;"), string(";"));
-	context.ListTermPreprocess += std::bind(TransformTermForSeperator, _1,
+	context.ListTermPreprocess += std::bind(ReplaceTermForSeperator, _1,
 		string("$,"), string(","));
 	RegisterContextHandler(root, "$;",
 		FormContextHandler(RemoveHeadAndReduceAll));
