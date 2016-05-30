@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1442
+\version r1476
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-04-15 20:05 +0800
+	2016-05-30 10:34 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -37,51 +37,6 @@ namespace NPL
 
 namespace A1
 {
-
-/// 675
-using ystdex::optional;
-
-/// 674
-//@{
-struct FunctionContextHandler
-{
-public:
-	FormContextHandler Handler;
-
-	template<typename _func>
-	FunctionContextHandler(_func f)
-		: Handler(f)
-	{}
-
-	void
-	operator()(TermNode&, ContextNode&) const;
-};
-
-
-struct FunctionFormHandler : private FunctionContextHandler
-{
-public:
-	template<typename _func>
-	FunctionFormHandler(_func f)
-		: FunctionContextHandler(Wrap(f))
-	{}
-
-	using FunctionContextHandler::operator();
-
-private:
-	static FunctionContextHandler
-	Wrap(std::function<void(TNIter, size_t, TermNode&)>);
-};
-
-
-template<typename _func>
-void
-RegisterFunction(ContextNode& node, const string& name, _func f)
-{
-	RegisterContextHandler(node, name, FunctionFormHandler(f));
-}
-//@}
-
 
 /// 306
 struct NPLContext

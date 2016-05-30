@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r4981
+\version r5025
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-05-28 01:41 +0800
+	2016-05-30 10:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -309,54 +309,47 @@ LoadFunctions(NPLContext& context)
 				ystdex::sfmt("Syntax error in lambda abstraction."));
 	}));
 	// NOTE: Examples.
-	RegisterFunction(root, "+", [](TNIter i, size_t n,
-		TermNode& term){
-		DoIntegerNAryArithmetics(ystdex::plus<>(), 0, i, n, term);
-	});
-	RegisterFunction(root, "add2", [](TNIter i, size_t n, TermNode& term){
-		// FIXME: Overflow?
-		DoIntegerBinaryArithmetics(ystdex::plus<>(), i, n, term);
-	});
-	RegisterFunction(root, "-", [](TNIter i, size_t n, TermNode& term){
-		// FIXME: Underflow?
-		DoIntegerBinaryArithmetics(ystdex::minus<>(), i, n, term);
-	});
-	RegisterFunction(root, "*", [](TNIter i, size_t n,
-		TermNode& term){
-		// FIXME: Overflow?
-		DoIntegerNAryArithmetics(ystdex::multiplies<>(), 1, i, n, term);
-	});
-	RegisterFunction(root, "multiply2", [](TNIter i,
-		size_t n, TermNode& term){
-		// FIXME: Overflow?
-		DoIntegerBinaryArithmetics(ystdex::multiplies<>(), i, n, term);
-	});
-	RegisterFunction(root, "/", [](TNIter i, size_t n, TermNode& term){
+	// FIXME: Overflow?
+	RegisterFunction(root, "+", std::bind(DoIntegerNAryArithmetics<
+		ystdex::plus<>>, ystdex::plus<>(), 0, _1));
+	// FIXME: Overflow?
+	RegisterFunction(root, "add2", std::bind(DoIntegerBinaryArithmetics<
+		ystdex::plus<>>, ystdex::plus<>(), _1));
+	// FIXME: Underflow?
+	RegisterFunction(root, "-", std::bind(DoIntegerBinaryArithmetics<
+		ystdex::minus<>>, ystdex::minus<>(), _1));
+	// FIXME: Overflow?
+	RegisterFunction(root, "*", std::bind(DoIntegerNAryArithmetics<
+		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1));
+	// FIXME: Overflow?
+	RegisterFunction(root, "multiply2", std::bind(DoIntegerBinaryArithmetics<
+		ystdex::multiplies<>>, ystdex::multiplies<>(), _1));
+	RegisterFunction(root, "/", [](TermNode& term){
 		DoIntegerBinaryArithmetics([](int e1, int e2){
 			if(e2 != 0)
 				return e1 / e2;
 			throw std::domain_error("Runtime error: divided by zero.");
-		}, i, n, term);
+		}, term);
 	});
-	RegisterFunction(root, "%", [](TNIter i, size_t n, TermNode& term){
+	RegisterFunction(root, "%", [](TermNode& term){
 		DoIntegerBinaryArithmetics([](int e1, int e2){
 			if(e2 != 0)
 				return e1 % e2;
 			throw std::domain_error("Runtime error: divided by zero.");
-		}, i, n, term);
+		}, term);
 	});
-	RegisterFunction(root, "system", [](TNIter i, size_t n, TermNode& term){
+	RegisterFunction(root, "system", [](TermNode& term){
 		DoUnary([](const string& arg){
 			std::system(arg.c_str());
-		}, i, n, term);
+		}, term);
 	});
-	RegisterFunction(root, "echo", [](TNIter i, size_t n, TermNode& term){
+	RegisterFunction(root, "echo", [](TermNode& term){
 		DoUnary([](const string& arg){
 			if(CheckLiteral(arg) != char())
 				std::cout << ystdex::get_mid(arg) << std::endl;
-		}, i, n, term);
+		}, term);
 	});
-	RegisterFunction(root, "parse", [](TNIter i, size_t n, TermNode& term){
+	RegisterFunction(root, "parse", [](TermNode& term){
 		DoUnary([](const string& path_gbk)
 		{
 			{
@@ -373,9 +366,9 @@ LoadFunctions(NPLContext& context)
 					Session::DefaultParseByte(sess.Lexer, c);
 				ParseOutput(sess.Lexer);
 			}
-		}, i, n, term);
+		}, term);
 	});
-	RegisterFunction(root, "print", [](TNIter i, size_t n, TermNode& term){
+	RegisterFunction(root, "print", [](TermNode& term){
 		DoUnary([](const string& path_gbk){
 			const auto& path(MBCSToMBCS(path_gbk));
 			size_t bom;
@@ -400,9 +393,9 @@ LoadFunctions(NPLContext& context)
 					str.c_str()), str.length()}, CP_ACP) << '\n';
 			}
 			std::cout << std::endl;
-		}, i, n, term);
+		}, term);
 	});
-	RegisterFunction(root, "mangle", [](TNIter i, size_t n, TermNode& term){
+	RegisterFunction(root, "mangle", [](TermNode& term){
 		DoUnary([](const string& arg){
 			if(CheckLiteral(arg) == '"')
 			{
@@ -418,9 +411,9 @@ LoadFunctions(NPLContext& context)
 			else
 				std::cout << "Please use a string literal as argument."
 					<< std::endl;
-		}, i, n, term);
+		}, term);
 	});
-	RegisterFunction(root, "search", [&](TNIter i, size_t n, TermNode& term){
+	RegisterFunction(root, "search", [&](TermNode& term){
 		DoUnary([&](const string& arg){
 			using namespace std;
 
@@ -433,15 +426,15 @@ LoadFunctions(NPLContext& context)
 				cout << "Found: " << name << " = " << s << endl;
 			}
 			CatchExpr(out_of_range&, cout << "Not found." << endl)
-		}, i, n, term);
+		}, term);
 	});
-	RegisterFunction(root, "eval", [&](TNIter i, size_t n, TermNode& term){
+	RegisterFunction(root, "eval", [&](TermNode& term){
 		DoUnary([&](const string& arg){
 			if(CheckLiteral(arg) == '\'')
 				NPLContext(context).Perform(ystdex::get_mid(arg));
-		}, i, n, term);
+		}, term);
 	});
-	RegisterFunction(root, "evals", [](TNIter i, size_t n, TermNode& term){
+	RegisterFunction(root, "evals", [](TermNode& term){
 		DoUnary([](const string& arg){
 			if(CheckLiteral(arg) == '\'')
 			{
@@ -457,9 +450,9 @@ LoadFunctions(NPLContext& context)
 				PrintNodeN(root);
 				PrintNodeN(A1::TransformNode(root));
 			}
-		}, i, n, term);
+		}, term);
 	});
-	RegisterFunction(root, "evalf", [](TNIter i, size_t n, TermNode& term){
+	RegisterFunction(root, "evalf", [](TermNode& term){
 		DoUnary([](const string& arg){
 			if(ifstream ifs{DecodeArg(arg)})
 			{
@@ -471,7 +464,7 @@ LoadFunctions(NPLContext& context)
 			}
 			else
 				throw LoggedEvent("Invalid file: \"" + arg + "\".", Warning);
-		}, i, n, term);
+		}, term);
 	});
 }
 

@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r1966
+\version r1985
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2016-05-28 01:40 +0800
+	2016-05-30 10:07 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -55,14 +55,29 @@ RemoveHeadAndReduceAll(TermNode&, ContextNode&);
 
 void
 RegisterLiteralSignal(ContextNode&, const string&, SSignal);
+//@}
 
+
+/// 696
+//@{
+inline size_t
+CheckTermSize(TermNode& term)
+{
+	const auto n(term.size());
+
+	YAssert(n != 0, "Invalid term found.");
+	return n - 1;
+}
 
 template<typename _func>
 void
-DoIntegerBinaryArithmetics(_func f, TNIter i, size_t n, TermNode& term)
+DoIntegerBinaryArithmetics(_func f, TermNode& term)
 {
+	const auto n(CheckTermSize(term));
+
 	if(n == 2)
 	{
+		auto i(term.begin());
 		const auto e1(std::stoi(Access<string>(Deref(++i))));
 
 		// TODO: Remove 'to_string'?
@@ -75,8 +90,10 @@ DoIntegerBinaryArithmetics(_func f, TNIter i, size_t n, TermNode& term)
 
 template<typename _func>
 void
-DoIntegerNAryArithmetics(_func f, int val, TNIter i, size_t n, TermNode& term)
+DoIntegerNAryArithmetics(_func f, int val, TermNode& term)
 {
+	const auto n(CheckTermSize(term));
+	auto i(term.begin());
 	const auto j(ystdex::make_transform(++i, [](TNIter i){
 		return std::stoi(Access<string>(Deref(i)));
 	}));
@@ -87,11 +104,13 @@ DoIntegerNAryArithmetics(_func f, int val, TNIter i, size_t n, TermNode& term)
 
 template<typename _func>
 void
-DoUnary(_func f, TNIter i, size_t n, TermNode& term)
+DoUnary(_func f, TermNode& term)
 {
+	const auto n(CheckTermSize(term));
+
 	if(n == 1)
 		// TODO: Assignment of void term.
-		f(Access<string>(Deref(++i)));
+		f(Access<string>(Deref(std::next(term.begin()))));
 	else
 		ThrowArityMismatch(1, n);
 	term.ClearContainer();

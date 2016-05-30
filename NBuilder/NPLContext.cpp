@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2012
+\version r2051
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-05-09 15:25 +0800
+	2016-05-30 10:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -41,54 +41,6 @@ namespace NPL
 
 namespace A1
 {
-
-void
-FunctionContextHandler::operator()(TermNode& term, ContextNode& ctx) const
-{
-	auto& con(term.GetContainerRef());
-
-	// NOTE: Arguments evaluation: applicative order.
-	ReduceArguments(con, ctx);
-
-	const auto n(con.size());
-
-	if(n > 1)
-	{
-		// NOTE: Matching function calls.
-		auto i(con.begin());
-
-		// NOTE: Adjust null list argument application
-		//	to function call without arguments.
-		// TODO: Improve performance of comparison?
-		if(n == 2 && Deref(++i).Value == ValueToken::Null)
-			con.erase(i);
-		Handler(term, ctx);
-	}
-	// TODO: Unreduced form check.
-#if 0
-	if(n == 0)
-		YTraceDe(Warning, "Empty reduced form found.");
-	else
-		YTraceDe(Warning, "%zu term(s) not reduced found.", n);
-#endif
-}
-
-
-FunctionContextHandler
-FunctionFormHandler::Wrap(std::function<void(TNIter, size_t, TermNode&)> f)
-{
-	return [f](TermNode& term, const ContextNode&){
-		auto& con(term.GetContainerRef());
-		const auto size(con.size());
-
-		YAssert(size != 0, "Invalid term found.");
-		// NOTE: This is basically call-by-value, i.e. the arguments would be
-		//	copied as the parameters, unless the terms are prevented to be
-		//	evaluated immediately by some special tags in reduction.
-		f(con.begin(), size - 1, term);
-	};
-}
-
 
 NPLContext::NPLContext()
 	: Root(SetupRoot(std::bind(std::ref(ListTermPreprocess), _1, _2)))
