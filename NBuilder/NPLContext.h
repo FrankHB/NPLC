@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1476
+\version r1481
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-05-30 10:34 +0800
+	2016-05-31 10:28 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -43,11 +43,11 @@ struct NPLContext
 {
 public:
 	/// 664
-	ContextNode Root;
+	ContextNode Root{};
 	/// 675
-	TermPasses Preprocess;
+	TermPasses Preprocess{};
 	/// 675
-	EvaluationPasses ListTermPreprocess;
+	EvaluationPasses ListTermPreprocess{};
 
 	NPLContext();
 
@@ -56,9 +56,9 @@ public:
 	Perform(const string&);
 
 private:
-	/// 675
-	static ContextNode
-	SetupRoot(EvaluationPasses);
+	/// 697
+	static void
+	Setup(ContextNode&, EvaluationPasses);
 };
 
 } // namespace A1;

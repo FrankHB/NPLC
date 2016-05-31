@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2051
+\version r2061
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-05-30 10:35 +0800
+	2016-05-31 10:28 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -43,8 +43,12 @@ namespace A1
 {
 
 NPLContext::NPLContext()
-	: Root(SetupRoot(std::bind(std::ref(ListTermPreprocess), _1, _2)))
-{}
+{
+#if NPL_TraceDepth
+	SetupTraceDepth(Root);
+#endif
+	Setup(Root, std::bind(std::ref(ListTermPreprocess), _1, _2));
+}
 
 TermNode
 NPLContext::Perform(const string& unit)
@@ -59,13 +63,9 @@ NPLContext::Perform(const string& unit)
 	return term;
 }
 
-ContextNode
-NPLContext::SetupRoot(EvaluationPasses passes)
+void
+NPLContext::Setup(ContextNode& root, EvaluationPasses passes)
 {
-	ContextNode root;
-#if NPL_TraceDepth
-	SetupTraceDepth(root);
-#endif
 	passes += ReduceFirst;
 	passes += [](TermNode& term, ContextNode& ctx){
 		// TODO: Form evaluation: macro expansion, etc.
@@ -124,7 +124,6 @@ NPLContext::SetupRoot(EvaluationPasses passes)
 		}
 		return {};
 	};
-	return root;
 }
 
 } // namespace A1;
