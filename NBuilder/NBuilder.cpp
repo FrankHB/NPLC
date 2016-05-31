@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5025
+\version r5028
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-05-30 10:23 +0800
+	2016-05-31 11:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -259,15 +259,13 @@ LoadFunctions(NPLContext& context)
 			const auto p_closure(make_shared<TermNode>(std::move(con),
 				term.GetName(), std::move(term.Value)));
 
-			term.Value = ContextHandler([=](TermNode& app_term){
+			term.Value = ToContextHandler([=](TermNode& app_term){
 				const auto& params(Deref(p_params));
 				const auto n_params(params.size());
 				// TODO: Optimize for performance.
 				auto app_ctx(Deref(p_ctx));
 				const auto n_terms(app_term.size());
 
-				// NOTE: Arguments evaluation: applicative order.
-				ReduceArguments(app_term.GetContainerRef(), app_ctx);
 				YTraceDe(Debug, "Lambda called, with %ld shared context(s),"
 					" %zu parameter(s).", p_ctx.use_count(), n_params);
 				if(n_terms == 0)
