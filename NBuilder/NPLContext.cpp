@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2061
+\version r2079
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-05-31 10:28 +0800
+	2016-05-31 11:48 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -67,26 +67,8 @@ void
 NPLContext::Setup(ContextNode& root, EvaluationPasses passes)
 {
 	passes += ReduceFirst;
-	passes += [](TermNode& term, ContextNode& ctx){
-		// TODO: Form evaluation: macro expansion, etc.
-		if(!term.empty())
-		{
-			const auto& fm(Deref(ystdex::as_const(term).begin()));
-
-			if(const auto p_handler = AccessPtr<ContextHandler>(fm))
-				(*p_handler)(term, ctx);
-			else
-			{
-				const auto p(AccessPtr<string>(fm));
-
-				// TODO: Capture contextual information in error.
-				throw ListReductionFailure(ystdex::sfmt("No matching form '%s'"
-					" with %zu argument(s) found.", p ? p->c_str()
-					: "#<unknown>", term.size()));
-			}
-		}
-		return false;
-	};
+	// TODO: Insert more form evaluation passes: macro expansion, etc.
+	passes += EvaluateContextFirst;
 	AccessListPassesRef(root) = std::move(passes);
 	AccessLeafPassesRef(root) = [](TermNode& term, ContextNode& ctx) -> bool{
 		if(const auto p = AccessPtr<string>(term))
