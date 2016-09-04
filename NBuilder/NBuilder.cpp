@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5033
+\version r5034
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-06-01 09:49 +0800
+	2016-09-03 16:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -36,6 +36,7 @@
 #include YFM_YCLib_Debug
 #include YFM_Win32_YCLib_MinGW32
 #include YFM_YSLib_Service_TextFile
+#include YFM_Win32_YCLib_NLS
 
 namespace NPL
 {
