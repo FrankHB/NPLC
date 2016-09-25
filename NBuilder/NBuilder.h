@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r1985
+\version r1987
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2016-05-30 10:07 +0800
+	2016-09-25 23:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -85,7 +85,7 @@ DoIntegerBinaryArithmetics(_func f, TermNode& term)
 			= to_string(f(e1, std::stoi(Access<string>(Deref(++i)))));
 	}
 	else
-		ThrowArityMismatch(2, n);
+		throw ArityMismatch(2, n);
 }
 
 template<typename _func>
@@ -112,7 +112,7 @@ DoUnary(_func f, TermNode& term)
 		// TODO: Assignment of void term.
 		f(Access<string>(Deref(std::next(term.begin()))));
 	else
-		ThrowArityMismatch(1, n);
+		throw ArityMismatch(1, n);
 	term.ClearContainer();
 }
 //@}

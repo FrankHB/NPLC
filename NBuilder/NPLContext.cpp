@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2079
+\version r2134
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-05-31 11:48 +0800
+	2016-09-25 23:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -41,6 +41,14 @@ namespace NPL
 
 namespace A1
 {
+
+void
+LoadSequenceSeparators(ContextNode& ctx, EvaluationPasses& passes)
+{
+	RegisterSequenceContextTransformer(passes, ctx, "$;", string(";")),
+	RegisterSequenceContextTransformer(passes, ctx, "$,", string(","));
+}
+
 
 NPLContext::NPLContext()
 {
@@ -66,45 +74,46 @@ NPLContext::Perform(const string& unit)
 void
 NPLContext::Setup(ContextNode& root, EvaluationPasses passes)
 {
-	passes += ReduceFirst;
+	// TODO: Simplify by using %ReductionStatus as invocation result directly
+	//	in YSLib. Otherwise current versions of G++ would crash here as internal
+	//	compiler error: "error reporting routines re-entered".
+//	passes += ReduceFirst;
+	passes += [](TermNode& term, ContextNode& ctx){
+		return ReduceFirst(term, ctx) != ReductionStatus::Success;
+	};
 	// TODO: Insert more form evaluation passes: macro expansion, etc.
-	passes += EvaluateContextFirst;
+//	passes += EvaluateContextFirst;
+	passes += [](TermNode& term, ContextNode& ctx){
+		return EvaluateContextFirst(term, ctx) != ReductionStatus::Success;
+	};
 	AccessListPassesRef(root) = std::move(passes);
-	AccessLeafPassesRef(root) = [](TermNode& term, ContextNode& ctx) -> bool{
-		if(const auto p = AccessPtr<string>(term))
-		{
-			// NOTE: String node of identifier.
-			auto& id(*p);
-
-			// NOTE: If necessary, they should have been handled in preprocess
-			//	pass.
-			if(id == "," || id == ";")
+	AccessLeafPassesRef(root) = [](TermNode& term, ContextNode& ctx){
+		return ystdex::call_value_or([&](string_view id) -> ReductionStatus{
+			YAssertNonnull(id.data());
+			// NOTE: Only string node of identifier is tested.
+			if(!id.empty())
 			{
-				term.Clear();
-				return true;
-			}
-			else if(!id.empty())
-			{
-				// NOTE: Value rewriting.
-				// TODO: Implement general literal check.
-				if(CheckLiteral(id) == char() && !std::isdigit(id.front()))
+				// NOTE: If necessary, they should have been handled in
+				//	preprocess pass.
+				if(id == "," || id == ";")
 				{
-					if(auto v = FetchValue(ctx, id))
-					{
-						term.Value = std::move(v);
-						if(const auto p_handler
-							= AccessPtr<LiteralHandler>(term))
-							return (*p_handler)(ctx);
-					}
-					else
-						throw UndeclaredIdentifier(ystdex::sfmt(
-							"Undeclared identifier '%s' found", id.c_str()));
+					term.Clear();
+					return ReductionStatus::NeedRetry;
 				}
+				else if(!id.empty())
+				{
+					// NOTE: Value rewriting.
+					// TODO: Implement general literal check.
+					if(CheckLiteral(id) == char() && !std::isdigit(id.front()))
+						EvaluateIdentifier(term, ctx, id);
+				}
+				// XXX: Empty token is ignored.
+				// XXX: Remained reducible?
 			}
-			// XXX: Empty token is ignored.
-			// XXX: Remained reducible?
-		}
-		return {};
+			return ReductionStatus::Success;
+		// FIXME: Success on node conversion failure?
+		}, AccessPtr<string>(term), ReductionStatus::Success)
+			!= ReductionStatus::Success;
 	};
 }
 
