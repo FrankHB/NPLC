@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r1987
+\version r2029
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2016-09-25 23:53 +0800
+	2016-11-01 23:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -40,59 +40,31 @@ namespace A1
 {
 
 /// 674
-//@{
-bool
-ExtractModifier(TermNode::Container&, const ValueObject& = string("!"));
-inline PDefH(bool, ExtractModifier, const TermNode& term,
-	const ValueObject& mod = string("!"))
-	ImplRet(ExtractModifier(term.GetContainer(), mod))
-
-void
-ReduceTail(TermNode&, ContextNode&, TNIter);
-
-void
-RemoveHeadAndReduceAll(TermNode&, ContextNode&);
-
 void
 RegisterLiteralSignal(ContextNode&, const string&, SSignal);
-//@}
 
 
 /// 696
 //@{
-inline size_t
-CheckTermSize(TermNode& term)
-{
-	const auto n(term.size());
-
-	YAssert(n != 0, "Invalid term found.");
-	return n - 1;
-}
-
 template<typename _func>
 void
 DoIntegerBinaryArithmetics(_func f, TermNode& term)
 {
-	const auto n(CheckTermSize(term));
+	Forms::QuoteN(term, 2);
 
-	if(n == 2)
-	{
-		auto i(term.begin());
-		const auto e1(std::stoi(Access<string>(Deref(++i))));
+	auto i(term.begin());
+	const auto e1(std::stoi(Access<string>(Deref(++i))));
 
-		// TODO: Remove 'to_string'?
-		term.Value
-			= to_string(f(e1, std::stoi(Access<string>(Deref(++i)))));
-	}
-	else
-		throw ArityMismatch(2, n);
+	// TODO: Remove 'to_string'?
+	term.Value
+		= to_string(f(e1, std::stoi(Access<string>(Deref(++i)))));
 }
 
 template<typename _func>
 void
 DoIntegerNAryArithmetics(_func f, int val, TermNode& term)
 {
-	const auto n(CheckTermSize(term));
+	const auto n(Forms::FetchArgumentN(term));
 	auto i(term.begin());
 	const auto j(ystdex::make_transform(++i, [](TNIter i){
 		return std::stoi(Access<string>(Deref(i)));
@@ -100,20 +72,6 @@ DoIntegerNAryArithmetics(_func f, int val, TermNode& term)
 
 	// FIXME: Overflow?
 	term.Value = to_string(std::accumulate(j, std::next(j, n), val, f));
-}
-
-template<typename _func>
-void
-DoUnary(_func f, TermNode& term)
-{
-	const auto n(CheckTermSize(term));
-
-	if(n == 1)
-		// TODO: Assignment of void term.
-		f(Access<string>(Deref(std::next(term.begin()))));
-	else
-		throw ArityMismatch(1, n);
-	term.ClearContainer();
 }
 //@}
 

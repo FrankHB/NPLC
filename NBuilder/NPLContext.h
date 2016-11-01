@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1484
+\version r1488
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2016-09-25 23:54 +0800
+	2016-10-31 10:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -59,11 +59,6 @@ public:
 	/// 665
 	TermNode
 	Perform(const string&);
-
-private:
-	/// 697
-	static void
-	Setup(ContextNode&, EvaluationPasses);
 };
 
 } // namespace A1;
