@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5350
+\version r5458
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-11-01 23:58 +0800
+	2016-11-06 16:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -66,7 +66,8 @@ namespace
 {
 
 /// 327
-void ParseOutput(LexicalAnalyzer& lex)
+void
+ParseOutput(LexicalAnalyzer& lex)
 {
 	const auto& cbuf(lex.GetBuffer());
 	const auto xlst(lex.Literalize());
@@ -76,13 +77,24 @@ void ParseOutput(LexicalAnalyzer& lex)
 	cout << "cbuf size:" << cbuf.size() << endl
 		<< "xlst size:" << cbuf.size() << endl;
 	for(const auto& str : rlst)
-	{
-	//	cout << str << endl;
-	//	cout << String(str).GetMBCS(Text::CharSet::GBK) << endl;
-		cout << MBCSToMBCS(str) << endl
+		cout << EncodeArg(str) << endl
 			<< "* u8 length: " << str.size() << endl;
-	}
 	cout << rlst.size() << " token(s) parsed." <<endl;
+}
+
+/// 737
+void
+ParseStream(std::istream& is)
+{
+	if(is)
+	{
+		Session sess;
+		char c;
+
+		while((c = is.get()), is)
+			Session::DefaultParseByte(sess.Lexer, c);
+		ParseOutput(sess.Lexer);
+	}
 }
 
 
@@ -138,72 +150,40 @@ LoadFunctions(NPLContext& context)
 			throw std::domain_error("Runtime error: divided by zero.");
 		}, term);
 	}, IsBranch);
+	RegisterUnaryFunction<const string>(root, "eval", [&](const string& arg){
+		NPLContext(context).Perform(arg);
+	});
 	RegisterUnaryFunction<const string>(root, "system", [](const string& arg){
-		std::system(arg.c_str());
+		std::system(EncodeArg(arg).c_str());
 	});
 	RegisterUnaryFunction<const string>(root, "echo", [](const string& arg){
-		if(CheckLiteral(arg) != char())
-			std::cout << ystdex::get_mid(arg) << std::endl;
+		std::cout << EncodeArg(arg) << std::endl;
 	});
-	RegisterUnaryFunction<const string>(root, "parse",
-		[](const string& path_gbk){
-		{
-			using namespace std;
-			cout << ystdex::sfmt("Parse from file: %s : ", path_gbk.c_str())
-				<< endl;
-		}
-		if(ifstream ifs{MBCSToMBCS(path_gbk)})
-		{
-			Session sess;
-			char c;
-
-			while((c = ifs.get()), ifs)
-				Session::DefaultParseByte(sess.Lexer, c);
-			ParseOutput(sess.Lexer);
-		}
+	RegisterFunction(root, "ofs", [](TermNode& term){
+		Forms::CallUnaryAs<const string>([&](const string& path){
+			if(ifstream ifs{path})
+				return ifs;
+			throw LoggedEvent(
+				ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
+		}, term);
 	});
-	RegisterUnaryFunction<const string>(root, "print",
-		[](const string& path_gbk){
-		const auto& path(MBCSToMBCS(path_gbk));
-		size_t bom;
-
-		if(ifstream ifs{path})
-		{
-			ifs.seekg(0, std::ios_base::end);
-			bom = Text::DetectBOM(ifs, ifs.tellg()).second;
-		}
-		else
-			throw LoggedEvent("Failed opening file.");
-
-		std::ifstream fin(path.c_str());
-		string str;
-
-		while(bom--)
-			fin.get();
-		while(fin)
-		{
-			std::getline(fin, str);
-			std::cout << WCSToMBCS({reinterpret_cast<const wchar_t*>(
-				str.c_str()), str.length()}, CP_ACP) << '\n';
-		}
-		std::cout << std::endl;
+	RegisterFunction(root, "oss", [](TermNode& term){
+		Forms::CallUnaryAs<const string>([&](const string& str){
+			return std::istringstream(str);
+		}, term);
 	});
-	RegisterUnaryFunction<const string>(root, "mangle", [](const string& arg){
-		if(CheckLiteral(arg) == '"')
-		{
-			const auto& str(ystdex::get_mid(arg));
+	RegisterUnaryFunction<ifstream>(root, "parse-f", ParseStream);
+	RegisterUnaryFunction<std::istringstream>(root, "parse-s", ParseStream);
+	RegisterFunction(root, "lex", [](TermNode& term){
+		Forms::CallUnaryAs<const string>([&](const string& str){
 			LexicalAnalyzer lex;
 
 			for(const auto& c : str)
 				lex.ParseByte(c);
-			std::cout << ystdex::sfmt("Parse from str: %s : ", str.c_str())
-				<< std::endl;
-			ParseOutput(lex);
-		}
-		else
-			std::cout << "Please use a string literal as argument."
-				<< std::endl;
+			return lex;
+		}, term);
 	});
+	RegisterUnaryFunction<LexicalAnalyzer>(root, "parse-lex", ParseOutput);
 	RegisterUnaryFunction<const string>(root, "search", [&](const string& arg){
 		using namespace std;
 
@@ -216,38 +196,6 @@ LoadFunctions(NPLContext& context)
 			cout << "Found: " << name << " = " << s << endl;
 		}
 		CatchExpr(out_of_range&, cout << "Not found." << endl)
-	});
-	RegisterUnaryFunction<const string>(root, "eval", [&](const string& arg){
-		if(CheckLiteral(arg) == '\'')
-			NPLContext(context).Perform(ystdex::get_mid(arg));
-	});
-	RegisterUnaryFunction<const string>(root, "evals", [](const string& arg){
-		if(CheckLiteral(arg) == '\'')
-		{
-			using namespace std;
-			const TermNode&
-				root(SContext::Analyze(string_view(ystdex::get_mid(arg))));
-			const auto PrintNodeN([](const ValueNode& node){
-				cout << ">>>Root size: " << node.size() << endl;
-				PrintNode(cout, node);
-				cout << endl;
-			});
-
-			PrintNodeN(root);
-			PrintNodeN(A1::TransformNode(root));
-		}
-	});
-	RegisterUnaryFunction<const string>(root, "evalf", [](const string& arg){
-		if(ifstream ifs{DecodeArg(arg)})
-		{
-			Configuration conf;
-			ofstream f("out.txt");
-
-			ifs >> conf;
-			f << conf;
-		}
-		else
-			throw LoggedEvent("Invalid file: \"" + arg + "\".", Warning);
 	});
 }
 
