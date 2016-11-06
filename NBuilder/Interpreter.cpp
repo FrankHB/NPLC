@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r272
+\version r276
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-05-26 09:24 +0800
+	2016-11-06 01:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -58,8 +58,9 @@ YB_NONNULL(3) void
 PrintError(WConsole& wc, const LoggedEvent& e, const char* name = "Error")
 {
 	wc.UpdateForeColor(ErrorColor);
-	std::cerr << name << "[" << typeid(e).name() << "]" << "<"
-		<< unsigned(e.GetLevel()) << ">: " << e.what() << std::endl;
+	YF_TraceRaw(e.GetLevel(), "%s[%s]<%u>: %s", name, typeid(e).name(),
+		unsigned(e.GetLevel()), e.what());
+//	ExtractAndTrace(e, e.GetLevel());
 }
 
 } // unnamed namespace;
@@ -140,6 +141,8 @@ Interpreter::Process()
 	wc.UpdateForeColor(SideEffectColor);
 	try
 	{
+		line = DecodeArg(line);
+
 		const auto res(context.Perform(line));
 
 #if NPL_TracePerform
