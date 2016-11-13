@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r2029
+\version r2033
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2016-11-01 23:56 +0800
+	2016-11-13 04:05 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -53,11 +53,10 @@ DoIntegerBinaryArithmetics(_func f, TermNode& term)
 	Forms::QuoteN(term, 2);
 
 	auto i(term.begin());
-	const auto e1(std::stoi(Access<string>(Deref(++i))));
+	const int e1(Access<int>(Deref(++i)));
 
 	// TODO: Remove 'to_string'?
-	term.Value
-		= to_string(f(e1, std::stoi(Access<string>(Deref(++i)))));
+	term.Value = to_string(f(e1, Access<int>(Deref(++i))));
 }
 
 template<typename _func>
@@ -67,7 +66,7 @@ DoIntegerNAryArithmetics(_func f, int val, TermNode& term)
 	const auto n(Forms::FetchArgumentN(term));
 	auto i(term.begin());
 	const auto j(ystdex::make_transform(++i, [](TNIter i){
-		return std::stoi(Access<string>(Deref(i)));
+		return Access<int>(Deref(i));
 	}));
 
 	// FIXME: Overflow?
