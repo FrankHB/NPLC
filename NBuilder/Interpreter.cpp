@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r276
+\version r312
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-11-06 01:45 +0800
+	2016-11-13 18:32 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -35,6 +35,7 @@
 using namespace YSLib;
 
 #define NPL_TracePerform 1
+#define NPL_TracePerformDetails 0
 
 namespace NPL
 {
@@ -88,8 +89,13 @@ LogTree(const ValueNode& node, Logger::Level lv)
 
 
 Interpreter::Interpreter(Application& app,
-	std::function<void(NPLContext&)> loader)
-	: wc(), err_threshold(RecordLevel(0x10)), line(), context()
+	std::function<void(REPLContext&)> loader)
+	: wc(), err_threshold(RecordLevel(0x10)), line(),
+#if NPL_TracePerformDetails
+	context(true)
+#else
+	context()
+#endif
 {
 	using namespace std;
 	using namespace platform_ex;
@@ -136,37 +142,36 @@ Interpreter::Process()
 {
 	using namespace platform_ex;
 
-	if(line.empty())
-		return true;
-	wc.UpdateForeColor(SideEffectColor);
-	try
+	if(!line.empty())
 	{
-		line = DecodeArg(line);
+		wc.UpdateForeColor(SideEffectColor);
+		try
+		{
+			line = DecodeArg(line);
 
-		const auto res(context.Perform(line));
+			const auto res(context.Perform(line));
 
 #if NPL_TracePerform
-	//	wc.UpdateForeColor(InfoColor);
-	//	cout << "Unrecognized reduced token list:" << endl;
-		wc.UpdateForeColor(ReducedColor);
-		LogTree(res);
+		//	wc.UpdateForeColor(InfoColor);
+		//	cout << "Unrecognized reduced token list:" << endl;
+			wc.UpdateForeColor(ReducedColor);
+			LogTree(res);
 #endif
-	}
-	catch(SSignal e)
-	{
-		if(e == SSignal::Exit)
-			return false;
-		wc.UpdateForeColor(SignalColor);
-		HandleSignal(e);
-	}
-	CatchExpr(NPLException& e, PrintError(wc, e, "NPLException"))
-	catch(LoggedEvent& e)
-	{
-		const auto l(e.GetLevel());
-
-		if(l < err_threshold)
-			throw;
-		PrintError(wc, e);
+		}
+		catch(SSignal e)
+		{
+			if(e == SSignal::Exit)
+				return {};
+			wc.UpdateForeColor(SignalColor);
+			HandleSignal(e);
+		}
+		CatchExpr(NPLException& e, PrintError(wc, e, "NPLException"))
+		catch(LoggedEvent& e)
+		{
+			if(e.GetLevel() < err_threshold)
+				throw;
+			PrintError(wc, e);
+		}
 	}
 	return true;
 }

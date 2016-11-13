@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2204
+\version r2223
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-11-13 15:42 +0800
+	2016-11-13 17:52 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -49,15 +49,10 @@ LoadSequenceSeparators(ContextNode& ctx, EvaluationPasses& passes)
 	RegisterSequenceContextTransformer(passes, ctx, "$,", string(","));
 }
 
-
-NPLContext::NPLContext()
+void
+LoadDeafultLiteralPasses(ContextNode& ctx)
 {
-#if NPL_TraceDepth
-	SetupTraceDepth(Root);
-#endif
-	SetupDefaultInterpretation(Root,
-		std::bind(std::ref(ListTermPreprocess), _1, _2));
-	AccessLiteralPassesRef(Root)
+	AccessLiteralPassesRef(ctx)
 		= [](TermNode& term, ContextNode&, string_view id) -> bool{
 		YAssertNonnull(id.data());
 		if(!id.empty())
@@ -83,19 +78,6 @@ NPLContext::NPLContext()
 		}
 		return {};
 	};
-}
-
-TermNode
-NPLContext::Perform(const string& unit)
-{
-	if(unit.empty())
-		throw LoggedEvent("Empty token list found.", Alert);
-
-	auto term(SContext::Analyze(Session(unit)));
-
-	Preprocess(term);
-	Reduce(term, Root);
-	return term;
 }
 
 } // namespace A1;

@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r137
+\version r143
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-05-26 02:36 +0800
+	2016-11-13 17:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -43,8 +43,8 @@ namespace NPL
 using namespace YSLib::Consoles;
 /// 674
 using YSLib::Logger;
-/// 674
-using A1::NPLContext;
+/// 740
+using A1::REPLContext;
 
 /// 304
 enum class SSignal
@@ -83,11 +83,12 @@ private:
 	YSLib::unique_ptr<YSLib::Environment> p_env;
 	/// 674
 	string line;
-	NPLContext context;
+	/// 740
+	REPLContext context;
 
 public:
-	/// 694
-	Interpreter(YSLib::Application&, std::function<void(NPLContext&)>);
+	/// 740
+	Interpreter(YSLib::Application&, std::function<void(REPLContext&)>);
 
 	void
 	HandleSignal(SSignal);

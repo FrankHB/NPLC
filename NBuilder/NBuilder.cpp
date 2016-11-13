@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5458
+\version r5463
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-11-06 16:23 +0800
+	2016-11-13 18:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -98,15 +98,16 @@ ParseStream(std::istream& is)
 }
 
 
-/// 328
+/// 740
 void
-LoadFunctions(NPLContext& context)
+LoadFunctions(REPLContext& context)
 {
 	using namespace std::placeholders;
 	using namespace Forms;
 	auto& root(context.Root);
 
 	LoadSequenceSeparators(root, context.ListTermPreprocess);
+	LoadDeafultLiteralPasses(root);
 	RegisterLiteralSignal(root, "exit", SSignal::Exit);
 	RegisterLiteralSignal(root, "cls", SSignal::ClearScreen);
 	RegisterLiteralSignal(root, "about", SSignal::About);
@@ -151,10 +152,10 @@ LoadFunctions(NPLContext& context)
 		}, term);
 	}, IsBranch);
 	RegisterUnaryFunction<const string>(root, "eval", [&](const string& arg){
-		NPLContext(context).Perform(arg);
+		REPLContext(context).Perform(arg);
 	});
 	RegisterUnaryFunction<const string>(root, "system", [](const string& arg){
-		std::system(EncodeArg(arg).c_str());
+		usystem(arg.c_str());
 	});
 	RegisterUnaryFunction<const string>(root, "echo", [](const string& arg){
 		std::cout << EncodeArg(arg) << std::endl;
