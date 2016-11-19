@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5507
+\version r5514
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-11-18 15:38 +0800
+	2016-11-18 15:44 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -121,6 +121,13 @@ LoadFunctions(REPLContext& context)
 	RegisterFormContextHandler(root, "$set",
 		std::bind(DefineOrSet, _1, _2, false), IsBranch);
 	RegisterFormContextHandler(root, "$lambda", Lambda, IsBranch);
+	RegisterFunction(root, "$display", ystdex::bind1(LogTree, Notice));
+	RegisterUnaryFunction(root, "$ifdef",
+		[](TermNode& term, const ContextNode& ctx){
+		return ystdex::call_value_or<bool>([&](string_view id){
+			return bool(LookupName(ctx, id));
+		}, AccessPtr<string>(term));
+	});
 	// NOTE: Examples.
 	// FIXME: Overflow?
 	RegisterFunction(root, "+", std::bind(DoIntegerNAryArithmetics<
