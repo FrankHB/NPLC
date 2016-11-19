@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5463
+\version r5507
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-11-13 18:35 +0800
+	2016-11-18 15:38 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -151,53 +151,29 @@ LoadFunctions(REPLContext& context)
 			throw std::domain_error("Runtime error: divided by zero.");
 		}, term);
 	}, IsBranch);
-	RegisterUnaryFunction<const string>(root, "eval", [&](const string& arg){
-		REPLContext(context).Perform(arg);
+	RegisterUnaryFunction<const string>(root, "eval",
+		ystdex::bind1(Eval, std::ref(context)));
+	RegisterFunction(root, "system", CallSystem);
+	RegisterUnaryFunction<const string>(root, "echo", Echo);
+	RegisterUnaryFunction<const string>(root, "ofs", [&](const string& path){
+		if(ifstream ifs{path})
+			return ifs;
+		throw LoggedEvent(
+			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
 	});
-	RegisterUnaryFunction<const string>(root, "system", [](const string& arg){
-		usystem(arg.c_str());
-	});
-	RegisterUnaryFunction<const string>(root, "echo", [](const string& arg){
-		std::cout << EncodeArg(arg) << std::endl;
-	});
-	RegisterFunction(root, "ofs", [](TermNode& term){
-		Forms::CallUnaryAs<const string>([&](const string& path){
-			if(ifstream ifs{path})
-				return ifs;
-			throw LoggedEvent(
-				ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
-		}, term);
-	});
-	RegisterFunction(root, "oss", [](TermNode& term){
-		Forms::CallUnaryAs<const string>([&](const string& str){
-			return std::istringstream(str);
-		}, term);
+	RegisterUnaryFunction<const string>(root, "oss", [&](const string& str){
+		return std::istringstream(str);
 	});
 	RegisterUnaryFunction<ifstream>(root, "parse-f", ParseStream);
 	RegisterUnaryFunction<std::istringstream>(root, "parse-s", ParseStream);
-	RegisterFunction(root, "lex", [](TermNode& term){
-		Forms::CallUnaryAs<const string>([&](const string& str){
-			LexicalAnalyzer lex;
+	RegisterUnaryFunction<const string>(root, "lex", [&](const string& unit){
+		LexicalAnalyzer lex;
 
-			for(const auto& c : str)
-				lex.ParseByte(c);
-			return lex;
-		}, term);
+		for(const auto& c : unit)
+			lex.ParseByte(c);
+		return lex;
 	});
 	RegisterUnaryFunction<LexicalAnalyzer>(root, "parse-lex", ParseOutput);
-	RegisterUnaryFunction<const string>(root, "search", [&](const string& arg){
-		using namespace std;
-
-		try
-		{
-			const auto& name(arg);
-			auto& node(AccessNode(root, name));
-			const auto& s(Access<string>(node));
-
-			cout << "Found: " << name << " = " << s << endl;
-		}
-		CatchExpr(out_of_range&, cout << "Not found." << endl)
-	});
 }
 
 } // unnamed namespace;
