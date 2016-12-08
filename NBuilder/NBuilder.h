@@ -80,3 +80,4 @@ DoIntegerNAryArithmetics(_func f, int val, TermNode& term)
 
 #endif
 
+
