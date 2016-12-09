@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5514
+\version r5539
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-11-18 15:44 +0800
+	2016-12-08 23:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -30,6 +30,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <typeindex>
 #include <Helper/YModules.h>
 #include YFM_NPL_Configuration
 #include YFM_Helper_Initialization
@@ -158,10 +159,9 @@ LoadFunctions(REPLContext& context)
 			throw std::domain_error("Runtime error: divided by zero.");
 		}, term);
 	}, IsBranch);
-	RegisterUnaryFunction<const string>(root, "eval",
-		ystdex::bind1(Eval, std::ref(context)));
-	RegisterFunction(root, "system", CallSystem);
 	RegisterUnaryFunction<const string>(root, "echo", Echo);
+	RegisterFunction(root, "eval", ystdex::bind1(Eval, std::ref(context)));
+	RegisterFunction(root, "system", CallSystem);
 	RegisterUnaryFunction<const string>(root, "ofs", [&](const string& path){
 		if(ifstream ifs{path})
 			return ifs;
@@ -181,6 +181,28 @@ LoadFunctions(REPLContext& context)
 		return lex;
 	});
 	RegisterUnaryFunction<LexicalAnalyzer>(root, "parse-lex", ParseOutput);
+	RegisterUnaryFunction<const string>(root, "put", [&](const string& str){
+		std::cout << str;
+	});
+	RegisterUnaryFunction<const string>(root, "puts", [&](const string& str){
+		std::cout << str << std::endl;
+	});
+	RegisterUnaryFunction(root, "typeid", [](TermNode& term){
+		// FIXME: Get it work with %YB_Use_LightweightTypeID.
+		return std::type_index(term.Value.GetType());
+	});
+	RegisterUnaryFunction<const std::type_index>(root, "nameof",
+		[](const std::type_index& ti){
+		return string(ti.name());
+	});
+	RegisterFunction(root, "eq?", EqualReference);
+	RegisterFunction(root, "eqv?", EqualValue);
+	RegisterUnaryFunction<const string>(root, "env-get", [&](const string& var){
+		string res;
+
+		FetchEnvironmentVariable(res, var.c_str());
+		return res;
+	});
 }
 
 } // unnamed namespace;
