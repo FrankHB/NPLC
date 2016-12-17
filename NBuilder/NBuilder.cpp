@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5542
+\version r5544
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-12-17 22:05 +0800
+	2016-12-17 22:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -183,10 +183,10 @@ LoadFunctions(REPLContext& context)
 	});
 	RegisterUnaryFunction<LexicalAnalyzer>(root, "parse-lex", ParseOutput);
 	RegisterUnaryFunction<const string>(root, "put", [&](const string& str){
-		std::cout << str;
+		std::cout << EncodeArg(str);
 	});
 	RegisterUnaryFunction<const string>(root, "puts", [&](const string& str){
-		std::cout << str << std::endl;
+		std::cout << EncodeArg(str) << std::endl;
 	});
 	RegisterUnaryFunction(root, "typeid", [](TermNode& term){
 		// FIXME: Get it work with %YB_Use_LightweightTypeID.
