@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5544
+\version r5557
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-12-17 22:06 +0800
+	2016-12-18 19:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -182,11 +182,17 @@ LoadFunctions(REPLContext& context)
 		return lex;
 	});
 	RegisterUnaryFunction<LexicalAnalyzer>(root, "parse-lex", ParseOutput);
+	RegisterUnaryFunction<const int>(root, "itos", [](int x){
+		return to_string(x);
+	});
 	RegisterUnaryFunction<const string>(root, "put", [&](const string& str){
 		std::cout << EncodeArg(str);
 	});
 	RegisterUnaryFunction<const string>(root, "puts", [&](const string& str){
 		std::cout << EncodeArg(str) << std::endl;
+	});
+	RegisterUnaryFunction<const string>(root, "strlen", [&](const string& str){
+		return int(str.length());
 	});
 	RegisterUnaryFunction(root, "typeid", [](TermNode& term){
 		// FIXME: Get it work with %YB_Use_LightweightTypeID.
@@ -215,6 +221,13 @@ main(int argc, char* argv[])
 {
 	using namespace std;
 
+	// XXX: Windows 10 rs2_prerelease may have some bugs for MBCS console
+	//	output. String from 'std::putc' or iostream with stdio buffer (unless
+	//	set with '_IONBF') seems to use wrong width of characters, resulting
+	//	mojibake. This is one of the possible workaround. Note that
+	//	'ios_base::sync_with_stdio({})' would also fix this problem but it would
+	//	disturb prompt color setting.
+	ystdex::setnbuf(stdout);
 	yunused(argc), yunused(argv);
 	return FilterExceptions([]{
 		Application app;
