@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2265
+\version r2267
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2016-12-23 23:38 +0800
+	2016-12-26 11:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -45,7 +45,8 @@ namespace A1
 void
 LoadSequenceSeparators(ContextNode& ctx, EvaluationPasses& passes)
 {
-	RegisterSequenceContextTransformer(passes, ctx, "$;", TokenValue(";")),
+	RegisterSequenceContextTransformer(passes, ctx, "$;", TokenValue(";"),
+		true),
 	RegisterSequenceContextTransformer(passes, ctx, "$,", TokenValue(","));
 }
 
