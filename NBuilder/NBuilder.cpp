@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5557
+\version r5592
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2016-12-18 19:22 +0800
+	2016-12-27 21:51 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -123,93 +123,100 @@ LoadFunctions(REPLContext& context)
 		std::bind(DefineOrSet, _1, _2, false), IsBranch);
 	RegisterFormContextHandler(root, "$lambda", Lambda, IsBranch);
 	RegisterFormContextHandler(root, "$if", If, IsBranch);
-	RegisterUnaryFunction(root, "$ifdef",
+	RegisterStrictUnary(root, "ifdef",
 		[](TermNode& term, const ContextNode& ctx){
 		return ystdex::call_value_or([&](string_view id){
 			return bool(LookupName(ctx, id));
 		}, AccessPtr<string>(term));
 	});
-	RegisterFunction(root, "$display", ystdex::bind1(LogTree, Notice));
+	RegisterStrict(root, "display", ystdex::bind1(LogTree, Notice));
 	// NOTE: Examples.
 	// FIXME: Overflow?
-	RegisterFunction(root, "+", std::bind(DoIntegerNAryArithmetics<
+	RegisterStrict(root, "+", std::bind(DoIntegerNAryArithmetics<
 		ystdex::plus<>>, ystdex::plus<>(), 0, _1), IsBranch);
 	// FIXME: Overflow?
-	RegisterFunction(root, "add2", std::bind(DoIntegerBinaryArithmetics<
+	RegisterStrict(root, "add2", std::bind(DoIntegerBinaryArithmetics<
 		ystdex::plus<>>, ystdex::plus<>(), _1), IsBranch);
 	// FIXME: Underflow?
-	RegisterFunction(root, "-", std::bind(DoIntegerBinaryArithmetics<
+	RegisterStrict(root, "-", std::bind(DoIntegerBinaryArithmetics<
 		ystdex::minus<>>, ystdex::minus<>(), _1), IsBranch);
 	// FIXME: Overflow?
-	RegisterFunction(root, "*", std::bind(DoIntegerNAryArithmetics<
+	RegisterStrict(root, "*", std::bind(DoIntegerNAryArithmetics<
 		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1), IsBranch);
 	// FIXME: Overflow?
-	RegisterFunction(root, "multiply2", std::bind(DoIntegerBinaryArithmetics<
+	RegisterStrict(root, "multiply2", std::bind(DoIntegerBinaryArithmetics<
 		ystdex::multiplies<>>, ystdex::multiplies<>(), _1), IsBranch);
-	RegisterFunction(root, "/", [](TermNode& term){
+	RegisterStrict(root, "/", [](TermNode& term){
 		DoIntegerBinaryArithmetics([](int e1, int e2){
 			if(e2 != 0)
 				return e1 / e2;
 			throw std::domain_error("Runtime error: divided by zero.");
 		}, term);
 	}, IsBranch);
-	RegisterFunction(root, "%", [](TermNode& term){
+	RegisterStrict(root, "%", [](TermNode& term){
 		DoIntegerBinaryArithmetics([](int e1, int e2){
 			if(e2 != 0)
 				return e1 % e2;
 			throw std::domain_error("Runtime error: divided by zero.");
 		}, term);
 	}, IsBranch);
-	RegisterUnaryFunction<const string>(root, "echo", Echo);
-	RegisterFunction(root, "eval", ystdex::bind1(Eval, std::ref(context)));
-	RegisterFunction(root, "system", CallSystem);
-	RegisterUnaryFunction<const string>(root, "ofs", [&](const string& path){
+	RegisterStrictUnary<const string>(root, "echo", Echo);
+	RegisterStrict(root, "eval", ystdex::bind1(Eval, std::ref(context)));
+	RegisterStrict(root, "system", CallSystem);
+	RegisterStrictUnary<const string>(root, "ofs", [&](const string& path){
 		if(ifstream ifs{path})
 			return ifs;
 		throw LoggedEvent(
 			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
 	});
-	RegisterUnaryFunction<const string>(root, "oss", [&](const string& str){
+	RegisterStrictUnary<const string>(root, "oss", [&](const string& str){
 		return std::istringstream(str);
 	});
-	RegisterUnaryFunction<ifstream>(root, "parse-f", ParseStream);
-	RegisterUnaryFunction<std::istringstream>(root, "parse-s", ParseStream);
-	RegisterUnaryFunction<const string>(root, "lex", [&](const string& unit){
+	RegisterStrictUnary<ifstream>(root, "parse-f", ParseStream);
+	RegisterStrictUnary<std::istringstream>(root, "parse-s", ParseStream);
+	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
 		LexicalAnalyzer lex;
 
 		for(const auto& c : unit)
 			lex.ParseByte(c);
 		return lex;
 	});
-	RegisterUnaryFunction<LexicalAnalyzer>(root, "parse-lex", ParseOutput);
-	RegisterUnaryFunction<const int>(root, "itos", [](int x){
+	RegisterStrictUnary<LexicalAnalyzer>(root, "parse-lex", ParseOutput);
+	RegisterStrictUnary<const int>(root, "itos", [](int x){
 		return to_string(x);
 	});
-	RegisterUnaryFunction<const string>(root, "put", [&](const string& str){
+	RegisterStrictUnary<const string>(root, "put", [&](const string& str){
 		std::cout << EncodeArg(str);
 	});
-	RegisterUnaryFunction<const string>(root, "puts", [&](const string& str){
+	RegisterStrictUnary<const string>(root, "puts", [&](const string& str){
 		std::cout << EncodeArg(str) << std::endl;
 	});
-	RegisterUnaryFunction<const string>(root, "strlen", [&](const string& str){
+	RegisterStrictUnary<const string>(root, "strlen", [&](const string& str){
 		return int(str.length());
 	});
-	RegisterUnaryFunction(root, "typeid", [](TermNode& term){
+	RegisterStrictUnary(root, "typeid", [](TermNode& term){
 		// FIXME: Get it work with %YB_Use_LightweightTypeID.
 		return std::type_index(term.Value.GetType());
 	});
-	RegisterUnaryFunction<const std::type_index>(root, "nameof",
+	RegisterStrictUnary<const std::type_index>(root, "nameof",
 		[](const std::type_index& ti){
 		return string(ti.name());
 	});
-	RegisterFunction(root, "eq?", EqualReference);
-	RegisterFunction(root, "eqv?", EqualValue);
-	RegisterUnaryFunction<const string>(root, "env-get", [&](const string& var){
+	RegisterStrict(root, "eq?", EqualReference);
+	RegisterStrict(root, "eqv?", EqualValue);
+	RegisterStrictUnary<const string>(root, "env-get", [&](const string& var){
 		string res;
 
 		FetchEnvironmentVariable(res, var.c_str());
 		return res;
 	});
+	RegisterFormContextHandler(root, "$and", And);
+	RegisterFormContextHandler(root, "$or", Or);
+	RegisterFormContextHandler(root, "begin", ReduceOrdered),
+	RegisterFormContextHandler(root, "list",
+		static_cast<void(&)(TermNode&, ContextNode&)>(ReduceChildren));
+	context.Perform("$define not ($lambda (x) eqv? x #f)");
+	context.Perform("$define ptype ($lambda (x) puts (nameof (typeid(x))))");
 }
 
 } // unnamed namespace;
