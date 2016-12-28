@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r143
+\version r145
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-11-13 17:49 +0800
+	2016-12-28 14:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -75,8 +75,8 @@ yconstexpr Color DefaultColor(Gray), TitleColor(Cyan),
 class Interpreter
 {
 private:
-	/// 520
-	platform_ex::WConsole wc;
+	/// 755
+	platform_ex::Terminal terminal;
 	/// 674
 	YSLib::RecordLevel err_threshold;
 	/// 689

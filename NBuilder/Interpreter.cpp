@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r317
+\version r332
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-11-18 10:02 +0800
+	2016-12-28 14:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -54,11 +54,11 @@ namespace
 /// 520
 using namespace platform_ex;
 
-/// 691
+/// 755
 YB_NONNULL(3) void
-PrintError(WConsole& wc, const LoggedEvent& e, const char* name = "Error")
+PrintError(Terminal& terminal, const LoggedEvent& e, const char* name = "Error")
 {
-	wc.UpdateForeColor(ErrorColor);
+	terminal.UpdateForeColor(ErrorColor);
 	YF_TraceRaw(e.GetLevel(), "%s[%s]<%u>: %s", name, typeid(e).name(),
 		unsigned(e.GetLevel()), e.what());
 //	ExtractAndTrace(e, e.GetLevel());
@@ -93,7 +93,7 @@ LogTree(const ValueNode& node, Logger::Level lv)
 
 Interpreter::Interpreter(Application& app,
 	std::function<void(REPLContext&)> loader)
-	: wc(), err_threshold(RecordLevel(0x10)), line(),
+	: terminal(), err_threshold(RecordLevel(0x10)), line(),
 #if NPL_TracePerformDetails
 	context(true)
 #else
@@ -103,12 +103,12 @@ Interpreter::Interpreter(Application& app,
 	using namespace std;
 	using namespace platform_ex;
 
-	wc.UpdateForeColor(TitleColor);
+	terminal.UpdateForeColor(TitleColor);
 	cout << title << endl << "Initializing...";
 	p_env.reset(new Environment(app));
 	loader(context);
 	cout << "NPLC initialization OK!" << endl << endl;
-	wc.UpdateForeColor(InfoColor);
+	terminal.UpdateForeColor(InfoColor);
 	cout << "Type \"exit\" to exit,"
 		" \"cls\" to clear screen, \"help\", \"about\", or \"license\""
 		" for more information." << endl << endl;
@@ -124,7 +124,7 @@ Interpreter::HandleSignal(SSignal e)
 	switch(e)
 	{
 	case SSignal::ClearScreen:
-		wc.Clear();
+		terminal.Clear();
 		break;
 	case SSignal::About:
 		cout << not_impl << "About" << endl;
@@ -147,7 +147,7 @@ Interpreter::Process()
 
 	if(!line.empty())
 	{
-		wc.UpdateForeColor(SideEffectColor);
+		terminal.UpdateForeColor(SideEffectColor);
 		try
 		{
 			line = DecodeArg(line);
@@ -155,9 +155,9 @@ Interpreter::Process()
 			const auto res(context.Perform(line));
 
 #if NPL_TracePerform
-		//	wc.UpdateForeColor(InfoColor);
+		//	terminal.UpdateForeColor(InfoColor);
 		//	cout << "Unrecognized reduced token list:" << endl;
-			wc.UpdateForeColor(ReducedColor);
+			terminal.UpdateForeColor(ReducedColor);
 			LogTree(res);
 #endif
 		}
@@ -165,15 +165,15 @@ Interpreter::Process()
 		{
 			if(e == SSignal::Exit)
 				return {};
-			wc.UpdateForeColor(SignalColor);
+			terminal.UpdateForeColor(SignalColor);
 			HandleSignal(e);
 		}
-		CatchExpr(NPLException& e, PrintError(wc, e, "NPLException"))
+		CatchExpr(NPLException& e, PrintError(terminal, e, "NPLException"))
 		catch(LoggedEvent& e)
 		{
 			if(e.GetLevel() < err_threshold)
 				throw;
-			PrintError(wc, e);
+			PrintError(terminal, e);
 		}
 	}
 	return true;
@@ -187,9 +187,9 @@ Interpreter::WaitForLine()
 std::istream&
 Interpreter::WaitForLine(std::istream& is, std::ostream& os)
 {
-	wc.UpdateForeColor(PromptColor);
+	terminal.UpdateForeColor(PromptColor);
 	os << prompt;
-	wc.UpdateForeColor(DefaultColor);
+	terminal.UpdateForeColor(DefaultColor);
 	return std::getline(is, line);
 }
 
