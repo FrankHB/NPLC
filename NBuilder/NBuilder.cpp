@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5661
+\version r5679
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-01-03 15:54 +0800
+	2017-01-03 15:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -225,7 +225,25 @@ LoadFunctions(REPLContext& context)
 		return std::type_index(term.Value.GetType());
 	});
 	context.Perform("$define (ptype x) puts (nameof (typeid(x)))");
+	RegisterStrictUnary<string>(root, "get-typeid",
+		[&](const string& str) -> std::type_index{
+		if(str == "bool")
+			return typeid(bool);
+		if(str == "int")
+			return typeid(int);
+		if(str == "string")
+			return typeid(string);
+		return typeid(void);
+	});
+	context.Perform("$define (bool? x) eqv? (get-typeid \"bool\")"
+		" (typeid x)");
+	context.Perform("$define (int? x) eqv? (get-typeid \"int\")"
+		" (typeid x)");
+	context.Perform("$define (string? x) eqv? (get-typeid \"string\")"
+		" (typeid x)");
 	// NOTE: String library.
+	RegisterStrict(root, "++", std::bind(CallBinaryFold<string, ystdex::plus<>>,
+		ystdex::plus<>(), string(), _1), IsBranch);
 	RegisterStrictUnary<const int>(root, "itos", [](int x){
 		return to_string(x);
 	});
