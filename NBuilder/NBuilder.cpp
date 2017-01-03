@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5651
+\version r5661
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-01-03 15:51 +0800
+	2017-01-03 15:54 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -115,6 +115,11 @@ LoadFunctions(REPLContext& context)
 	RegisterLiteralSignal(root, "about", SSignal::About);
 	RegisterLiteralSignal(root, "help", SSignal::Help);
 	RegisterLiteralSignal(root, "license", SSignal::License);
+	// NOTE: Context builtins.
+	DefineValue(root, "REPL-context", ValueObject(context, OwnershipTag<>()),
+		{});
+	DefineValue(root, "root-context", ValueObject(root, OwnershipTag<>()),
+		{});
 	// NOTE: Literal expression forms.
 	RegisterFormContextHandler(root, "$quote", Quote, IsBranch);
 	RegisterFormContextHandler(root, "$quote1",
@@ -195,6 +200,13 @@ LoadFunctions(REPLContext& context)
 	});
 	RegisterStrict(root, "eval",
 		ystdex::bind1(Eval, std::ref(context)), IsBranch);
+	RegisterStrict(root, "eval-in", [](TermNode& term){
+		const auto& rctx(Access<REPLContext>(Deref(term.rbegin())));
+
+		term.Remove(std::prev(term.end()));
+		Eval(term, rctx);
+	}, ystdex::bind1(QuoteN, 2));
+	RegisterStrict(root, "value-of", ValueOf);
 	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
 		LexicalAnalyzer lex;
 
