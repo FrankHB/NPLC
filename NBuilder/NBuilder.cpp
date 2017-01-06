@@ -11,7 +11,7 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5679
+\version r5707
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
@@ -26,18 +26,11 @@
 
 
 #include "NBuilder.h"
-#include <streambuf>
-#include <sstream>
 #include <iostream>
-#include <fstream>
 #include <typeindex>
 #include <Helper/YModules.h>
-#include YFM_NPL_Configuration
-#include YFM_Helper_Initialization
-#include YFM_YCLib_Debug
-#include YFM_Win32_YCLib_MinGW32
-#include YFM_YSLib_Service_TextFile
-#include YFM_Win32_YCLib_NLS
+#include YFM_YSLib_Core_YApplication // for YSLib, Application;
+#include YFM_NPL_Dependency // for NPL, NPL::A1, LoadNPLContextForSHBuild;
 
 namespace NPL
 {
@@ -107,8 +100,10 @@ LoadFunctions(REPLContext& context)
 	using namespace Forms;
 	auto& root(context.Root);
 
-	LoadSequenceSeparators(root, context.ListTermPreprocess);
-	LoadDeafultLiteralPasses(root);
+	LoadNPLContextForSHBuild(context);
+	// TODO: Extract literal configuration API.
+//	LoadSequenceSeparators(root, context.ListTermPreprocess);
+//	LoadDeafultLiteralPasses(root);
 	// NOTE: Literal builtins.
 	RegisterLiteralSignal(root, "exit", SSignal::Exit);
 	RegisterLiteralSignal(root, "cls", SSignal::ClearScreen);
@@ -125,9 +120,6 @@ LoadFunctions(REPLContext& context)
 	RegisterFormContextHandler(root, "$quote1",
 		ystdex::bind1(QuoteN, 1), IsBranch);
 	// NOTE: Binding and control forms.
-	RegisterFormContextHandler(root, "$define",
-		std::bind(DefineOrSet, _1, _2, true), IsBranch);
-	RegisterFormContextHandler(root, "$if", If, IsBranch);
 	RegisterFormContextHandler(root, "$lambda", Lambda, IsBranch);
 	RegisterFormContextHandler(root, "$set",
 		std::bind(DefineOrSet, _1, _2, false), IsBranch);
@@ -187,17 +179,12 @@ LoadFunctions(REPLContext& context)
 		std::cout << EncodeArg(str);
 	});
 	RegisterStrictUnary<const string>(root, "puts", [&](const string& str){
+		// XXX: Overridding.
 		std::cout << EncodeArg(str) << std::endl;
 	});
-	// NOTE: Interop procedures.
+	// NOTE: Interoperation library.
 	RegisterStrict(root, "display", ystdex::bind1(LogTree, Notice));
 	RegisterStrictUnary<const string>(root, "echo", Echo);
-	RegisterStrictUnary<const string>(root, "env-get", [&](const string& var){
-		string res;
-
-		FetchEnvironmentVariable(res, var.c_str());
-		return res;
-	});
 	RegisterStrict(root, "eval",
 		ystdex::bind1(Eval, std::ref(context)), IsBranch);
 	RegisterStrict(root, "eval-in", [](TermNode& term){
@@ -218,8 +205,7 @@ LoadFunctions(REPLContext& context)
 		[](const std::type_index& ti){
 		return string(ti.name());
 	});
-	RegisterStrict(root, "system", CallSystem);
-	// NOTE: Type interop library.
+	// NOTE: Type operation library.
 	RegisterStrictUnary(root, "typeid", [](TermNode& term){
 		// FIXME: Get it work with %YB_Use_LightweightTypeID.
 		return std::type_index(term.Value.GetType());
@@ -242,15 +228,13 @@ LoadFunctions(REPLContext& context)
 	context.Perform("$define (string? x) eqv? (get-typeid \"string\")"
 		" (typeid x)");
 	// NOTE: String library.
-	RegisterStrict(root, "++", std::bind(CallBinaryFold<string, ystdex::plus<>>,
-		ystdex::plus<>(), string(), _1), IsBranch);
+	context.Perform(u8R"NPL($define (quote-string str) ++ "\"" str "\"")NPL");
 	RegisterStrictUnary<const int>(root, "itos", [](int x){
 		return to_string(x);
 	});
 	RegisterStrictUnary<const string>(root, "strlen", [&](const string& str){
 		return int(str.length());
 	});
-
 }
 
 } // unnamed namespace;
