@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5707
+\version r5759
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-01-03 15:56 +0800
+	2017-01-16 23:51 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -116,52 +116,40 @@ LoadFunctions(REPLContext& context)
 	DefineValue(root, "root-context", ValueObject(root, OwnershipTag<>()),
 		{});
 	// NOTE: Literal expression forms.
-	RegisterFormContextHandler(root, "$quote", Quote, IsBranch);
-	RegisterFormContextHandler(root, "$quote1",
-		ystdex::bind1(QuoteN, 1), IsBranch);
+	RegisterForm(root, "$quote", Quote);
+	RegisterForm(root, "$quote1",
+		ystdex::bind1(QuoteN, 1));
 	// NOTE: Binding and control forms.
-	RegisterFormContextHandler(root, "$lambda", Lambda, IsBranch);
-	RegisterFormContextHandler(root, "$set",
-		std::bind(DefineOrSet, _1, _2, false), IsBranch);
+	RegisterForm(root, "$lambda", Lambda);
 	// NOTE: Privmitive procedures.
-	RegisterFormContextHandler(root, "$and", And);
-	RegisterFormContextHandler(root, "$or", Or);
-	RegisterFormContextHandler(root, "begin", ReduceOrdered),
+	RegisterForm(root, "$and", And);
+	RegisterForm(root, "begin", ReduceOrdered),
 	RegisterStrict(root, "eq?", EqualReference);
-	RegisterStrict(root, "eqv?", EqualValue);
-	RegisterFormContextHandler(root, "list",
+	RegisterForm(root, "list",
 		static_cast<void(&)(TermNode&, ContextNode&)>(ReduceChildren));
-	context.Perform("$define (not x) eqv? x #f");
 	// NOTE: Arithmetic procedures.
 	// FIXME: Overflow?
 	RegisterStrict(root, "+", std::bind(CallBinaryFold<int, ystdex::plus<>>,
-		ystdex::plus<>(), 0, _1), IsBranch);
+		ystdex::plus<>(), 0, _1));
 	// FIXME: Overflow?
-	RegisterStrict(root, "add2", std::bind(CallBinaryAs<int, ystdex::plus<>>,
-		ystdex::plus<>(), _1), IsBranch);
+	RegisterStrictBinary<int>(root, "add2", ystdex::plus<>());
 	// FIXME: Underflow?
-	RegisterStrict(root, "-", std::bind(CallBinaryAs<int, ystdex::minus<>>,
-		ystdex::minus<>(), _1), IsBranch);
+	RegisterStrictBinary<int>(root, "-", ystdex::minus<>());
 	// FIXME: Overflow?
 	RegisterStrict(root, "*", std::bind(CallBinaryFold<int,
-		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1), IsBranch);
+		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1));
 	// FIXME: Overflow?
-	RegisterStrict(root, "multiply2", std::bind(CallBinaryAs<int,
-		ystdex::multiplies<>>, ystdex::multiplies<>(), _1), IsBranch);
-	RegisterStrict(root, "/", [](TermNode& term){
-		CallBinaryAs<int>([](int e1, int e2){
-			if(e2 != 0)
-				return e1 / e2;
-			throw std::domain_error("Runtime error: divided by zero.");
-		}, term);
-	}, IsBranch);
-	RegisterStrict(root, "%", [](TermNode& term){
-		CallBinaryAs<int>([](int e1, int e2){
-			if(e2 != 0)
-				return e1 % e2;
-			throw std::domain_error("Runtime error: divided by zero.");
-		}, term);
-	}, IsBranch);
+	RegisterStrictBinary<int>(root, "multiply2", ystdex::multiplies<>());
+	RegisterStrictBinary<int>(root, "/", [](int e1, int e2){
+		if(e2 != 0)
+			return e1 / e2;
+		throw std::domain_error("Runtime error: divided by zero.");
+	});
+	RegisterStrictBinary<int>(root, "%", [](int e1, int e2){
+		if(e2 != 0)
+			return e1 % e2;
+		throw std::domain_error("Runtime error: divided by zero.");
+	});
 	// NOTE: I/O library.
 	RegisterStrictUnary<const string>(root, "ofs", [&](const string& path){
 		if(ifstream ifs{path})
@@ -186,14 +174,14 @@ LoadFunctions(REPLContext& context)
 	RegisterStrict(root, "display", ystdex::bind1(LogTree, Notice));
 	RegisterStrictUnary<const string>(root, "echo", Echo);
 	RegisterStrict(root, "eval",
-		ystdex::bind1(Eval, std::ref(context)), IsBranch);
+		ystdex::bind1(Eval, std::ref(context)));
 	RegisterStrict(root, "eval-in", [](TermNode& term){
-		const auto& rctx(Access<REPLContext>(Deref(term.rbegin())));
+		const auto i(std::next(term.begin()));
+		const auto& rctx(Access<REPLContext>(Deref(i)));
 
-		term.Remove(std::prev(term.end()));
+		term.Remove(i);
 		Eval(term, rctx);
 	}, ystdex::bind1(QuoteN, 2));
-	RegisterStrict(root, "value-of", ValueOf);
 	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
 		LexicalAnalyzer lex;
 
@@ -235,6 +223,20 @@ LoadFunctions(REPLContext& context)
 	RegisterStrictUnary<const string>(root, "strlen", [&](const string& str){
 		return int(str.length());
 	});
+	// NOTE: SHBuild builitins.
+	// XXX: Overriding.
+	DefineValue(root, "SHBuild_BaseTerminalHook_",
+		ValueObject(std::function<void(const string&, const string&)>(
+		[](const string& n, const string& val){
+			// XXX: Errors from stream operations are ignored.
+			using namespace std;
+			Terminal te;
+
+			cout << te.LockForeColor(DarkCyan) << n;
+			cout << " = \"";
+			cout << te.LockForeColor(DarkRed) << val;
+			cout << '"' << endl;
+	})), true);
 }
 
 } // unnamed namespace;
