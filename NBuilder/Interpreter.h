@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2016 FrankHB.
+	© 2013-2017 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r145
+\version r147
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2016-12-28 14:45 +0800
+	2017-01-14 23:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -30,7 +30,6 @@
 
 #include <Helper/YModules.h>
 #include "NPLContext.h"
-#include YFM_Win32_YCLib_Consoles
 #include YFM_YSLib_Core_YConsole
 #include YFM_Helper_Environment
 #include <iosfwd>
