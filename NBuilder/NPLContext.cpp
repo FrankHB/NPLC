@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2270
+\version r2274
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2017-01-03 15:32 +0800
+	2017-01-30 09:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -54,7 +54,7 @@ void
 LoadDeafultLiteralPasses(ContextNode& ctx)
 {
 	AccessLiteralPassesRef(ctx)
-		= [](TermNode& term, ContextNode&, string_view id) -> bool{
+		= [](TermNode& term, ContextNode&, string_view id) -> ReductionStatus{
 		YAssertNonnull(id.data());
 		if(!id.empty())
 		{
@@ -95,7 +95,7 @@ LoadDeafultLiteralPasses(ContextNode& ctx)
 				else if(id == "-nan.t")
 					term.Value = -std::numeric_limits<long double>::quiet_NaN();
 				else if(f != '#')
-					return true;
+					return ReductionStatus::Retrying;
 			}
 			else if(std::isdigit(f))
 			{
@@ -117,9 +117,9 @@ LoadDeafultLiteralPasses(ContextNode& ctx)
 #endif
 			}
 			else
-				return true;
+				return ReductionStatus::Retrying;
 		}
-		return {};
+		return ReductionStatus::Clean;
 	};
 }
 

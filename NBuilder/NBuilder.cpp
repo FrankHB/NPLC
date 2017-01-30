@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5759
+\version r5760
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-01-16 23:51 +0800
+	2017-01-30 09:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -42,7 +42,7 @@ void
 RegisterLiteralSignal(ContextNode& node, const string& name, SSignal sig)
 {
 	RegisterLiteralHandler(node, name,
-		[=](const ContextNode&) YB_ATTR(noreturn) -> bool{
+		[=](const ContextNode&) YB_ATTR(noreturn) -> ReductionStatus{
 		throw sig;
 	});
 }
