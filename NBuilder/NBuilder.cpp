@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5760
+\version r5765
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-01-30 09:53 +0800
+	2017-02-06 20:52 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -116,9 +116,9 @@ LoadFunctions(REPLContext& context)
 	DefineValue(root, "root-context", ValueObject(root, OwnershipTag<>()),
 		{});
 	// NOTE: Literal expression forms.
-	RegisterForm(root, "$quote", Quote);
-	RegisterForm(root, "$quote1",
-		ystdex::bind1(QuoteN, 1));
+	RegisterForm(root, "$Retain", Retain);
+	RegisterForm(root, "$Retain1",
+		ystdex::bind1(RetainN, 1));
 	// NOTE: Binding and control forms.
 	RegisterForm(root, "$lambda", Lambda);
 	// NOTE: Privmitive procedures.
@@ -181,7 +181,7 @@ LoadFunctions(REPLContext& context)
 
 		term.Remove(i);
 		Eval(term, rctx);
-	}, ystdex::bind1(QuoteN, 2));
+	}, ystdex::bind1(RetainN, 2));
 	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
 		LexicalAnalyzer lex;
 
@@ -216,7 +216,7 @@ LoadFunctions(REPLContext& context)
 	context.Perform("$define (string? x) eqv? (get-typeid \"string\")"
 		" (typeid x)");
 	// NOTE: String library.
-	context.Perform(u8R"NPL($define (quote-string str) ++ "\"" str "\"")NPL");
+	context.Perform(u8R"NPL($define (Retain-string str) ++ "\"" str "\"")NPL");
 	RegisterStrictUnary<const int>(root, "itos", [](int x){
 		return to_string(x);
 	});
