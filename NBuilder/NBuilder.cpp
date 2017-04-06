@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5863
+\version r5881
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-04-06 21:21 +0800
+	2017-04-07 00:12 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -218,9 +218,36 @@ LoadFunctions(REPLContext& context)
 	// NOTE: The sequence operator is also available as infix ';' syntax sugar.
 	RegisterForm(root, "$sequence", ReduceOrdered);
 	RegisterStrict(root, "list", ReduceToList);
+	context.Perform(u8R"NPL(
+		$def! head $lambda ((x .)) x;
+		$def! tail $lambda ((#ignore .x)) x;
+		$def! apply
+		(
+			$lambda (appv arg .opt)
+			(
+				eval (cons () (cons (unwrap appv) arg))
+					($if (null? opt) (() make-environment) (head opt))
+			)
+		);
+		$defrec! $cond $vau clauses env
+		(
+			$sequence
+			(
+				$def! aux $lambda ((test .body) .clauses)
+					$if (eval test env)
+				(apply (wrap $sequence) body env)
+				(apply (wrap $cond) clauses env)
+			)
+			(
+				$if (null? clauses)
+				inert
+				(apply aux clauses)
+			)
+		);
+	)NPL");
 #else
 	// NOTE: They can be derived as Kernel does.
-	context.Perform(u8R"NPL($defrec! list $lambda x x)NPL");
+	context.Perform(u8R"NPL($def! list $lambda x x)NPL");
 #endif
 	RegisterStrict(root, "id", [](TermNode& term){
 		RetainN(term);
