@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5782
+\version r5799
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-04-06 13:28 +0800
+	2017-04-06 13:33 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -89,6 +89,24 @@ ParseStream(std::istream& is)
 			Session::DefaultParseByte(sess.Lexer, c);
 		ParseOutput(sess.Lexer);
 	}
+}
+
+
+/// 780
+void
+LoadExternal(REPLContext& context, const string& name)
+{
+	platform::ifstream ifs(name, std::ios_base::in);
+
+	if(ifs)
+	{
+		YTraceDe(Notice, "Test unit '%s' found.", name.c_str());
+		FilterExceptions([&]{
+			context.LoadFrom(ifs);
+		});
+	}
+	else
+		YTraceDe(Notice, "Test unit '%s' not found.", name.c_str());
 }
 
 
@@ -246,6 +264,8 @@ LoadFunctions(REPLContext& context)
 			cout << te.LockForeColor(DarkRed) << val;
 			cout << '"' << endl;
 	})), true);
+	RegisterStrictUnary<const string>(root, "load",
+		std::bind(LoadExternal, std::ref(context), _1));
 }
 
 } // unnamed namespace;
