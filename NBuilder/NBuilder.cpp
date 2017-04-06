@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5765
+\version r5769
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-02-06 20:52 +0800
+	2017-04-06 13:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -173,14 +173,14 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Interoperation library.
 	RegisterStrict(root, "display", ystdex::bind1(LogTree, Notice));
 	RegisterStrictUnary<const string>(root, "echo", Echo);
-	RegisterStrict(root, "eval",
-		ystdex::bind1(Eval, std::ref(context)));
-	RegisterStrict(root, "eval-in", [](TermNode& term){
+	RegisterStrict(root, "eval-u",
+		ystdex::bind1(EvaluateUnit, std::ref(context)));
+	RegisterStrict(root, "eval-u-in", [](TermNode& term){
 		const auto i(std::next(term.begin()));
 		const auto& rctx(Access<REPLContext>(Deref(i)));
 
 		term.Remove(i);
-		Eval(term, rctx);
+		EvaluateUnit(term, rctx);
 	}, ystdex::bind1(RetainN, 2));
 	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
 		LexicalAnalyzer lex;
