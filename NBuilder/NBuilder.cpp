@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5775
+\version r5778
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-04-06 13:19 +0800
+	2017-04-06 13:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -110,6 +110,9 @@ LoadFunctions(REPLContext& context)
 	RegisterLiteralSignal(root, "about", SSignal::About);
 	RegisterLiteralSignal(root, "help", SSignal::Help);
 	RegisterLiteralSignal(root, "license", SSignal::License);
+	// NOTE: This is named after '#inert' in Kernel, but essentially
+	//	unspecified in NPLA.
+	DefineValue(root, "inert", ValueToken::Unspecified, {});
 	// NOTE: Context builtins.
 	DefineValue(root, "REPL-context", ValueObject(context, OwnershipTag<>()),
 		{});
