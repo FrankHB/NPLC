@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5816
+\version r5820
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-04-06 14:06 +0800
+	2017-04-06 14:07 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -161,12 +161,16 @@ LoadFunctions(REPLContext& context)
 */
 	RegisterStrict(root, "eq?", EqualReference);
 //	RegisterStrict(root, "eqv?", EqualValue);
+	// FIXME: This requires a string.
+	RegisterStrictUnary<const string>(root, "symbol?", IsSymbol);
 //	RegisterForm(root, "$if", If);
 	// NOTE: Though NPLA does not use cons pairs, corresponding primitives are
 	//	still necessary.
 	RegisterStrictUnary(root, "list?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
 	RegisterStrictUnary(root, "null?", IsEmpty);
+	// NOTE: Since NPL has no con pairs, it only added head to existed list.
+	RegisterStrict(root, "cons", Cons);
 	// NOTE: The applicative 'copy-es-immutable' is unsupported currently due to
 	//	different implementation of control primitives.
 	RegisterStrict(root, "eval", Eval);
