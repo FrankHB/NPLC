@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5769
+\version r5775
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-04-06 13:17 +0800
+	2017-04-06 13:19 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -127,6 +127,12 @@ LoadFunctions(REPLContext& context)
 	RegisterStrict(root, "eq?", EqualReference);
 	RegisterForm(root, "list",
 		static_cast<void(&)(TermNode&, ContextNode&)>(ReduceChildren));
+	// NOTE: Comparison.
+	RegisterStrictBinary<int>(root, "=?", ystdex::equal_to<>());
+	RegisterStrictBinary<int>(root, "<?", ystdex::less<>());
+	RegisterStrictBinary<int>(root, "<=?", ystdex::less_equal<>());
+	RegisterStrictBinary<int>(root, ">=?", ystdex::greater_equal<>());
+	RegisterStrictBinary<int>(root, ">?", ystdex::greater<>());
 	// NOTE: Arithmetic procedures.
 	// FIXME: Overflow?
 	RegisterStrict(root, "+", std::bind(CallBinaryFold<int, ystdex::plus<>>,
