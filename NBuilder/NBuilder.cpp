@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5799
+\version r5741
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-04-06 13:33 +0800
+	2017-04-06 13:47 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -93,6 +93,15 @@ ParseStream(std::istream& is)
 
 
 /// 780
+//@{
+bool
+IfDef(observer_ptr<const string> p, const ContextNode& ctx)
+{
+	return ystdex::call_value_or([&](string_view id){
+		return bool(ResolveName(ctx, id));
+	}, p);
+}
+
 void
 LoadExternal(REPLContext& context, const string& name)
 {
@@ -108,6 +117,7 @@ LoadExternal(REPLContext& context, const string& name)
 	else
 		YTraceDe(Notice, "Test unit '%s' not found.", name.c_str());
 }
+//@}
 
 
 /// 740
@@ -145,8 +155,32 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$and", And);
 	RegisterForm(root, "begin", ReduceOrdered),
 	RegisterStrict(root, "eq?", EqualReference);
-	RegisterForm(root, "list",
+//	RegisterStrict(root, "eqv?", EqualValue);
+//	RegisterForm(root, "$vau", Vau);
+	RegisterStrict(root, "id", [](TermNode& term){
+		RetainN(term);
+		LiftTerm(term, Deref(std::next(term.begin())));
+		return
+			IsBranch(term) ? ReductionStatus::Retained : ReductionStatus::Clean;
+	});
+	// NOTE: Derived functions with privmitive implementation.
+	RegisterForm(root, "$and?", And);
+	RegisterForm(root, "$delay", [](TermNode& term, ContextNode&){
+		term.Remove(term.begin());
+		
+		ValueObject x(DelayedTerm(std::move(term)));
+
+		term.Value = std::move(x);
+		return ReductionStatus::Clean;
+	});
+	// TODO: Provide 'equal?'.
+	RegisterForm(root, "evalv",
 		static_cast<void(&)(TermNode&, ContextNode&)>(ReduceChildren));
+	RegisterStrict(root, "force", [](TermNode& term){
+		RetainN(term);
+		return EvaluateDelayed(term,
+			Access<DelayedTerm>(Deref(std::next(term.begin()))));
+	});
 	// NOTE: Comparison.
 	RegisterStrictBinary<int>(root, "=?", ystdex::equal_to<>());
 	RegisterStrictBinary<int>(root, "<?", ystdex::less<>());
@@ -208,6 +242,13 @@ LoadFunctions(REPLContext& context)
 		term.Remove(i);
 		EvaluateUnit(term, rctx);
 	}, ystdex::bind1(RetainN, 2));
+	RegisterStrictUnary(root, "ifdef",
+		[](TermNode& term, const ContextNode& ctx){
+		return IfDef(AccessPtr<string>(term), ctx);
+	});
+	RegisterStrictBinary(root, "ifdefc", [&](TermNode& t, TermNode& c){
+		return IfDef(AccessPtr<string>(t), Access<ContextNode>(c));
+	});
 	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
 		LexicalAnalyzer lex;
 
@@ -242,6 +283,8 @@ LoadFunctions(REPLContext& context)
 	context.Perform("$define (string? x) eqv? (get-typeid \"string\")"
 		" (typeid x)");
 	// NOTE: String library.
+	RegisterStrict(root, "string=?", std::bind(CallBinaryFold<string,
+		ystdex::equal_to<>>, ystdex::equal_to<>(), string(), _1));
 	context.Perform(u8R"NPL($define (Retain-string str) ++ "\"" str "\"")NPL");
 	RegisterStrictUnary<const int>(root, "itos", [](int x){
 		return to_string(x);
@@ -264,8 +307,10 @@ LoadFunctions(REPLContext& context)
 			cout << te.LockForeColor(DarkRed) << val;
 			cout << '"' << endl;
 	})), true);
+	context.Perform("$define (iput x) puts (itos x)");
 	RegisterStrictUnary<const string>(root, "load",
 		std::bind(LoadExternal, std::ref(context), _1));
+	LoadExternal(context, "test.txt");
 }
 
 } // unnamed namespace;
