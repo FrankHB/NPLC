@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r337
+\version r358
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2017-01-14 23:47 +0800
+	2017-04-06 13:18 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -74,16 +74,29 @@ LogTree(const ValueNode& node, Logger::Level lv)
 
 	PrintNode(oss, node, [](const ValueNode& nd){
 		return EscapeLiteral([&]() -> string{
-			if(const auto p = AccessPtr<string>(nd))
-				return *p;
-			if(const auto p = AccessPtr<bool>(nd))
-				return *p ? "[bool] #t" : "[bool] #f";
+			if(nd.Value != A1::ValueToken::Null)
+			{
+				if(const auto p = AccessPtr<string>(nd))
+					return *p;
+				if(const auto p = AccessPtr<TokenValue>(nd))
+					return sfmt("[TokenValue] %s", p->c_str());
+				if(const auto p = AccessPtr<A1::ValueToken>(nd))
+					return sfmt("[ValueToken] %s", to_string(*p).c_str());
+				if(const auto p = AccessPtr<bool>(nd))
+					return *p ? "[bool] #t" : "[bool] #f";
+				if(const auto p = AccessPtr<int>(nd))
+					return sfmt("[int] %d", *p);
+				if(const auto p = AccessPtr<unsigned>(nd))
+					return sfmt("[uint] %u", *p);
+				if(const auto p = AccessPtr<double>(nd))
+					return sfmt("[double] %lf", *p);
 
-			const auto& v(nd.Value);
-			const auto& t(v.GetType());
+				const auto& v(nd.Value);
+				const auto& t(v.GetType());
 
-			if(t != ystdex::type_id<void>())
-				return ystdex::quote(string(t.name()), '[', ']');
+				if(t != ystdex::type_id<void>())
+					return ystdex::quote(string(t.name()), '[', ']');
+			}
 			throw ystdex::bad_any_cast();
 		}());
 	});
