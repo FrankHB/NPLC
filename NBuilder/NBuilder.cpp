@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5741
+\version r5816
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-04-06 13:47 +0800
+	2017-04-06 14:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -149,14 +149,68 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Literal expression forms.
 	RegisterForm(root, "$retain", Retain);
 	RegisterForm(root, "$retain1", ystdex::bind1(RetainN, 1));
-	// NOTE: Binding and control forms.
-	RegisterForm(root, "$lambda", Lambda);
-	// NOTE: Privmitive procedures.
-	RegisterForm(root, "$and", And);
-	RegisterForm(root, "begin", ReduceOrdered),
+#if true
+	// NOTE: Primitive features, listed as RnRK, except mentioned above.
+/*
+	The primitives are provided here to maintain acyclic dependencies on derived
+		forms, also for simplicity of semantics.
+	The primitives are listed in order as Chapter 4 of Revised^-1 Report on the
+		Kernel Programming Language. Derived forms are not ordered likewise.
+	There are some difference of listed primitives.
+	See $2017-02 @ %Documentation::Workflow::Annual2017.
+*/
 	RegisterStrict(root, "eq?", EqualReference);
 //	RegisterStrict(root, "eqv?", EqualValue);
+//	RegisterForm(root, "$if", If);
+	// NOTE: Though NPLA does not use cons pairs, corresponding primitives are
+	//	still necessary.
+	RegisterStrictUnary(root, "list?", IsList);
+	// TODO: Add nonnull list predicate to improve performance?
+	RegisterStrictUnary(root, "null?", IsEmpty);
+	// NOTE: The applicative 'copy-es-immutable' is unsupported currently due to
+	//	different implementation of control primitives.
+	RegisterStrict(root, "eval", Eval);
+	RegisterStrict(root, "get-current-environment",
+		[](TermNode& term, ContextNode& ctx){
+		term.Value = ValueObject(ctx, OwnershipTag<>());
+	});
+	RegisterStrict(root, "make-environment",
+		[](TermNode& term, ContextNode& ctx){
+		// FIXME: Parent environments?
+		term.Value = ValueObject(ctx, OwnershipTag<>());
+	});
 //	RegisterForm(root, "$vau", Vau);
+	RegisterStrictUnary<ContextHandler>(root, "wrap",
+		[](const ContextHandler& h){
+		// TODO: Use 'MakeMoveCopy'?
+		return ToContextHandler(h);
+	});
+	// NOTE: This does check before wrapping.
+	RegisterStrictUnary<ContextHandler>(root, "wrap1",
+		[](const ContextHandler& h){
+		// TODO: Use 'MakeMoveCopy'?
+		if(const auto p = h.target<FormContextHandler>())
+			return ToContextHandler(*p);
+		throw NPLException("Wrapping failed.");
+	});
+	RegisterStrictUnary<ContextHandler>(root, "unwrap",
+		[](const ContextHandler& h){
+		// TODO: Use 'MakeMoveCopy'?
+		if(const auto p = h.target<StrictContextHandler>())
+			return ContextHandler(p->Handler);
+		throw NPLException("Unwrapping failed.");
+	});
+#endif
+#if true
+	// NOTE: Some combiners are provided here as host primitives for
+	//	more efficiency and less dependencies.
+	// NOTE: The sequence operator is also available as infix ';' syntax sugar.
+	RegisterForm(root, "$sequence", ReduceOrdered);
+	RegisterStrict(root, "list", ReduceToList);
+#else
+	// NOTE: They can be derived as Kernel does.
+	context.Perform(u8R"NPL($define! list $lambda x x)NPL");
+#endif
 	RegisterStrict(root, "id", [](TermNode& term){
 		RetainN(term);
 		LiftTerm(term, Deref(std::next(term.begin())));
@@ -270,13 +324,29 @@ LoadFunctions(REPLContext& context)
 		[&](const string& str) -> std::type_index{
 		if(str == "bool")
 			return typeid(bool);
+		if(str == "environment")
+			// XXX: The environment is same to context node currently.
+			// FIXME: %ContextNode should be different to %ValueNode.
+			return typeid(ContextNode);
 		if(str == "int")
 			return typeid(int);
+		if(str == "operative")
+			return typeid(FormContextHandler);
+		if(str == "applicative")
+			return typeid(StrictContextHandler);
 		if(str == "string")
 			return typeid(string);
 		return typeid(void);
 	});
 	context.Perform("$define (bool? x) eqv? (get-typeid \"bool\")"
+		" (typeid x)");
+	context.Perform("$define (environment? x) eqv? (get-typeid \"environment\")"
+		" (typeid x)");
+	// FIXME: Wrong result.
+	context.Perform("$define (operative? x) eqv? (get-typeid \"operative\")"
+		" (typeid x)");
+	// FIXME: Wrong result.
+	context.Perform("$define (applicative? x) eqv? (get-typeid \"applicative\")"
 		" (typeid x)");
 	context.Perform("$define (int? x) eqv? (get-typeid \"int\")"
 		" (typeid x)");
