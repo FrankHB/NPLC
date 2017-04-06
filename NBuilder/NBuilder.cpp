@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5820
+\version r5863
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-04-06 14:07 +0800
+	2017-04-06 21:21 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -163,6 +163,8 @@ LoadFunctions(REPLContext& context)
 //	RegisterStrict(root, "eqv?", EqualValue);
 	// FIXME: This requires a string.
 	RegisterStrictUnary<const string>(root, "symbol?", IsSymbol);
+	// NOTE: Like Scheme but not Kernel, %'$if' treats non-boolean value as
+	//	'#f', for zero overhead principle.
 //	RegisterForm(root, "$if", If);
 	// NOTE: Though NPLA does not use cons pairs, corresponding primitives are
 	//	still necessary.
@@ -174,15 +176,20 @@ LoadFunctions(REPLContext& context)
 	// NOTE: The applicative 'copy-es-immutable' is unsupported currently due to
 	//	different implementation of control primitives.
 	RegisterStrict(root, "eval", Eval);
-	RegisterStrict(root, "get-current-environment",
-		[](TermNode& term, ContextNode& ctx){
-		term.Value = ValueObject(ctx, OwnershipTag<>());
-	});
 	RegisterStrict(root, "make-environment",
 		[](TermNode& term, ContextNode& ctx){
 		// FIXME: Parent environments?
 		term.Value = ValueObject(ctx, OwnershipTag<>());
 	});
+	// NOTE: Environment mutation is optional in Kernel and supported here.
+	// NOTE: Lazy form '$deflazy!' is the basic operation, which may bind
+	//	parameter as unevaluated operands. For zero overhead principle, the form
+	//	without recursion (named '$def!') is preferred. The recursion variant
+	//	(named '$defrec!') is exact '$define!' in Kernel, and is used only when
+	//	necessary.
+	RegisterForm(root, "$deflazy!", DefineLazy);
+	RegisterForm(root, "$def!", DefineWithNoRecursion);
+	RegisterForm(root, "$defrec!", DefineWithRecursion);
 //	RegisterForm(root, "$vau", Vau);
 	RegisterStrictUnary<ContextHandler>(root, "wrap",
 		[](const ContextHandler& h){
@@ -213,7 +220,7 @@ LoadFunctions(REPLContext& context)
 	RegisterStrict(root, "list", ReduceToList);
 #else
 	// NOTE: They can be derived as Kernel does.
-	context.Perform(u8R"NPL($define! list $lambda x x)NPL");
+	context.Perform(u8R"NPL($defrec! list $lambda x x)NPL");
 #endif
 	RegisterStrict(root, "id", [](TermNode& term){
 		RetainN(term);
@@ -291,6 +298,21 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Interoperation library.
 	RegisterStrict(root, "display", ystdex::bind1(LogTree, Notice));
 	RegisterStrictUnary<const string>(root, "echo", Echo);
+	// NOTE: Environments.
+	RegisterForm(root, "$binds?",
+		[](TermNode& term, const ContextNode& ctx){
+		CallUnaryAs<const TokenValue>([&](const TokenValue& t){
+			return IfDef(make_observer(&t), ctx);
+		}, term);
+	});
+	// NOTE: Following strict variants are not in Kernel.
+	RegisterStrictUnary(root, "binds?",
+		[](TermNode& term, const ContextNode& ctx){
+		return IfDef(AccessPtr<string>(term), ctx);
+	});
+	RegisterStrictBinary(root, "binds-in?", [&](TermNode& t, TermNode& c){
+		return IfDef(AccessPtr<string>(t), Access<ContextNode>(c));
+	});
 	RegisterStrict(root, "eval-u",
 		ystdex::bind1(EvaluateUnit, std::ref(context)));
 	RegisterStrict(root, "eval-u-in", [](TermNode& term){
@@ -300,13 +322,24 @@ LoadFunctions(REPLContext& context)
 		term.Remove(i);
 		EvaluateUnit(term, rctx);
 	}, ystdex::bind1(RetainN, 2));
-	RegisterStrictUnary(root, "ifdef",
-		[](TermNode& term, const ContextNode& ctx){
-		return IfDef(AccessPtr<string>(term), ctx);
+#if true
+	RegisterStrict(root, "get-current-environment",
+		[](TermNode& term, ContextNode& ctx){
+		term.Value = ValueObject(ctx, OwnershipTag<>());
 	});
-	RegisterStrictBinary(root, "ifdefc", [&](TermNode& t, TermNode& c){
-		return IfDef(AccessPtr<string>(t), Access<ContextNode>(c));
-	});
+#else
+	// NOTE: %'eq?' shall hold for results of alternative library derivation
+	//	and the implementation above.
+	context.Perform(u8R"NPL(
+		$def get-current-environment
+		(
+			wrap
+			(
+				$vau () e e
+			)
+		);
+	)NPL");
+#endif
 	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
 		LexicalAnalyzer lex;
 
