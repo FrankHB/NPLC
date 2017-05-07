@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6007
+\version r6020
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-07 23:48 +0800
+	2017-05-07 23:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -261,6 +261,19 @@ LoadFunctions(REPLContext& context)
 		throw NPLException("Unwrapping failed.");
 	});
 #endif
+	// NOTE: NPLA value transferring.
+	RegisterStrictUnary(root, "vcopy", [](TermNode& term){
+		return term.Value.MakeCopy();
+	});
+	RegisterStrictUnary(root, "vmove", [](TermNode& term){
+		return term.Value.MakeMove();
+	});
+	RegisterStrictUnary(root, "vmovecopy", [](TermNode& term){
+		return term.Value.MakeMoveCopy();
+	});
+	// XXX: Unsafe.
+	RegisterStrictUnary(root, "vref", ystdex::compose(ReferenceValue,
+		ystdex::bind1(std::mem_fn(&TermNode::Value))));
 	// XXX: For test or debug only.
 	RegisterStrictUnary(root, "tt", DefaultDebugAction);
 	RegisterStrictUnary<const string>(root, "dbg", [](const string& cmd){
