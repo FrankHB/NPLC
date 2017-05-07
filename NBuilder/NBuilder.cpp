@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6020
+\version r6036
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-07 23:50 +0800
+	2017-05-07 23:54 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -221,10 +221,8 @@ LoadFunctions(REPLContext& context)
 	//	basic than vau.
 	// NOTE: 'eq? (() get-current-environment) (() (wrap ($vau () e e)))' shall
 	//	be '#t'.
-	RegisterStrict(root, "get-current-environment",
-		[](TermNode& term, ContextNode& ctx){
-		term.Value = ValueObject(ctx, OwnershipTag<>());
-	});
+	RegisterStrict(root, "get-current-environment", GetCurrentEnvironment);
+
 	RegisterStrict(root, "make-environment",
 		[](TermNode& term, ContextNode& ctx){
 		// FIXME: Parent environments?
@@ -373,6 +371,18 @@ LoadFunctions(REPLContext& context)
 				(apply aux clauses)
 			)
 		);
+		$def! $set! $vau (exp1 formals .exp2) env eval
+		(
+			list $def! formals (unwrap eval) exp2 env
+		) (eval exp1 env);
+		$def! $defl! $vau (f formals .body) env eval
+		(
+			list $set! env f $lambda formals body
+		) env;
+		$def! $defv! $vau ($f formals senv .body) env eval
+		(
+			list $set! env $f $vau formals senv body
+		) env;
 	)NPL");
 	// NOTE: Derived functions with privmitive implementation.
 	RegisterForm(root, "$and?", And);
