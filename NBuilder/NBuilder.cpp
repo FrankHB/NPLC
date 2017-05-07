@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5885
+\version r5901
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-07 23:24 +0800
+	2017-05-07 23:37 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -196,20 +196,17 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$vaue!", ystdex::bind1(VauWithEnvironment, _2, true));
 	RegisterStrictUnary<ContextHandler>(root, "wrap",
 		[](const ContextHandler& h){
-		// TODO: Use 'MakeMoveCopy'?
 		return ToContextHandler(h);
 	});
 	// NOTE: This does check before wrapping.
 	RegisterStrictUnary<ContextHandler>(root, "wrap1",
 		[](const ContextHandler& h){
-		// TODO: Use 'MakeMoveCopy'?
 		if(const auto p = h.target<FormContextHandler>())
 			return ToContextHandler(*p);
 		throw NPLException("Wrapping failed.");
 	});
 	RegisterStrictUnary<ContextHandler>(root, "unwrap",
 		[](const ContextHandler& h){
-		// TODO: Use 'MakeMoveCopy'?
 		if(const auto p = h.target<StrictContextHandler>())
 			return ContextHandler(p->Handler);
 		throw NPLException("Unwrapping failed.");
@@ -221,6 +218,20 @@ LoadFunctions(REPLContext& context)
 	// NOTE: The sequence operator is also available as infix ';' syntax sugar.
 	RegisterForm(root, "$sequence", ReduceOrdered);
 	RegisterStrict(root, "list", ReduceToList);
+	RegisterStrict(root, "id", [](TermNode& term){
+		RetainN(term);
+		LiftTerm(term, Deref(std::next(term.begin())));
+		return
+			IsBranch(term) ? ReductionStatus::Retained : ReductionStatus::Clean;
+	});
+#else
+	// NOTE: They can be derived as Kernel does.
+	// FIXME: Object denoted '$aux' is used out of lifetime.
+	// FIXME: Support tail parameter ellipsis.
+	context.Perform(u8R"NPL($def! list wrap ($vau x #ignore x))NPL");
+//	context.Perform(u8R"NPL($def! list $lambda x x)NPL");
+	context.Perform(u8R"NPL($def! id $lambda (x) x)NPL");
+#endif
 	context.Perform(u8R"NPL(
 		$def! head $lambda ((x .)) x;
 		$def! tail $lambda ((#ignore .x)) x;
@@ -248,21 +259,11 @@ LoadFunctions(REPLContext& context)
 			)
 		);
 	)NPL");
-#else
-	// NOTE: They can be derived as Kernel does.
-	context.Perform(u8R"NPL($def! list $lambda x x)NPL");
-#endif
-	RegisterStrict(root, "id", [](TermNode& term){
-		RetainN(term);
-		LiftTerm(term, Deref(std::next(term.begin())));
-		return
-			IsBranch(term) ? ReductionStatus::Retained : ReductionStatus::Clean;
-	});
 	// NOTE: Derived functions with privmitive implementation.
 	RegisterForm(root, "$and?", And);
 	RegisterForm(root, "$delay", [](TermNode& term, ContextNode&){
 		term.Remove(term.begin());
-		
+
 		ValueObject x(DelayedTerm(std::move(term)));
 
 		term.Value = std::move(x);
