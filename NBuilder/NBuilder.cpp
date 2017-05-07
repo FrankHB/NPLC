@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5904
+\version r5957
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-07 23:39 +0800
+	2017-05-07 23:44 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -176,6 +176,14 @@ LoadFunctions(REPLContext& context)
 	// NOTE: The applicative 'copy-es-immutable' is unsupported currently due to
 	//	different implementation of control primitives.
 	RegisterStrict(root, "eval", Eval);
+	// NOTE: This is now be primitive since in NPL environment capture is more
+	//	basic than vau.
+	// NOTE: 'eq? (() get-current-environment) (() (wrap ($vau () e e)))' shall
+	//	be '#t'.
+	RegisterStrict(root, "get-current-environment",
+		[](TermNode& term, ContextNode& ctx){
+		term.Value = ValueObject(ctx, OwnershipTag<>());
+	});
 	RegisterStrict(root, "make-environment",
 		[](TermNode& term, ContextNode& ctx){
 		// FIXME: Parent environments?
@@ -228,6 +236,43 @@ LoadFunctions(REPLContext& context)
 	// NOTE: They can be derived as Kernel does.
 	// FIXME: Object denoted '$aux' is used out of lifetime.
 	// FIXME: Support tail parameter ellipsis.
+	context.Perform(u8R"NPL(
+		$def! __make-stdenv $lambda () () get-current-environment;
+		$def! $sequence
+		(
+			wrap
+			(
+				$vau ($seq2) #ignore
+				(
+					$seq2
+					(
+						$defrec! $aux $vaue! (() __make-stdenv) (head .tail)
+							env
+						(
+							$if (null? tail)
+							(eval head env)
+							(
+								$seq2 (eval head env)
+									(eval (cons $aux tail) env)
+							)
+						)
+					)
+					(
+						$vaue! (() __make-stdenv) body env
+						(
+							$if (null? body)
+							inert
+							(eval (cons $aux body) env)
+						)
+					)
+				)
+			)
+		)
+		(
+			$vau (first second) env
+				(wrap ($vau #ignore #ignore (eval second env))) (eval first env)
+		)
+	)NPL");
 	context.Perform(u8R"NPL($def! list wrap ($vau x #ignore x))NPL");
 //	context.Perform(u8R"NPL($def! list $lambda x x)NPL");
 	context.Perform(u8R"NPL($def! id $lambda (x) x)NPL");
@@ -356,24 +401,6 @@ LoadFunctions(REPLContext& context)
 		term.Remove(i);
 		EvaluateUnit(term, rctx);
 	}, ystdex::bind1(RetainN, 2));
-#if true
-	RegisterStrict(root, "get-current-environment",
-		[](TermNode& term, ContextNode& ctx){
-		term.Value = ValueObject(ctx, OwnershipTag<>());
-	});
-#else
-	// NOTE: %'eq?' shall hold for results of alternative library derivation
-	//	and the implementation above.
-	context.Perform(u8R"NPL(
-		$def get-current-environment
-		(
-			wrap
-			(
-				$vau () e e
-			)
-		);
-	)NPL");
-#endif
 	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
 		LexicalAnalyzer lex;
 
