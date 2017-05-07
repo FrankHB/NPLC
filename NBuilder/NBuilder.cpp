@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5881
+\version r5885
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-04-07 00:12 +0800
+	2017-05-07 23:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -190,7 +190,10 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$deflazy!", DefineLazy);
 	RegisterForm(root, "$def!", DefineWithNoRecursion);
 	RegisterForm(root, "$defrec!", DefineWithRecursion);
-//	RegisterForm(root, "$vau", Vau);
+//	RegisterForm(root, "$vau", ystdex::bind1(Vau, _2, false));
+	RegisterForm(root, "$vau!", ystdex::bind1(Vau, _2, true));
+	RegisterForm(root, "$vaue", ystdex::bind1(VauWithEnvironment, _2, false));
+	RegisterForm(root, "$vaue!", ystdex::bind1(VauWithEnvironment, _2, true));
 	RegisterStrictUnary<ContextHandler>(root, "wrap",
 		[](const ContextHandler& h){
 		// TODO: Use 'MakeMoveCopy'?
