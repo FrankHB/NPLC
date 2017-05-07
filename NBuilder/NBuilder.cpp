@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r5957
+\version r6007
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-07 23:44 +0800
+	2017-05-07 23:48 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -90,6 +90,47 @@ ParseStream(std::istream& is)
 		ParseOutput(sess.Lexer);
 	}
 }
+
+
+/// 785
+//@{
+ReductionStatus
+ProcessDebugCommand()
+{
+	string cmd;
+
+	getline(std::cin, cmd);
+	if(cmd == "r")
+		return ReductionStatus::Retrying;
+	return ReductionStatus::Clean;
+}
+
+bool use_debug = {};
+
+ReductionStatus
+DefaultDebugAction(TermNode& term)
+{
+	if(use_debug)
+	{
+		YTraceDe(Debug, "List term: %p", ystdex::pvoid(&term));
+		LogTree(term);
+		return ProcessDebugCommand();
+	}
+	return ReductionStatus::Clean;
+}
+
+ReductionStatus
+DefaultLeafDebugAction(TermNode& term)
+{
+	if(use_debug)
+	{
+		YTraceDe(Debug, "Leaf term: %p", ystdex::pvoid(&term));
+		LogTree(term);
+		return ProcessDebugCommand();
+	}
+	return ReductionStatus::Clean;
+}
+//@}
 
 
 /// 780
@@ -220,6 +261,19 @@ LoadFunctions(REPLContext& context)
 		throw NPLException("Unwrapping failed.");
 	});
 #endif
+	// XXX: For test or debug only.
+	RegisterStrictUnary(root, "tt", DefaultDebugAction);
+	RegisterStrictUnary<const string>(root, "dbg", [](const string& cmd){
+		if(cmd == "on")
+			use_debug = true;
+		else if(cmd == "off")
+			use_debug = {};
+		else if(cmd == "crash")
+			terminate();
+	});
+	RegisterForm(root, "$crash", []{
+		terminate();
+	});
 #if true
 	// NOTE: Some combiners are provided here as host primitives for
 	//	more efficiency and less dependencies.
@@ -479,6 +533,8 @@ LoadFunctions(REPLContext& context)
 	RegisterStrictUnary<const string>(root, "load",
 		std::bind(LoadExternal, std::ref(context), _1));
 	LoadExternal(context, "test.txt");
+	AccessListPassesRef(root).Add(DefaultDebugAction, 255);
+	AccessLeafPassesRef(root).Add(DefaultLeafDebugAction, 255);
 }
 
 } // unnamed namespace;
