@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6036
+\version r6059
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-07 23:54 +0800
+	2017-05-08 00:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -222,7 +222,24 @@ LoadFunctions(REPLContext& context)
 	// NOTE: 'eq? (() get-current-environment) (() (wrap ($vau () e e)))' shall
 	//	be '#t'.
 	RegisterStrict(root, "get-current-environment", GetCurrentEnvironment);
+	RegisterStrict(root, "copy-environment",
+		[&](TermNode& term, ContextNode& ctx){
+		yconstexpr const auto ParentContextName("__$@_parent");
+		ContextNode c(ctx, ValueNode());
+		auto& e(c.Environment);
 
+		for(const auto& b : ctx.Environment)
+			if(b.GetName() != ParentContextName)
+				e.emplace(b.CreateWith(IValueHolder::Copy),
+					b.GetName(), b.Value.MakeCopy());
+			else if(const auto p = AccessPtr<weak_ptr<ContextNode>>(b))
+			{
+				if(const auto p_ctx = p->lock())
+					e.emplace(NoContainer, ParentContextName,
+						share_copy(*p_ctx));
+			}
+		term.Value = ValueObject(std::move(c));
+	});
 	RegisterStrict(root, "make-environment",
 		[](TermNode& term, ContextNode& ctx){
 		// FIXME: Parent environments?
@@ -299,10 +316,10 @@ LoadFunctions(REPLContext& context)
 	});
 #else
 	// NOTE: They can be derived as Kernel does.
-	// FIXME: Object denoted '$aux' is used out of lifetime.
-	// FIXME: Support tail parameter ellipsis.
+	// XXX: The current environment is better to be saved by
+	//	'$lambda () () get-current-environment'.
+	// TODO: Avoid redundant environment copy.
 	context.Perform(u8R"NPL(
-		$def! __make-stdenv $lambda () () get-current-environment;
 		$def! $sequence
 		(
 			wrap
@@ -311,7 +328,7 @@ LoadFunctions(REPLContext& context)
 				(
 					$seq2
 					(
-						$defrec! $aux $vaue! (() __make-stdenv) (head .tail)
+						$defrec! $aux $vaue! (() copy-environment) (head .tail)
 							env
 						(
 							$if (null? tail)
@@ -323,7 +340,7 @@ LoadFunctions(REPLContext& context)
 						)
 					)
 					(
-						$vaue! (() __make-stdenv) body env
+						$vaue! (() copy-environment) body env
 						(
 							$if (null? body)
 							inert
