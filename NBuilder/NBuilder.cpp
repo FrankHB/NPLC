@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6059
+\version r6075
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-08 00:06 +0800
+	2017-05-08 13:21 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -258,23 +258,10 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$vau!", ystdex::bind1(Vau, _2, true));
 	RegisterForm(root, "$vaue", ystdex::bind1(VauWithEnvironment, _2, false));
 	RegisterForm(root, "$vaue!", ystdex::bind1(VauWithEnvironment, _2, true));
-	RegisterStrictUnary<ContextHandler>(root, "wrap",
-		[](const ContextHandler& h){
-		return ToContextHandler(h);
-	});
+	RegisterStrictUnary<ContextHandler>(root, "wrap", Wrap);
 	// NOTE: This does check before wrapping.
-	RegisterStrictUnary<ContextHandler>(root, "wrap1",
-		[](const ContextHandler& h){
-		if(const auto p = h.target<FormContextHandler>())
-			return ToContextHandler(*p);
-		throw NPLException("Wrapping failed.");
-	});
-	RegisterStrictUnary<ContextHandler>(root, "unwrap",
-		[](const ContextHandler& h){
-		if(const auto p = h.target<StrictContextHandler>())
-			return ContextHandler(p->Handler);
-		throw NPLException("Unwrapping failed.");
-	});
+	RegisterStrictUnary<ContextHandler>(root, "wrap1", WrapOnce);
+	RegisterStrictUnary<ContextHandler>(root, "unwrap", Unwrap);
 #endif
 	// NOTE: NPLA value transferring.
 	RegisterStrictUnary(root, "vcopy", [](TermNode& term){
