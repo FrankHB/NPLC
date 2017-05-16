@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6115
+\version r6122
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-17 04:37 +0800
+	2017-05-17 04:39 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -252,6 +252,8 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$deflazy!", DefineLazy);
 //	RegisterForm(root, "$def!", DefineWithNoRecursion);
 	RegisterForm(root, "$defrec!", DefineWithRecursion);
+	RegisterForm(root, "$undef!", ystdex::bind1(Undefine, _2, true));
+	RegisterForm(root, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
 //	RegisterForm(root, "$vau", ystdex::bind1(Vau, _2, false));
 	RegisterForm(root, "$vau!", ystdex::bind1(Vau, _2, true));
 	RegisterForm(root, "$vaue", ystdex::bind1(VauWithEnvironment, _2, false));
@@ -264,6 +266,9 @@ LoadFunctions(REPLContext& context)
 	// NOTE: NPLA value transferring.
 	RegisterStrictUnary(root, "vcopy", [](TermNode& term){
 		return term.Value.MakeCopy();
+	});
+	RegisterStrictUnary(root, "vcopymove", [](TermNode& term){
+		return term.Value.CopyMove();
 	});
 	RegisterStrictUnary(root, "vmove", [](TermNode& term){
 		return term.Value.MakeMove();
@@ -347,6 +352,7 @@ LoadFunctions(REPLContext& context)
 	context.Perform(u8R"NPL(
 		$def! head $lambda ((x .)) x;
 		$def! tail $lambda ((#ignore .x)) x;
+		$def! $quote $vau (x) #ignore x;
 		$def! apply
 		(
 			$lambda (appv arg .opt)
@@ -543,6 +549,7 @@ LoadFunctions(REPLContext& context)
 		[&](const string& str){
 		return int(str.length());
 	});
+	RegisterStrictUnary<const string>(root, "string->symbol", StringToSymbol);
 //	RegisterStrictUnary<const TokenValue>(root, "symbol->string",
 	//	SymbolToString);
 	// NOTE: SHBuild builitins.
