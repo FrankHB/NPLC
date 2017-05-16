@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r358
+\version r359
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2017-04-06 13:18 +0800
+	2017-05-13 19:05 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -118,7 +118,7 @@ Interpreter::Interpreter(Application& app,
 
 	terminal.UpdateForeColor(TitleColor);
 	cout << title << endl << "Initializing...";
-	p_env.reset(new Environment(app));
+	p_env.reset(new YSLib::Environment(app));
 	loader(context);
 	cout << "NPLC initialization OK!" << endl << endl;
 	terminal.UpdateForeColor(InfoColor);
