@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6104
+\version r6115
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-17 04:29 +0800
+	2017-05-17 04:37 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -215,7 +215,7 @@ LoadFunctions(REPLContext& context)
 	RegisterStrict(root, "cons", Cons);
 	// NOTE: The applicative 'copy-es-immutable' is unsupported currently due to
 	//	different implementation of control primitives.
-	RegisterStrict(root, "eval", Eval);
+//	RegisterStrict(root, "eval", Eval);
 	// NOTE: This is now be primitive since in NPL environment capture is more
 	//	basic than vau.
 	// NOTE: 'eq? (() get-current-environment) (() (wrap ($vau () e e)))' shall
@@ -250,7 +250,7 @@ LoadFunctions(REPLContext& context)
 	//	(named '$defrec!') is exact '$define!' in Kernel, and is used only when
 	//	necessary.
 	RegisterForm(root, "$deflazy!", DefineLazy);
-	RegisterForm(root, "$def!", DefineWithNoRecursion);
+//	RegisterForm(root, "$def!", DefineWithNoRecursion);
 	RegisterForm(root, "$defrec!", DefineWithRecursion);
 //	RegisterForm(root, "$vau", ystdex::bind1(Vau, _2, false));
 	RegisterForm(root, "$vau!", ystdex::bind1(Vau, _2, true));
@@ -259,7 +259,7 @@ LoadFunctions(REPLContext& context)
 	RegisterStrictUnary<ContextHandler>(root, "wrap", Wrap);
 	// NOTE: This does check before wrapping.
 	RegisterStrictUnary<ContextHandler>(root, "wrap1", WrapOnce);
-	RegisterStrictUnary<ContextHandler>(root, "unwrap", Unwrap);
+//	RegisterStrictUnary<ContextHandler>(root, "unwrap", Unwrap);
 #endif
 	// NOTE: NPLA value transferring.
 	RegisterStrictUnary(root, "vcopy", [](TermNode& term){
@@ -292,7 +292,7 @@ LoadFunctions(REPLContext& context)
 	//	more efficiency and less dependencies.
 	// NOTE: The sequence operator is also available as infix ';' syntax sugar.
 	RegisterForm(root, "$sequence", ReduceOrdered);
-	RegisterStrict(root, "list", ReduceToList);
+//	RegisterStrict(root, "list", ReduceToList);
 	RegisterStrict(root, "id", [](TermNode& term){
 		RetainN(term);
 		LiftTerm(term, Deref(std::next(term.begin())));
@@ -340,7 +340,7 @@ LoadFunctions(REPLContext& context)
 				(wrap ($vau #ignore #ignore (eval second env))) (eval first env)
 		)
 	)NPL");
-	context.Perform(u8R"NPL($def! list wrap ($vau x #ignore x))NPL");
+//	context.Perform(u8R"NPL($def! list wrap ($vau x #ignore x))NPL");
 //	context.Perform(u8R"NPL($def! list $lambda x x)NPL");
 	context.Perform(u8R"NPL($def! id $lambda (x) x)NPL");
 #endif
@@ -373,6 +373,9 @@ LoadFunctions(REPLContext& context)
 				(apply aux clauses)
 			)
 		);
+	)NPL");
+#if false
+	context.Perform(u8R"NPL(
 		$def! $set! $vau (exp1 formals .exp2) env eval
 		(
 			list $def! formals (unwrap eval) exp2 env
@@ -386,6 +389,7 @@ LoadFunctions(REPLContext& context)
 			list $set! env $f $vau formals senv body
 		) env;
 	)NPL");
+#endif
 	// NOTE: Derived functions with privmitive implementation.
 	RegisterForm(root, "$and?", And);
 	RegisterForm(root, "$delay", [](TermNode& term, ContextNode&){
@@ -539,6 +543,8 @@ LoadFunctions(REPLContext& context)
 		[&](const string& str){
 		return int(str.length());
 	});
+//	RegisterStrictUnary<const TokenValue>(root, "symbol->string",
+	//	SymbolToString);
 	// NOTE: SHBuild builitins.
 	// XXX: Overriding.
 	root_env.Define("SHBuild_BaseTerminalHook_",
