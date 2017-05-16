@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6075
+\version r6104
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-08 13:21 +0800
+	2017-05-17 04:29 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -168,6 +168,7 @@ LoadFunctions(REPLContext& context)
 	using namespace std::placeholders;
 	using namespace Forms;
 	auto& root(context.Root);
+	auto& root_env(root.GetRecordRef());
 
 	LoadNPLContextForSHBuild(context);
 	// TODO: Extract literal configuration API.
@@ -181,12 +182,10 @@ LoadFunctions(REPLContext& context)
 	RegisterLiteralSignal(root, "license", SSignal::License);
 	// NOTE: This is named after '#inert' in Kernel, but essentially
 	//	unspecified in NPLA.
-	DefineValue(root, "inert", ValueToken::Unspecified, {});
+	root_env.Define("inert", ValueToken::Unspecified, {});
 	// NOTE: Context builtins.
-	DefineValue(root, "REPL-context", ValueObject(context, OwnershipTag<>()),
-		{});
-	DefineValue(root, "root-context", ValueObject(root, OwnershipTag<>()),
-		{});
+	root_env.Define("REPL-context", ValueObject(context, OwnershipTag<>()), {});
+	root_env.Define("root-context", ValueObject(root, OwnershipTag<>()), {});
 	// NOTE: Literal expression forms.
 	RegisterForm(root, "$retain", Retain);
 	RegisterForm(root, "$retain1", ystdex::bind1(RetainN, 1));
@@ -225,25 +224,24 @@ LoadFunctions(REPLContext& context)
 	RegisterStrict(root, "copy-environment",
 		[&](TermNode& term, ContextNode& ctx){
 		yconstexpr const auto ParentContextName("__$@_parent");
-		ContextNode c(ctx, ValueNode());
-		auto& e(c.Environment);
+		auto p_env(make_shared<NPL::Environment>());
+		auto& e(p_env->GetMapRef());
 
-		for(const auto& b : ctx.Environment)
+		for(const auto& b : ctx.GetBindingsRef())
 			if(b.GetName() != ParentContextName)
-				e.emplace(b.CreateWith(IValueHolder::Copy),
-					b.GetName(), b.Value.MakeCopy());
-			else if(const auto p = AccessPtr<weak_ptr<ContextNode>>(b))
+				e.emplace(b.CreateWith(ystdex::id<>()), b.GetName(), b.Value);
+			else if(const auto p = AccessPtr<weak_ptr<NPL::Environment>>(b))
 			{
-				if(const auto p_ctx = p->lock())
+				if(const auto p_parent = p->lock())
 					e.emplace(NoContainer, ParentContextName,
-						share_copy(*p_ctx));
+						share_copy(*p_parent));
 			}
-		term.Value = ValueObject(std::move(c));
+		term.Value = ValueObject(std::move(p_env));
 	});
 	RegisterStrict(root, "make-environment",
 		[](TermNode& term, ContextNode& ctx){
 		// FIXME: Parent environments?
-		term.Value = ValueObject(ctx, OwnershipTag<>());
+		GetCurrentEnvironment(term, ctx);
 	});
 	// NOTE: Environment mutation is optional in Kernel and supported here.
 	// NOTE: Lazy form '$deflazy!' is the basic operation, which may bind
@@ -498,15 +496,14 @@ LoadFunctions(REPLContext& context)
 		// FIXME: Get it work with %YB_Use_LightweightTypeID.
 		return std::type_index(term.Value.GetType());
 	});
-	context.Perform("$define (ptype x) puts (nameof (typeid(x)))");
+	context.Perform("$defl! ptype (x) puts (nameof (typeid(x)))");
 	RegisterStrictUnary<string>(root, "get-typeid",
 		[&](const string& str) -> std::type_index{
 		if(str == "bool")
 			return typeid(bool);
 		if(str == "environment")
-			// XXX: The environment is same to context node currently.
-			// FIXME: %ContextNode should be different to %ValueNode.
-			return typeid(ContextNode);
+			// XXX: The environment type is not unique.
+			return typeid(weak_ptr<NPL::Environment>);
 		if(str == "int")
 			return typeid(int);
 		if(str == "operative")
@@ -517,24 +514,24 @@ LoadFunctions(REPLContext& context)
 			return typeid(string);
 		return typeid(void);
 	});
-	context.Perform("$define (bool? x) eqv? (get-typeid \"bool\")"
+	context.Perform("$defl! bool? (x) eqv? (get-typeid \"bool\")"
 		" (typeid x)");
-	context.Perform("$define (environment? x) eqv? (get-typeid \"environment\")"
-		" (typeid x)");
-	// FIXME: Wrong result.
-	context.Perform("$define (operative? x) eqv? (get-typeid \"operative\")"
+	context.Perform("$defl! environment? (x) eqv? (get-typeid \"environment\")"
 		" (typeid x)");
 	// FIXME: Wrong result.
-	context.Perform("$define (applicative? x) eqv? (get-typeid \"applicative\")"
+	context.Perform("$defl! operative? (x) eqv? (get-typeid \"operative\")"
 		" (typeid x)");
-	context.Perform("$define (int? x) eqv? (get-typeid \"int\")"
+	// FIXME: Wrong result.
+	context.Perform("$defl! applicative? (x) eqv? (get-typeid \"applicative\")"
 		" (typeid x)");
-	context.Perform("$define (string? x) eqv? (get-typeid \"string\")"
+	context.Perform("$defl! int? (x) eqv? (get-typeid \"int\")"
+		" (typeid x)");
+	context.Perform("$defl! string? (x) eqv? (get-typeid \"string\")"
 		" (typeid x)");
 	// NOTE: String library.
 	RegisterStrict(root, "string=?", std::bind(CallBinaryFold<string,
 		ystdex::equal_to<>>, ystdex::equal_to<>(), string(), _1));
-	context.Perform(u8R"NPL($define (Retain-string str) ++ "\"" str "\"")NPL");
+	context.Perform(u8R"NPL($defl! retain-string (str) ++ "\"" str "\"")NPL");
 	RegisterStrictUnary<const int>(root, "itos", [](int x){
 		return to_string(x);
 	});
@@ -544,7 +541,7 @@ LoadFunctions(REPLContext& context)
 	});
 	// NOTE: SHBuild builitins.
 	// XXX: Overriding.
-	DefineValue(root, "SHBuild_BaseTerminalHook_",
+	root_env.Define("SHBuild_BaseTerminalHook_",
 		ValueObject(std::function<void(const string&, const string&)>(
 		[](const string& n, const string& val){
 			// XXX: Errors from stream operations are ignored.
@@ -556,7 +553,7 @@ LoadFunctions(REPLContext& context)
 			cout << te.LockForeColor(DarkRed) << val;
 			cout << '"' << endl;
 	})), true);
-	context.Perform("$define (iput x) puts (itos x)");
+	context.Perform("$defl! iput (x) puts (itos x)");
 	RegisterStrictUnary<const string>(root, "load",
 		std::bind(LoadExternal, std::ref(context), _1));
 	LoadExternal(context, "test.txt");
