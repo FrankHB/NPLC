@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6122
+\version r6266
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-17 04:39 +0800
+	2017-05-21 07:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -180,9 +180,7 @@ LoadFunctions(REPLContext& context)
 	RegisterLiteralSignal(root, "about", SSignal::About);
 	RegisterLiteralSignal(root, "help", SSignal::Help);
 	RegisterLiteralSignal(root, "license", SSignal::License);
-	// NOTE: This is named after '#inert' in Kernel, but essentially
-	//	unspecified in NPLA.
-	root_env.Define("inert", ValueToken::Unspecified, {});
+	// NOTE: Definition of %inert is in %YFramework.NPL.Dependency.
 	// NOTE: Context builtins.
 	root_env.Define("REPL-context", ValueObject(context, OwnershipTag<>()), {});
 	root_env.Define("root-context", ValueObject(root, OwnershipTag<>()), {});
@@ -190,15 +188,8 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$retain", Retain);
 	RegisterForm(root, "$retain1", ystdex::bind1(RetainN, 1));
 #if true
-	// NOTE: Primitive features, listed as RnRK, except mentioned above.
-/*
-	The primitives are provided here to maintain acyclic dependencies on derived
-		forms, also for simplicity of semantics.
-	The primitives are listed in order as Chapter 4 of Revised^-1 Report on the
-		Kernel Programming Language. Derived forms are not ordered likewise.
-	There are some difference of listed primitives.
-	See $2017-02 @ %Documentation::Workflow::Annual2017.
-*/
+	// NOTE: Primitive features, listed as RnRK, except mentioned above. See
+	//	%YFramework.NPL.Dependency.
 	RegisterStrict(root, "eq?", EqualReference);
 //	RegisterStrict(root, "eqv?", EqualValue);
 	// FIXME: This requires a string.
@@ -206,52 +197,13 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Like Scheme but not Kernel, %'$if' treats non-boolean value as
 	//	'#f', for zero overhead principle.
 //	RegisterForm(root, "$if", If);
-	// NOTE: Though NPLA does not use cons pairs, corresponding primitives are
-	//	still necessary.
 	RegisterStrictUnary(root, "list?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
-	RegisterStrictUnary(root, "null?", IsEmpty);
-	// NOTE: Since NPL has no con pairs, it only added head to existed list.
-	RegisterStrict(root, "cons", Cons);
-	// NOTE: The applicative 'copy-es-immutable' is unsupported currently due to
-	//	different implementation of control primitives.
-//	RegisterStrict(root, "eval", Eval);
-	// NOTE: This is now be primitive since in NPL environment capture is more
-	//	basic than vau.
-	// NOTE: 'eq? (() get-current-environment) (() (wrap ($vau () e e)))' shall
-	//	be '#t'.
-	RegisterStrict(root, "get-current-environment", GetCurrentEnvironment);
-	RegisterStrict(root, "copy-environment",
-		[&](TermNode& term, ContextNode& ctx){
-		yconstexpr const auto ParentContextName("__$@_parent");
-		auto p_env(make_shared<NPL::Environment>());
-		auto& e(p_env->GetMapRef());
-
-		for(const auto& b : ctx.GetBindingsRef())
-			if(b.GetName() != ParentContextName)
-				e.emplace(b.CreateWith(ystdex::id<>()), b.GetName(), b.Value);
-			else if(const auto p = AccessPtr<weak_ptr<NPL::Environment>>(b))
-			{
-				if(const auto p_parent = p->lock())
-					e.emplace(NoContainer, ParentContextName,
-						share_copy(*p_parent));
-			}
-		term.Value = ValueObject(std::move(p_env));
-	});
-	RegisterStrict(root, "make-environment",
-		[](TermNode& term, ContextNode& ctx){
-		// FIXME: Parent environments?
-		GetCurrentEnvironment(term, ctx);
-	});
+	// NOTE: Definitions of null?, cons, eval, get-current-environment,
+	//	copy-environment, make-environment are in %YFramework.NPL.Dependency.
 	// NOTE: Environment mutation is optional in Kernel and supported here.
-	// NOTE: Lazy form '$deflazy!' is the basic operation, which may bind
-	//	parameter as unevaluated operands. For zero overhead principle, the form
-	//	without recursion (named '$def!') is preferred. The recursion variant
-	//	(named '$defrec!') is exact '$define!' in Kernel, and is used only when
-	//	necessary.
-	RegisterForm(root, "$deflazy!", DefineLazy);
-//	RegisterForm(root, "$def!", DefineWithNoRecursion);
-	RegisterForm(root, "$defrec!", DefineWithRecursion);
+	// NOTE: Definitions of $deflazy!, $def!, $defrec! are in
+	//	%YFramework.NPL.Dependency.
 	RegisterForm(root, "$undef!", ystdex::bind1(Undefine, _2, true));
 	RegisterForm(root, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
 //	RegisterForm(root, "$vau", ystdex::bind1(Vau, _2, false));
@@ -292,12 +244,8 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$crash", []{
 		terminate();
 	});
+	// NOTE: Definitions of $sequence, list are in %YFramework.NPL.Dependency.
 #if true
-	// NOTE: Some combiners are provided here as host primitives for
-	//	more efficiency and less dependencies.
-	// NOTE: The sequence operator is also available as infix ';' syntax sugar.
-	RegisterForm(root, "$sequence", ReduceOrdered);
-//	RegisterStrict(root, "list", ReduceToList);
 	RegisterStrict(root, "id", [](TermNode& term){
 		RetainN(term);
 		LiftTerm(term, Deref(std::next(term.begin())));
@@ -305,97 +253,15 @@ LoadFunctions(REPLContext& context)
 			IsBranch(term) ? ReductionStatus::Retained : ReductionStatus::Clean;
 	});
 #else
-	// NOTE: They can be derived as Kernel does.
-	// XXX: The current environment is better to be saved by
-	//	'$lambda () () get-current-environment'.
-	// TODO: Avoid redundant environment copy.
-	context.Perform(u8R"NPL(
-		$def! $sequence
-		(
-			wrap
-			(
-				$vau ($seq2) #ignore
-				(
-					$seq2
-					(
-						$defrec! $aux $vaue! (() copy-environment) (head .tail)
-							env
-						(
-							$if (null? tail)
-							(eval head env)
-							(
-								$seq2 (eval head env)
-									(eval (cons $aux tail) env)
-							)
-						)
-					)
-					(
-						$vaue! (() copy-environment) body env
-						(
-							$if (null? body)
-							inert
-							(eval (cons $aux body) env)
-						)
-					)
-				)
-			)
-		)
-		(
-			$vau (first second) env
-				(wrap ($vau #ignore #ignore (eval second env))) (eval first env)
-		)
-	)NPL");
-//	context.Perform(u8R"NPL($def! list wrap ($vau x #ignore x))NPL");
-//	context.Perform(u8R"NPL($def! list $lambda x x)NPL");
 	context.Perform(u8R"NPL($def! id $lambda (x) x)NPL");
 #endif
 	context.Perform(u8R"NPL(
 		$def! head $lambda ((x .)) x;
 		$def! tail $lambda ((#ignore .x)) x;
 		$def! $quote $vau (x) #ignore x;
-		$def! apply
-		(
-			$lambda (appv arg .opt)
-			(
-				eval (cons () (cons (unwrap appv) arg))
-					($if (null? opt) (() make-environment) (head opt))
-			)
-		);
-		$defrec! list* $lambda (head .tail)
-			$if (null? tail) head
-				(cons head (apply list* tail));
-		$defrec! $cond $vau clauses env
-		(
-			$sequence
-			(
-				$def! aux $lambda ((test .body) .clauses)
-					$if (eval test env)
-				(apply (wrap $sequence) body env)
-				(apply (wrap $cond) clauses env)
-			)
-			(
-				$if (null? clauses)
-				inert
-				(apply aux clauses)
-			)
-		);
 	)NPL");
-#if false
-	context.Perform(u8R"NPL(
-		$def! $set! $vau (exp1 formals .exp2) env eval
-		(
-			list $def! formals (unwrap eval) exp2 env
-		) (eval exp1 env);
-		$def! $defl! $vau (f formals .body) env eval
-		(
-			list $set! env f $lambda formals body
-		) env;
-		$def! $defv! $vau ($f formals senv .body) env eval
-		(
-			list $set! env $f $vau formals senv body
-		) env;
-	)NPL");
-#endif
+	// NOTE: Definitions of apply, list*, $cond, $set!, $defl!, $defv!, $when,
+	//	$unless, not? are in %YFramework.NPL.Dependency.
 	// NOTE: Derived functions with privmitive implementation.
 	RegisterForm(root, "$and?", And);
 	RegisterForm(root, "$delay", [](TermNode& term, ContextNode&){
