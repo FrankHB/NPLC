@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6281
+\version r6285
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-30 02:14 +0800
+	2017-05-30 02:16 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -404,6 +404,10 @@ LoadFunctions(REPLContext& context)
 		" (typeid x)");
 	context.Perform("$defl! string? (x) eqv? (get-typeid \"string\")"
 		" (typeid x)");
+	// NOTE: List library.
+	RegisterStrictUnary(root, "list-length", [&](TermNode& term){
+		return int(term.size());
+	});
 	// NOTE: String library.
 	RegisterStrict(root, "string=?", std::bind(CallBinaryFold<string,
 		ystdex::equal_to<>>, ystdex::equal_to<>(), string(), _1));
