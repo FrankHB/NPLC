@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6285
+\version r6352
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-05-30 02:16 +0800
+	2017-06-05 00:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -258,11 +258,58 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Definitions of first, rest are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$def! $quote $vau (x) #ignore x;
+		$defl! xcons (x y) cons y x;
 	)NPL");
-	// NOTE: Definitions of apply, list*, $cond, $set!, $defl!, $defv!, $when,
-	//	$unless, not? are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of apply, list*, $cond, $set!, $defl!, $defv!, $defw!,
+	//	list-rest, accl, accr, foldr1, map1 are in
+	//	%YFramework.NPL.Dependency.
+	context.Perform(u8R"NPL(
+		$defl! foldl1 (kons knil l) accl l null? knil first rest kons;
+		$defw! map1-reverse (appv l) env foldl1
+			($lambda (x xs) cons (apply appv (list x) env) xs) () l;
+		$defl! list-concat (x y) foldr1 cons y x;
+		$defl! list-copy-strict (l) foldr1 cons () l;
+		$defl! list-copy (obj) $if (list? obj) (list-copy-strict obj) obj;
+		$defl! reverse (l) foldl1 cons () l;
+		$defl! snoc (x r) (list-concat r (list x));
+		$defl! append (.ls) foldr1 list-concat () ls;
+		$def! foldr wrap
+		(
+			$defl! cxrs (ls cxr) accr ls null? () ($lambda (l) cxr (first l))
+				rest cons;
+			$vau (kons knil .ls) env
+				(accr ls unfoldable? knil ($lambda (ls) cxrs ls first)
+					($lambda (ls) cxrs ls rest)
+					($lambda (x st) apply kons (list-concat x (list st)) env))
+		);
+		$def! map wrap
+		(
+			$defl! cxrs (ls cxr) accr ls null? () ($lambda (l) cxr (first l))
+				rest cons;
+			$vau (appv .ls) env accr ls unfoldable? ()
+				($lambda (ls) cxrs ls first) ($lambda (ls) cxrs ls rest)
+				($lambda (x xs) cons (apply appv x env) xs)
+		);
+		$defw! for-each-rtl ls env $sequence (apply map ls env) inert;
+	)NPL");
+	// NOTE: Definitions of $let, $let* are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of not?, $when, $unless are in
+	//	%YFramework.NPL.Dependency.
+	context.Perform(u8R"NPL(
+		$defv! $letrec (bindings .body) env
+			eval (list $let () $sequence (list $defrec! (map1 first bindings)
+				(list* () list (map1 rest bindings))) body) env;
+		$defrec! $letrec* $vau (bindings .body) env
+			eval ($if (null? bindings) (list* $letrec bindings body)
+				(list $letrec (list (first bindings))
+				(list* $letrec* (rest bindings) body))) env;
+		$defv! $let-redirect (expr bindings .body) env
+			eval (list* (eval (list* $lambda (map1 first bindings) body)
+				(eval expr env)) (map1 list-rest bindings)) env;
+	)NPL");
 	// NOTE: Derived functions with privmitive implementation.
-	// NOTE: Definitions of $and?, $or? are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of $and?, $or?, unfoldable?, map-reverse for-each-ltr
+	//	are in %YFramework.NPL.Dependency.
 	RegisterForm(root, "$delay", [](TermNode& term, ContextNode&){
 		term.Remove(term.begin());
 
@@ -271,7 +318,6 @@ LoadFunctions(REPLContext& context)
 		term.Value = std::move(x);
 		return ReductionStatus::Clean;
 	});
-	// NOTE: Definitions of ref is in %YFramework.NPL.Dependency.
 	// TODO: Provide 'equal?'.
 	RegisterForm(root, "evalv",
 		static_cast<void(&)(TermNode&, ContextNode&)>(ReduceChildren));
@@ -280,6 +326,7 @@ LoadFunctions(REPLContext& context)
 		return EvaluateDelayed(term,
 			Access<DelayedTerm>(Deref(std::next(term.begin()))));
 	});
+	// NOTE: Definitions of ref is in %YFramework.NPL.Dependency.
 	// NOTE: Comparison.
 	RegisterStrictBinary<int>(root, "=?", ystdex::equal_to<>());
 	RegisterStrictBinary<int>(root, "<?", ystdex::less<>());
@@ -329,9 +376,23 @@ LoadFunctions(REPLContext& context)
 		// XXX: Overridding.
 		std::cout << EncodeArg(str) << std::endl;
 	});
-	// NOTE: Interoperation library.
-	RegisterStrict(root, "display", ystdex::bind1(LogTree, Notice));
-	RegisterStrictUnary<const string>(root, "echo", Echo);
+	// NOTE: Definitions of env-get, system
+	//	are in %YFramework.NPL.Dependency.
+	// NOTE: Definition of env-set, system-get are also in %Tools.SHBuild.Main.
+	RegisterStrictBinary<const string>(root, "env-set",
+		[&](const string& var, const string& val){
+		SetEnvironmentVariable(var.c_str(), val.c_str());
+	});
+	RegisterStrict(root, "system-get", [](TermNode& term){
+		CallUnaryAs<const string>([&](const string& cmd){
+			auto res(FetchCommandOutput(cmd.c_str()));
+
+			term.Clear();
+			term.AddValue(MakeIndex(0), res.first);
+			term.AddValue(MakeIndex(1), res.second);
+		}, term);
+		return ReductionStatus::Retained;
+	});
 	// NOTE: Environments.
 	RegisterForm(root, "$binds?",
 		[](TermNode& term, const ContextNode& ctx){
@@ -409,6 +470,8 @@ LoadFunctions(REPLContext& context)
 		return int(term.size());
 	});
 	// NOTE: String library.
+	// NOTE: Definitions of ++, string-empty?, string<- are in
+	//	%YFramework.NPL.Dependency.
 	RegisterStrict(root, "string=?", std::bind(CallBinaryFold<string,
 		ystdex::equal_to<>>, ystdex::equal_to<>(), string(), _1));
 	context.Perform(u8R"NPL($defl! retain-string (str) ++ "\"" str "\"")NPL");
@@ -416,11 +479,14 @@ LoadFunctions(REPLContext& context)
 		return to_string(x);
 	});
 	RegisterStrictUnary<const string>(root, "string-length",
-		[&](const string& str){
+		[&](const string& str) ynothrow{
 		return int(str.length());
 	});
 	// NOTE: Definitions of string->symbol, symbol->string are in
 	//	%YFramework.NPL.Dependency.
+	// NOTE: Interoperation library.
+	RegisterStrict(root, "display", ystdex::bind1(LogTree, Notice));
+	RegisterStrictUnary<const string>(root, "echo", Echo);
 	// NOTE: SHBuild builitins.
 	// XXX: Overriding.
 	root_env.Define("SHBuild_BaseTerminalHook_",
