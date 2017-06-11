@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6352
+\version r6378
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-06-05 00:57 +0800
+	2017-06-11 16:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -134,15 +134,6 @@ DefaultLeafDebugAction(TermNode& term)
 
 
 /// 780
-//@{
-bool
-IfDef(observer_ptr<const string> p, const ContextNode& ctx)
-{
-	return ystdex::call_value_or([&](string_view id){
-		return bool(ResolveName(ctx, id));
-	}, p);
-}
-
 void
 LoadExternal(REPLContext& context, const string& name)
 {
@@ -158,7 +149,6 @@ LoadExternal(REPLContext& context, const string& name)
 	else
 		YTraceDe(Notice, "Test unit '%s' not found.", name.c_str());
 }
-//@}
 
 
 /// 740
@@ -394,20 +384,25 @@ LoadFunctions(REPLContext& context)
 		return ReductionStatus::Retained;
 	});
 	// NOTE: Environments.
-	RegisterForm(root, "$binds?",
+	// NOTE: Definitions of value-of is in %YFramework.NPL.Dependency.
+	// NOTE: Only '$binds?' is like in Kernel.
+	RegisterStrictUnary(root, "bound?",
 		[](TermNode& term, const ContextNode& ctx){
-		CallUnaryAs<const TokenValue>([&](const TokenValue& t){
-			return IfDef(make_observer(&t), ctx);
-		}, term);
+		return ystdex::call_value_or([&](string_view id){
+			return CheckSymbol(id, [&](){
+				return bool(ResolveName(ctx, id));
+			});
+		}, AccessPtr<string>(term));
 	});
-	// NOTE: Following strict variants are not in Kernel.
-	RegisterStrictUnary(root, "binds?",
-		[](TermNode& term, const ContextNode& ctx){
-		return IfDef(AccessPtr<string>(term), ctx);
-	});
-	RegisterStrictBinary(root, "binds-in?", [&](TermNode& t, TermNode& c){
-		return IfDef(AccessPtr<string>(t), Access<ContextNode>(c));
-	});
+	context.Perform(u8R"NPL(
+		$defw! environment-bound? (expr str) env
+			eval (list bound? str) (eval expr env);
+		$defv! $binds1? (expr s) env
+			eval (list (unwrap bound?) (symbol->string s)) (eval expr env);
+		$defv! $binds? (expr .ss) env
+			$let ((senv eval expr env))
+				foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
+	)NPL");
 	RegisterStrict(root, "eval-u",
 		ystdex::bind1(EvaluateUnit, std::ref(context)));
 	RegisterStrict(root, "eval-u-in", [](TermNode& term){
