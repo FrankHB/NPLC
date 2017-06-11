@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6378
+\version r6407
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-06-11 16:22 +0800
+	2017-06-11 17:07 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -182,8 +182,7 @@ LoadFunctions(REPLContext& context)
 	//	%YFramework.NPL.Dependency.
 	RegisterStrict(root, "eq?", EqualReference);
 //	RegisterStrict(root, "eqv?", EqualValue);
-	// FIXME: This requires a string.
-	RegisterStrictUnary<const string>(root, "symbol?", IsSymbol);
+	RegisterStrictUnary<const string>(root, "symbol-string?", IsSymbol);
 	// NOTE: Like Scheme but not Kernel, %'$if' treats non-boolean value as
 	//	'#f', for zero overhead principle.
 //	RegisterForm(root, "$if", If);
@@ -433,33 +432,44 @@ LoadFunctions(REPLContext& context)
 		[&](const string& str) -> std::type_index{
 		if(str == "bool")
 			return typeid(bool);
+		if(str == "symbol")
+			return typeid(TokenValue);
+		// XXX: The environment type is not unique.
 		if(str == "environment")
-			// XXX: The environment type is not unique.
 			return typeid(weak_ptr<NPL::Environment>);
+		if(str == "environment#owned")
+			return typeid(shared_ptr<NPL::Environment>);
 		if(str == "int")
 			return typeid(int);
 		if(str == "operative")
 			return typeid(FormContextHandler);
 		if(str == "applicative")
 			return typeid(StrictContextHandler);
+		if(str == "combiner")
+			return typeid(ContextHandler);
 		if(str == "string")
 			return typeid(string);
 		return typeid(void);
 	});
-	context.Perform("$defl! bool? (x) eqv? (get-typeid \"bool\")"
-		" (typeid x)");
-	context.Perform("$defl! environment? (x) eqv? (get-typeid \"environment\")"
-		" (typeid x)");
-	// FIXME: Wrong result.
-	context.Perform("$defl! operative? (x) eqv? (get-typeid \"operative\")"
-		" (typeid x)");
-	// FIXME: Wrong result.
-	context.Perform("$defl! applicative? (x) eqv? (get-typeid \"applicative\")"
-		" (typeid x)");
-	context.Perform("$defl! int? (x) eqv? (get-typeid \"int\")"
-		" (typeid x)");
-	context.Perform("$defl! string? (x) eqv? (get-typeid \"string\")"
-		" (typeid x)");
+	RegisterStrictUnary<const ContextHandler>(root, "get-combiner-type",
+		[&](const ContextHandler& h){
+		return std::type_index(h.target_type());
+	});
+	context.Perform(u8R"NPL(
+		$defl! typeid-match? (x id) eqv? (get-typeid id) (typeid x);
+		$defl! bool? (x) typeid-match? x "bool";
+		$defl! symbol? (x) $and? (typeid-match? x "symbol")
+			(symbol-string? (symbol->string x));
+		$defl! environment? (x) $or? (typeid-match? x "environment")
+			(typeid-match? x "environment#owned");
+		$defl! combiner? (x) typeid-match? x "combiner";
+		$defl! operative? (x) $and? (combiner? x)
+			(eqv? (get-combiner-type x) (get-typeid "operative"));
+		$defl! applicative? (x) $and? (combiner? x)
+			(eqv? (get-combiner-type x) (get-typeid "applicative"));
+		$defl! int? (x) typeid-match? x "int";
+		$defl! string? (x) typeid-match? x "string";
+	)NPL");
 	// NOTE: List library.
 	RegisterStrictUnary(root, "list-length", [&](TermNode& term){
 		return int(term.size());
