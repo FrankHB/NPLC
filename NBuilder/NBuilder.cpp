@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6408
+\version r6498
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-06-11 19:48 +0800
+	2017-06-22 10:12 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -149,6 +149,9 @@ LoadExternal(REPLContext& context, const string& name)
 	else
 		YTraceDe(Notice, "Test unit '%s' not found.", name.c_str());
 }
+
+/// 797
+ArgumentsVector CommandArguments;
 
 
 /// 740
@@ -315,84 +318,11 @@ LoadFunctions(REPLContext& context)
 		return EvaluateDelayed(term,
 			Access<DelayedTerm>(Deref(std::next(term.begin()))));
 	});
+	// NOTE: Object interoperation.
 	// NOTE: Definitions of ref is in %YFramework.NPL.Dependency.
-	// NOTE: Comparison.
-	RegisterStrictBinary<int>(root, "=?", ystdex::equal_to<>());
-	RegisterStrictBinary<int>(root, "<?", ystdex::less<>());
-	RegisterStrictBinary<int>(root, "<=?", ystdex::less_equal<>());
-	RegisterStrictBinary<int>(root, ">=?", ystdex::greater_equal<>());
-	RegisterStrictBinary<int>(root, ">?", ystdex::greater<>());
-	// NOTE: Arithmetic procedures.
-	// FIXME: Overflow?
-	RegisterStrict(root, "+", std::bind(CallBinaryFold<int, ystdex::plus<>>,
-		ystdex::plus<>(), 0, _1));
-	// FIXME: Overflow?
-	RegisterStrictBinary<int>(root, "add2", ystdex::plus<>());
-	// FIXME: Underflow?
-	RegisterStrictBinary<int>(root, "-", ystdex::minus<>());
-	// FIXME: Overflow?
-	RegisterStrict(root, "*", std::bind(CallBinaryFold<int,
-		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1));
-	// FIXME: Overflow?
-	RegisterStrictBinary<int>(root, "multiply2", ystdex::multiplies<>());
-	RegisterStrictBinary<int>(root, "/", [](int e1, int e2){
-		if(e2 != 0)
-			return e1 / e2;
-		throw std::domain_error("Runtime error: divided by zero.");
-	});
-	RegisterStrictBinary<int>(root, "%", [](int e1, int e2){
-		if(e2 != 0)
-			return e1 % e2;
-		throw std::domain_error("Runtime error: divided by zero.");
-	});
-	// NOTE: I/O library.
-	RegisterStrictUnary<const string>(root, "ofs", [&](const string& path){
-		if(ifstream ifs{path})
-			return ifs;
-		throw LoggedEvent(
-			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
-	});
-	RegisterStrictUnary<const string>(root, "oss", [&](const string& str){
-		return std::istringstream(str);
-	});
-	RegisterStrictUnary<ifstream>(root, "parse-f", ParseStream);
-	RegisterStrictUnary<LexicalAnalyzer>(root, "parse-lex", ParseOutput);
-	RegisterStrictUnary<std::istringstream>(root, "parse-s", ParseStream);
-	RegisterStrictUnary<const string>(root, "put", [&](const string& str){
-		std::cout << EncodeArg(str);
-	});
-	RegisterStrictUnary<const string>(root, "puts", [&](const string& str){
-		// XXX: Overridding.
-		std::cout << EncodeArg(str) << std::endl;
-	});
-	// NOTE: Definitions of env-get, system
-	//	are in %YFramework.NPL.Dependency.
-	// NOTE: Definition of env-set, system-get are also in %Tools.SHBuild.Main.
-	RegisterStrictBinary<const string>(root, "env-set",
-		[&](const string& var, const string& val){
-		SetEnvironmentVariable(var.c_str(), val.c_str());
-	});
-	RegisterStrict(root, "system-get", [](TermNode& term){
-		CallUnaryAs<const string>([&](const string& cmd){
-			auto res(FetchCommandOutput(cmd.c_str()));
-
-			term.Clear();
-			term.AddValue(MakeIndex(0), ystdex::trim(std::move(res.first)));
-			term.AddValue(MakeIndex(1), res.second);
-		}, term);
-		return ReductionStatus::Retained;
-	});
 	// NOTE: Environments.
-	// NOTE: Definitions of value-of is in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of bound?, value-of is in %YFramework.NPL.Dependency.
 	// NOTE: Only '$binds?' is like in Kernel.
-	RegisterStrictUnary(root, "bound?",
-		[](TermNode& term, const ContextNode& ctx){
-		return ystdex::call_value_or([&](string_view id){
-			return CheckSymbol(id, [&](){
-				return bool(ResolveName(ctx, id));
-			});
-		}, AccessPtr<string>(term));
-	});
 	context.Perform(u8R"NPL(
 		$defw! environment-bound? (expr str) env
 			eval (list bound? str) (eval expr env);
@@ -487,11 +417,86 @@ LoadFunctions(REPLContext& context)
 		[&](const string& str) ynothrow{
 		return int(str.length());
 	});
-	// NOTE: Definitions of string->symbol, symbol->string are in
-	//	%YFramework.NPL.Dependency.
-	// NOTE: Interoperation library.
+	// NOTE: Definitions of string->symbol, symbol->string, string->regex,
+	//	regex-match? are in %YFramework.NPL.Dependency.
+	// NOTE: Comparison.
+	RegisterStrictBinary<int>(root, "=?", ystdex::equal_to<>());
+	RegisterStrictBinary<int>(root, "<?", ystdex::less<>());
+	RegisterStrictBinary<int>(root, "<=?", ystdex::less_equal<>());
+	RegisterStrictBinary<int>(root, ">=?", ystdex::greater_equal<>());
+	RegisterStrictBinary<int>(root, ">?", ystdex::greater<>());
+	// NOTE: Arithmetic procedures.
+	// FIXME: Overflow?
+	RegisterStrict(root, "+", std::bind(CallBinaryFold<int, ystdex::plus<>>,
+		ystdex::plus<>(), 0, _1));
+	// FIXME: Overflow?
+	RegisterStrictBinary<int>(root, "add2", ystdex::plus<>());
+	// FIXME: Underflow?
+	RegisterStrictBinary<int>(root, "-", ystdex::minus<>());
+	// FIXME: Overflow?
+	RegisterStrict(root, "*", std::bind(CallBinaryFold<int,
+		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1));
+	// FIXME: Overflow?
+	RegisterStrictBinary<int>(root, "multiply2", ystdex::multiplies<>());
+	RegisterStrictBinary<int>(root, "/", [](int e1, int e2){
+		if(e2 != 0)
+			return e1 / e2;
+		throw std::domain_error("Runtime error: divided by zero.");
+	});
+	RegisterStrictBinary<int>(root, "%", [](int e1, int e2){
+		if(e2 != 0)
+			return e1 % e2;
+		throw std::domain_error("Runtime error: divided by zero.");
+	});
+	// NOTE: I/O library.
 	RegisterStrict(root, "display", ystdex::bind1(LogTree, Notice));
 	RegisterStrictUnary<const string>(root, "echo", Echo);
+	RegisterStrictUnary<const string>(root, "load",
+		std::bind(LoadExternal, std::ref(context), _1));
+	RegisterStrictUnary<const string>(root, "ofs", [&](const string& path){
+		if(ifstream ifs{path})
+			return ifs;
+		throw LoggedEvent(
+			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
+	});
+	RegisterStrictUnary<const string>(root, "oss", [&](const string& str){
+		return std::istringstream(str);
+	});
+	RegisterStrictUnary<ifstream>(root, "parse-f", ParseStream);
+	RegisterStrictUnary<LexicalAnalyzer>(root, "parse-lex", ParseOutput);
+	RegisterStrictUnary<std::istringstream>(root, "parse-s", ParseStream);
+	RegisterStrictUnary<const string>(root, "put", [&](const string& str){
+		std::cout << EncodeArg(str);
+	});
+	RegisterStrictUnary<const string>(root, "puts", [&](const string& str){
+		// XXX: Overridding.
+		std::cout << EncodeArg(str) << std::endl;
+	});
+	// NOTE: Interoperation library.
+	// NOTE: Definitions of env-get, system
+	//	are in %YFramework.NPL.Dependency.
+	// NOTE: Definition of env-set, cmd-get-args, system-get are also in
+	//	%Tools.SHBuild.Main.
+	RegisterStrictBinary<const string>(root, "env-set",
+		[&](const string& var, const string& val){
+		SetEnvironmentVariable(var.c_str(), val.c_str());
+	});
+	RegisterStrict(root, "cmd-get-args", [](TermNode& term){
+		term.Clear();
+		for(const auto& s : CommandArguments.Arguments)
+			term.AddValue(MakeIndex(term), s);
+		return ReductionStatus::Retained;
+	});
+	RegisterStrict(root, "system-get", [](TermNode& term){
+		CallUnaryAs<const string>([&](const string& cmd){
+			auto res(FetchCommandOutput(cmd.c_str()));
+
+			term.Clear();
+			term.AddValue(MakeIndex(0), ystdex::trim(std::move(res.first)));
+			term.AddValue(MakeIndex(1), res.second);
+		}, term);
+		return ReductionStatus::Retained;
+	});
 	// NOTE: SHBuild builitins.
 	// XXX: Overriding.
 	root_env.Define("SHBuild_BaseTerminalHook_",
@@ -507,8 +512,6 @@ LoadFunctions(REPLContext& context)
 			cout << '"' << endl;
 	})), true);
 	context.Perform("$defl! iput (x) puts (itos x)");
-	RegisterStrictUnary<const string>(root, "load",
-		std::bind(LoadExternal, std::ref(context), _1));
 	LoadExternal(context, "test.txt");
 	AccessListPassesRef(root).Add(DefaultDebugAction, 255);
 	AccessLeafPassesRef(root).Add(DefaultLeafDebugAction, 255);
@@ -530,6 +533,7 @@ main(int argc, char* argv[])
 	//	'ios_base::sync_with_stdio({})' would also fix this problem but it would
 	//	disturb prompt color setting.
 	ystdex::setnbuf(stdout);
+	CommandArguments.Reset(argc, argv);
 	yunused(argc), yunused(argv);
 	return FilterExceptions([]{
 		Application app;
