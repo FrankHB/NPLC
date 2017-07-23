@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6517
+\version r6519
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-07-23 15:15 +0800
+	2017-07-23 15:16 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -88,6 +88,8 @@ ParseStream(std::istream& is)
 		while((c = is.get()), is)
 			Session::DefaultParseByte(sess.Lexer, c);
 		ParseOutput(sess.Lexer);
+		is.clear();
+		is.seekg(0);
 	}
 }
 
