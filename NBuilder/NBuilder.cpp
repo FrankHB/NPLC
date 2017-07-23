@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6501
+\version r6516
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-07-23 15:11 +0800
+	2017-07-23 15:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -92,20 +92,35 @@ ParseStream(std::istream& is)
 }
 
 
+/// 799
+observer_ptr<REPLContext> p_context;
+
 /// 785
 //@{
+bool use_debug = {};
+
 ReductionStatus
 ProcessDebugCommand()
 {
 	string cmd;
 
+begin:
 	getline(std::cin, cmd);
 	if(cmd == "r")
 		return ReductionStatus::Retrying;
+	else if(p_context && !cmd.empty())
+	{
+		const bool u(use_debug);
+
+		use_debug = {};
+		FilterExceptions([&]{
+			LogTree(p_context->Perform(cmd));
+		}, yfsig);
+		use_debug = u;
+		goto begin;
+	}
 	return ReductionStatus::Clean;
 }
-
-bool use_debug = {};
 
 ReductionStatus
 DefaultDebugAction(TermNode& term)
@@ -163,6 +178,7 @@ LoadFunctions(REPLContext& context)
 	auto& root(context.Root);
 	auto& root_env(root.GetRecordRef());
 
+	p_context = make_observer(&context);
 	LoadNPLContextForSHBuild(context);
 	// TODO: Extract literal configuration API.
 //	LoadSequenceSeparators(root, context.ListTermPreprocess);
