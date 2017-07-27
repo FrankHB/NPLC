@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6519
+\version r6524
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-07-23 15:16 +0800
+	2017-07-27 13:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -217,7 +217,7 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$undef!", ystdex::bind1(Undefine, _2, true));
 	RegisterForm(root, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
 //	RegisterForm(root, "$vau", Vau);
-	RegisterForm(root, "$vaue", VauWithEnvironment);
+//	RegisterForm(root, "$vaue", VauWithEnvironment);
 //	RegisterStrictUnary<ContextHandler>(root, "wrap", Wrap);
 	// NOTE: This does check before wrapping.
 	RegisterStrictUnary<ContextHandler>(root, "wrap1", WrapOnce);
@@ -256,7 +256,8 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$crash", []{
 		terminate();
 	});
-	// NOTE: Definitions of $sequence, list are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of list, $quote, $set!, $setrec!, $sequence are in
+	//	%YFramework.NPL.Dependency.
 #if true
 	RegisterStrict(root, "id", [](TermNode& term){
 		RetainN(term);
@@ -269,10 +270,9 @@ LoadFunctions(REPLContext& context)
 #endif
 	// NOTE: Definitions of first, rest are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$def! $quote $vau (x) #ignore x;
 		$defl! xcons (x y) cons y x;
 	)NPL");
-	// NOTE: Definitions of apply, list*, $cond, $set!, $defl!, $defv!, $defw!,
+	// NOTE: Definitions of apply, list*, $cond, $defl!, $defv!, $defw!,
 	//	list-rest, accl, accr, foldr1, map1 are in
 	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
