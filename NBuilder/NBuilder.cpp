@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6526
+\version r6528
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-08-04 09:57 +0800
+	2017-08-05 00:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -262,8 +262,7 @@ LoadFunctions(REPLContext& context)
 	RegisterStrict(root, "id", [](TermNode& term){
 		RetainN(term);
 		LiftTerm(term, Deref(std::next(term.begin())));
-		return
-			IsBranch(term) ? ReductionStatus::Retained : ReductionStatus::Clean;
+		return CheckNorm(term);
 	});
 #else
 	context.Perform(u8R"NPL($def! id $lambda (x) x)NPL");
