@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6525
+\version r6526
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-08-01 11:10 +0800
+	2017-08-04 09:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -470,7 +470,7 @@ LoadFunctions(REPLContext& context)
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
 	// NOTE: I/O library.
-	RegisterStrict(root, "display", ystdex::bind1(LogTree, Notice));
+	RegisterStrict(root, "display", ystdex::bind1(LogTermValue, Notice));
 	RegisterStrictUnary<const string>(root, "echo", Echo);
 	RegisterStrictUnary<const string>(root, "load",
 		std::bind(LoadExternal, std::ref(context), _1));

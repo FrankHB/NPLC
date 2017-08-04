@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r360
+\version r368
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2017-08-01 11:07 +0800
+	2017-08-04 09:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -103,6 +103,12 @@ LogTree(const ValueNode& node, Logger::Level lv)
 	YTraceDe(lv, "%s", oss.str().c_str());
 }
 
+void
+LogTermValue(TermNode& term, Logger::Level lv)
+{
+	LiftSelf(term);
+	LogTree(term, lv);
+}
 
 Interpreter::Interpreter(Application& app,
 	std::function<void(REPLContext&)> loader)
@@ -165,13 +171,13 @@ Interpreter::Process()
 		{
 			line = DecodeArg(line);
 
-			const auto res(context.Perform(line));
+			auto res(context.Perform(line));
 
 #if NPL_TracePerform
 		//	terminal.UpdateForeColor(InfoColor);
 		//	cout << "Unrecognized reduced token list:" << endl;
 			terminal.UpdateForeColor(ReducedColor);
-			LogTree(res);
+			LogTermValue(res);
 #endif
 		}
 		catch(SSignal e)
