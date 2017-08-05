@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6528
+\version r6555
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-08-05 00:56 +0800
+	2017-08-05 12:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -284,22 +284,36 @@ LoadFunctions(REPLContext& context)
 		$defl! reverse (l) foldl1 cons () l;
 		$defl! snoc (x r) (list-concat r (list x));
 		$defl! append (.ls) foldr1 list-concat () ls;
-		$def! foldr wrap
+		$def! foldr
 		(
-			$defl! cxrs (ls cxr) accr ls null? () ($lambda (l) cxr (first l))
-				rest cons;
-			$vau (kons knil .ls) env
-				(accr ls unfoldable? knil ($lambda (ls) cxrs ls first)
-					($lambda (ls) cxrs ls rest)
-					($lambda (x st) apply kons (list-concat x (list st)) env))
+			$lambda (cenv) wrap
+			(
+				$set! cenv cxrs wrap ($vaue (weaken-environment cenv) (ls cxr)
+					#ignore
+					accr ls null? () ($lambda (l) cxr (first l)) rest cons);
+				$vaue cenv (kons knil .ls) env
+					(accr ls unfoldable? knil ($lambda (ls) cxrs ls first)
+					($lambda (ls) cxrs ls rest) ($lambda (x st)
+						apply kons (list-concat x (list st)) env))
+			)
+		)
+		(
+			make-environment (() get-current-environment)
 		);
-		$def! map wrap
+		$def! map
 		(
-			$defl! cxrs (ls cxr) accr ls null? () ($lambda (l) cxr (first l))
-				rest cons;
-			$vau (appv .ls) env accr ls unfoldable? ()
-				($lambda (ls) cxrs ls first) ($lambda (ls) cxrs ls rest)
-				($lambda (x xs) cons (apply appv x env) xs)
+			$lambda (cenv) wrap
+			(
+				$set! cenv cxrs wrap ($vaue (weaken-environment cenv) (ls cxr)
+					#ignore
+					accr ls null? () ($lambda (l) cxr (first l)) rest cons);
+				$vaue cenv (appv .ls) env accr ls unfoldable? ()
+					($lambda (ls) cxrs ls first) ($lambda (ls) cxrs ls rest)
+						($lambda (x xs) cons (apply appv x env) xs)
+			)
+		)
+		(
+			make-environment (() get-current-environment)
 		);
 		$defw! for-each-rtl ls env $sequence (apply map ls env) inert;
 	)NPL");
