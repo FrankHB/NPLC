@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6555
+\version r6558
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-08-05 12:57 +0800
+	2017-08-05 14:54 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -240,9 +240,6 @@ LoadFunctions(REPLContext& context)
 	RegisterStrictUnary(root, "vmovecopy", [](TermNode& term){
 		return term.Value.MakeMoveCopy();
 	});
-	// XXX: Unsafe.
-	RegisterStrictUnary(root, "vref", ystdex::compose(ReferenceValue,
-		ystdex::bind1(std::mem_fn(&TermNode::Value))));
 	// XXX: For test or debug only.
 	RegisterStrictUnary(root, "tt", DefaultDebugAction);
 	RegisterStrictUnary<const string>(root, "dbg", [](const string& cmd){
