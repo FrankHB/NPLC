@@ -59,6 +59,7 @@
 			<Add option="-Wformat=2" />
 			<Add option="-Wmultichar" />
 			<Add option="-Wno-format-nonliteral" />
+			<Add option="-Wno-noexcept-type" />
 			<Add option="-Wpacked" />
 			<Add option="-Wlogical-op" />
 			<Add option="-Wtrampolines" />
@@ -67,7 +68,8 @@
 			<Add option="-fdata-sections" />
 			<Add option="-ffunction-sections" />
 			<Add option="-mthreads" />
-			<Add option="-pipe" />		</Compiler>
+			<Add option="-pipe" />
+		</Compiler>
 		<Unit filename="Interpreter.cpp" />
 		<Unit filename="Interpreter.h" />
 		<Unit filename="NBuilder.cpp" />
