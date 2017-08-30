@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6558
+\version r6611
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-08-05 14:54 +0800
+	2017-08-31 00:10 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -150,6 +150,29 @@ DefaultLeafDebugAction(TermNode& term)
 //@}
 
 
+/// 801
+template<typename _tNode, typename _fCallable>
+ReductionStatus
+ListCopyOrMove(TermNode& term, _fCallable f)
+{
+	Forms::CallUnary([&](_tNode& node){
+		term.GetContainerRef() = node.CreateWith(f);
+	}, term);
+	return ReductionStatus::Retained;
+}
+
+/// 801
+template<typename _tNode, typename _fCallable>
+ReductionStatus
+TermCopyOrMove(TermNode& term, _fCallable f)
+{
+	Forms::CallUnary([&](_tNode& node){
+		SetContentWith(term, node, f);
+	}, term);
+	return ReductionStatus::Retained;
+}
+
+
 /// 780
 void
 LoadExternal(REPLContext& context, const string& name)
@@ -226,19 +249,42 @@ LoadFunctions(REPLContext& context)
 	//	be '#t'.
 #endif
 	// NOTE: NPLA value transferring.
-	// TODO: Add list support.
-	RegisterStrictUnary(root, "vcopy", [](TermNode& term){
-		return term.Value.MakeCopy();
+	RegisterStrictUnary(root, "vcopy", [](const TermNode& node){
+		return node.Value.MakeCopy();
 	});
-	RegisterStrictUnary(root, "vcopymove", [](TermNode& term){
+	RegisterStrictUnary(root, "vcopymove", [](TermNode& node){
 		// NOTE: Shallow copy or move.
-		return term.Value.CopyMove();
+		return node.Value.CopyMove();
 	});
-	RegisterStrictUnary(root, "vmove", [](TermNode& term){
-		return term.Value.MakeMove();
+	RegisterStrictUnary(root, "vmove", [](const TermNode& node){
+		return node.Value.MakeMove();
 	});
-	RegisterStrictUnary(root, "vmovecopy", [](TermNode& term){
-		return term.Value.MakeMoveCopy();
+	RegisterStrictUnary(root, "vmovecopy", [](const TermNode& node){
+		return node.Value.MakeMoveCopy();
+	});
+	RegisterStrict(root, "lcopy", [](TermNode& term){
+		return ListCopyOrMove<const TermNode>(term, &ValueObject::MakeCopy);
+	});
+	RegisterStrict(root, "lcopymove", [](TermNode& term){
+		return ListCopyOrMove<TermNode>(term, &ValueObject::CopyMove);
+	});
+	RegisterStrict(root, "lmove", [](TermNode& term){
+		return ListCopyOrMove<const TermNode>(term, &ValueObject::MakeMove);
+	});
+	RegisterStrict(root, "lmovecopy", [](TermNode& term){
+		return ListCopyOrMove<const TermNode>(term, &ValueObject::MakeMoveCopy);
+	});
+	RegisterStrict(root, "tcopy", [](TermNode& term){
+		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeCopy);
+	});
+	RegisterStrict(root, "tcopymove", [](TermNode& term){
+		return TermCopyOrMove<TermNode>(term, &ValueObject::CopyMove);
+	});
+	RegisterStrict(root, "tmove", [](TermNode& term){
+		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeMove);
+	});
+	RegisterStrict(root, "tmovecopy", [](TermNode& term){
+		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeMoveCopy);
 	});
 	// XXX: For test or debug only.
 	RegisterStrictUnary(root, "tt", DefaultDebugAction);
