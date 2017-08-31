@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6676
+\version r6684
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-08-31 11:34 +0800
+	2017-08-31 11:48 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -315,9 +315,9 @@ LoadFunctions(REPLContext& context)
 	context.Perform(u8R"NPL(
 		$defl! xcons (x y) cons y x;
 	)NPL");
-	// NOTE: Definitions of apply, list*, $cond, $lambdae, $defl!, $defv!,
-	//	$defw!, first-null?, list-rest, accl, accr, foldr1 are in
-	//	%YFramework.NPL.Dependency.
+	// NOTE: Definitions of apply, list*, $cond, $defl!, $defv!,
+	//	$defw!, $lambdae, not?, $when, $unless, $and?, $or?, first-null?,
+	//	list-rest, accl, accr, foldr1 are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! foldl1 (kons knil l) accl l null? knil first rest kons;
 		$defw! map1-reverse (appv l) env foldl1
@@ -343,10 +343,6 @@ LoadFunctions(REPLContext& context)
 		$defv! $let-redirect (expr bindings .body) env
 			eval (list* () (eval (list* $lambda (map1 first bindings) body)
 				(eval expr env)) (map1 list-rest bindings)) env;
-	)NPL");
-	// NOTE: Definitions of not?, $when, $unless are in
-	//	%YFramework.NPL.Dependency.
-	context.Perform(u8R"NPL(
 		$def! foldr $let ((cenv () make-standard-environment)) wrap
 		(
 			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
@@ -366,7 +362,7 @@ LoadFunctions(REPLContext& context)
 		);
 		$defw! for-each-rtl ls env $sequence (apply map ls env) inert;
 	)NPL");
-	// NOTE: Definitions of $and?, $or?, unfoldable?, map-reverse for-each-ltr
+	// NOTE: Definitions of unfoldable?, map-reverse for-each-ltr
 	//	are in %YFramework.NPL.Dependency.
 	RegisterForm(root, "$delay", [](TermNode& term, ContextNode&){
 		term.Remove(term.begin());
