@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6611
+\version r6675
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-08-31 00:10 +0800
+	2017-08-31 11:27 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -227,21 +227,21 @@ LoadFunctions(REPLContext& context)
 	RegisterStrict(root, "eq?", EqualReference);
 //	RegisterStrict(root, "eqv?", EqualValue);
 	RegisterStrictUnary<const string>(root, "symbol-string?", IsSymbol);
-	// NOTE: Like Scheme but not Kernel, %'$if' treats non-boolean value as
+	// NOTE: Like Scheme but not Kernel, '$if' treats non-boolean value as
 	//	'#f', for zero overhead principle.
 //	RegisterForm(root, "$if", If);
 	RegisterStrictUnary(root, "list?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
-	// NOTE: Definitions of null?, cons, eval, get-current-environment,
-	//	copy-environment, make-environment are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of null?, cons, eval, copy-environment,
+	//	make-environment, get-current-environment, weaken-environment,
+	//	lock-environment are in %YFramework.NPL.Dependency.
 	// NOTE: Environment mutation is optional in Kernel and supported here.
 	// NOTE: Definitions of $deflazy!, $def!, $defrec! are in
 	//	%YFramework.NPL.Dependency.
 	RegisterForm(root, "$undef!", ystdex::bind1(Undefine, _2, true));
 	RegisterForm(root, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
-//	RegisterForm(root, "$vau", Vau);
-//	RegisterForm(root, "$vaue", VauWithEnvironment);
-//	RegisterStrictUnary<ContextHandler>(root, "wrap", Wrap);
+	// NOTE: Definitions of $lambda, $vau, $vaue, wrap are in
+	//	%YFramework.NPL.Dependency.
 	// NOTE: This does check before wrapping.
 	RegisterStrictUnary<ContextHandler>(root, "wrap1", WrapOnce);
 //	RegisterStrictUnary<ContextHandler>(root, "unwrap", Unwrap);
@@ -299,6 +299,7 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$crash", []{
 		terminate();
 	});
+	// NOTE: Derived functions with probable privmitive implementation.
 	// NOTE: Definitions of list, $quote, $set!, $setrec!, $sequence are in
 	//	%YFramework.NPL.Dependency.
 #if true
@@ -314,54 +315,22 @@ LoadFunctions(REPLContext& context)
 	context.Perform(u8R"NPL(
 		$defl! xcons (x y) cons y x;
 	)NPL");
-	// NOTE: Definitions of apply, list*, $cond, $defl!, $defv!, $defw!,
-	//	list-rest, accl, accr, foldr1, map1 are in
+	// NOTE: Definitions of apply, list*, $cond, $lambdae, $defl!, $defv!,
+	//	$defw!, first-null?, list-rest, accl, accr, foldr1 are in
 	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! foldl1 (kons knil l) accl l null? knil first rest kons;
 		$defw! map1-reverse (appv l) env foldl1
 			($lambda (x xs) cons (apply appv (list x) env) xs) () l;
-		$defl! list-concat (x y) foldr1 cons y x;
+	)NPL");
+	// NOTE: Definitions of map1, list-concat are in %YFramework.NPL.Dependency.
+	context.Perform(u8R"NPL(
 		$defl! list-copy-strict (l) foldr1 cons () l;
 		$defl! list-copy (obj) $if (list? obj) (list-copy-strict obj) obj;
 		$defl! reverse (l) foldl1 cons () l;
 		$defl! snoc (x r) (list-concat r (list x));
-		$defl! append (.ls) foldr1 list-concat () ls;
-		$def! foldr
-		(
-			$lambda (cenv) wrap
-			(
-				$set! cenv cxrs wrap ($vaue (weaken-environment cenv) (ls cxr)
-					#ignore
-					accr ls null? () ($lambda (l) cxr (first l)) rest cons);
-				$vaue cenv (kons knil .ls) env
-					(accr ls unfoldable? knil ($lambda (ls) cxrs ls first)
-					($lambda (ls) cxrs ls rest) ($lambda (x st)
-						apply kons (list-concat x (list st)) env))
-			)
-		)
-		(
-			make-environment (() get-current-environment)
-		);
-		$def! map
-		(
-			$lambda (cenv) wrap
-			(
-				$set! cenv cxrs wrap ($vaue (weaken-environment cenv) (ls cxr)
-					#ignore
-					accr ls null? () ($lambda (l) cxr (first l)) rest cons);
-				$vaue cenv (appv .ls) env accr ls unfoldable? ()
-					($lambda (ls) cxrs ls first) ($lambda (ls) cxrs ls rest)
-						($lambda (x xs) cons (apply appv x env) xs)
-			)
-		)
-		(
-			make-environment (() get-current-environment)
-		);
-		$defw! for-each-rtl ls env $sequence (apply map ls env) inert;
 	)NPL");
-	// NOTE: Definitions of $let, $let* are in %YFramework.NPL.Dependency.
-	// NOTE: Definitions of not?, $when, $unless are in
+	// NOTE: Definitions of append, $let, $let* are in
 	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defv! $letrec (bindings .body) env
@@ -375,7 +344,28 @@ LoadFunctions(REPLContext& context)
 			eval (list* (eval (list* $lambda (map1 first bindings) body)
 				(eval expr env)) (map1 list-rest bindings)) env;
 	)NPL");
-	// NOTE: Derived functions with privmitive implementation.
+	// NOTE: Definitions of not?, $when, $unless are in
+	//	%YFramework.NPL.Dependency.
+	context.Perform(u8R"NPL(
+		$def! foldr $let ((cenv () make-standard-environment)) wrap
+		(
+			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
+				accr ls null? () ($lambda (l) cxr (first l)) rest cons;
+			$vaue cenv (kons knil .ls) env
+				(accr ls unfoldable? knil ($lambda (ls) cxrs ls first)
+				($lambda (ls) cxrs ls rest) ($lambda (x st)
+					apply kons (list-concat x (list st)) env))
+		);
+		$def! map $let ((cenv () make-standard-environment)) wrap
+		(
+			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
+				accr ls null? () ($lambda (l) cxr (first l)) rest cons;
+			$vaue cenv (appv .ls) env accr ls unfoldable? ()
+				($lambda (ls) cxrs ls first) ($lambda (ls) cxrs ls rest)
+					($lambda (x xs) cons (apply appv x env) xs)
+		);
+		$defw! for-each-rtl ls env $sequence (apply map ls env) inert;
+	)NPL");
 	// NOTE: Definitions of $and?, $or?, unfoldable?, map-reverse for-each-ltr
 	//	are in %YFramework.NPL.Dependency.
 	RegisterForm(root, "$delay", [](TermNode& term, ContextNode&){
