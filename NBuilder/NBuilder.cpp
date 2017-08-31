@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6675
+\version r6676
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-08-31 11:27 +0800
+	2017-08-31 11:34 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -341,7 +341,7 @@ LoadFunctions(REPLContext& context)
 				(list $letrec (list (first bindings))
 				(list* $letrec* (rest bindings) body))) env;
 		$defv! $let-redirect (expr bindings .body) env
-			eval (list* (eval (list* $lambda (map1 first bindings) body)
+			eval (list* () (eval (list* $lambda (map1 first bindings) body)
 				(eval expr env)) (map1 list-rest bindings)) env;
 	)NPL");
 	// NOTE: Definitions of not?, $when, $unless are in
