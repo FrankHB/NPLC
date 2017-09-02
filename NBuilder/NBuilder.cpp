@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6686
+\version r6698
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-09-02 13:48 +0800
+	2017-09-02 13:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -343,6 +343,18 @@ LoadFunctions(REPLContext& context)
 		$defv! $let-redirect (expr bindings .body) env
 			eval (list* () (eval (list* $lambda (map1 first bindings) body)
 				(eval expr env)) (map1 list-rest bindings)) env;
+		$defv! $let-safe (bindings .body) env
+			eval (list* () $let-redirect
+				(() make-standard-environment) bindings body) env;
+		$defv! $remote-eval (o e) d eval o (eval e d);
+		$defv! $bindings->environment bindings denv
+			eval (list $let-redirect (() make-environment) bindings
+				(list lock-environment (list () get-current-environment))) denv;
+		$defv! $provide! (symbols .body) env
+			eval (list $def! symbols
+				(list $let () $sequence body (list* list symbols))) env;
+		$defv! $import! (exp .symbols) env
+			eval (list $set! env symbols (cons list symbols)) (eval exp env);
 		$def! foldr $let ((cenv () make-standard-environment)) wrap
 		(
 			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
