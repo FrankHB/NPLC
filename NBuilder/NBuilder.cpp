@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6684
+\version r6686
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-08-31 11:48 +0800
+	2017-09-02 13:48 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -415,9 +415,9 @@ LoadFunctions(REPLContext& context)
 		return string(ti.name());
 	});
 	// NOTE: Type operation library.
-	RegisterStrictUnary(root, "typeid", [](TermNode& term){
+	RegisterStrictUnary(root, "typeid", [](const TermNode& term){
 		// FIXME: Get it work with %YB_Use_LightweightTypeID.
-		return std::type_index(term.Value.type());
+		return std::type_index(ReferenceTerm(term).Value.type());
 	});
 	// TODO: Copy of operand cannot be used for move-only types.
 	context.Perform("$defl! ptype (x) puts (nameof (typeid x))");
