@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6698
+\version r6717
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-09-02 13:49 +0800
+	2017-09-02 13:55 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -173,9 +173,9 @@ TermCopyOrMove(TermNode& term, _fCallable f)
 }
 
 
-/// 780
+/// 802
 void
-LoadExternal(REPLContext& context, const string& name)
+LoadExternal(REPLContext& context, const string& name, ContextNode& ctx)
 {
 	platform::ifstream ifs(name, std::ios_base::in);
 
@@ -183,11 +183,18 @@ LoadExternal(REPLContext& context, const string& name)
 	{
 		YTraceDe(Notice, "Test unit '%s' found.", name.c_str());
 		FilterExceptions([&]{
-			context.LoadFrom(ifs);
+			context.LoadFrom(ifs, ctx);
 		});
 	}
 	else
 		YTraceDe(Notice, "Test unit '%s' not found.", name.c_str());
+}
+
+/// 802
+void
+LoadExternalRoot(REPLContext& context, const string& name)
+{
+	LoadExternal(context, name, context.Root);
 }
 
 /// 797
@@ -527,7 +534,15 @@ LoadFunctions(REPLContext& context)
 	RegisterStrict(root, "display", ystdex::bind1(LogTermValue, Notice));
 	RegisterStrictUnary<const string>(root, "echo", Echo);
 	RegisterStrictUnary<const string>(root, "load",
-		std::bind(LoadExternal, std::ref(context), _1));
+		std::bind(LoadExternal, std::ref(context), _1, _2));
+	RegisterStrictUnary<const string>(root, "load-at-root",
+		std::bind(LoadExternal, std::ref(context), _1, std::ref(context.Root)));
+	context.Perform(u8R"NPL(
+		$defl! get-module (filename .opt)
+			$let ((env () make-standard-environment)) $sequence
+				($unless (null? opt) ($set! env module-parameters (first opt)))
+				(eval (list load filename) env) env;
+	)NPL");
 	RegisterStrictUnary<const string>(root, "ofs", [&](const string& path){
 		if(ifstream ifs{path})
 			return ifs;
@@ -587,7 +602,7 @@ LoadFunctions(REPLContext& context)
 			cout << '"' << endl;
 	})), true);
 	context.Perform("$defl! iput (x) puts (itos x)");
-	LoadExternal(context, "test.txt");
+	LoadExternalRoot(context, "test.txt");
 	AccessListPassesRef(root).Add(DefaultDebugAction, 255);
 	AccessLeafPassesRef(root).Add(DefaultLeafDebugAction, 255);
 }
