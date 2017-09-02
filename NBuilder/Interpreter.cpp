@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r369
+\version r371
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2017-08-04 14:51 +0800
+	2017-09-03 02:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -104,9 +104,8 @@ LogTree(const ValueNode& node, Logger::Level lv)
 }
 
 void
-LogTermValue(TermNode& term, Logger::Level lv)
+LogTermValue(const TermNode& term, Logger::Level lv)
 {
-	LiftToSelf(term);
 	LogTree(term, lv);
 }
 
