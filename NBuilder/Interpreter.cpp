@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r371
+\version 401
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2017-09-03 02:00 +0800
+	2017-09-03 16:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -64,6 +64,40 @@ PrintError(Terminal& terminal, const LoggedEvent& e, const char* name = "Error")
 //	ExtractAndTrace(e, e.GetLevel());
 }
 
+/// 803
+void
+PrintTermNode(std::ostream& os, const ValueNode& node, NodeToString node_to_str,
+	IndentGenerator igen = DefaultGenerateIndent, size_t depth = 0)
+{
+	PrintIndent(os, igen, depth);
+	os << EscapeLiteral(node.GetName()) << ' ';
+
+	const auto print_node_str(
+		[&](const ValueNode& nd) -> pair<lref<const ValueNode>, bool>{
+		const TermNode& term(nd);
+		const auto& tm(ReferenceTerm(term));
+		const ValueNode& vnode(tm);
+
+		if(&tm != &term)
+			os << '*';
+		return {vnode, PrintNodeString(os, vnode, node_to_str)};
+	});
+	const auto pr(print_node_str(node));
+
+	if(!pr.second)
+	{
+		const auto& vnode(pr.first.get());
+
+		os << '\n';
+		if(vnode)
+			TraverseNodeChildAndPrint(os, vnode, [&]{
+				PrintIndent(os, igen, depth);
+			}, print_node_str, [&](const ValueNode& nd){
+				return PrintTermNode(os, nd, node_to_str, igen, depth + 1);
+			});
+	}
+}
+
 } // unnamed namespace;
 
 
@@ -72,7 +106,7 @@ LogTree(const ValueNode& node, Logger::Level lv)
 {
 	std::ostringstream oss;
 
-	PrintNode(oss, node, [](const ValueNode& nd){
+	PrintTermNode(oss, node, [](const ValueNode& nd){
 		return EscapeLiteral([&]() -> string{
 			if(nd.Value != A1::ValueToken::Null)
 			{
