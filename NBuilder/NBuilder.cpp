@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6720
+\version r6722
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-09-03 02:06 +0800
+	2017-09-07 13:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -603,8 +603,8 @@ LoadFunctions(REPLContext& context)
 	})), true);
 	context.Perform("$defl! iput (x) puts (itos x)");
 	LoadExternalRoot(context, "test.txt");
-	AccessListPassesRef(root).Add(DefaultDebugAction, 255);
-	AccessLeafPassesRef(root).Add(DefaultLeafDebugAction, 255);
+	root.EvaluateList.Add(DefaultDebugAction, 255);
+	root.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
 }
 
 } // unnamed namespace;
