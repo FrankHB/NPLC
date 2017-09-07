@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2274
+\version r2275
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2017-01-30 09:53 +0800
+	2017-09-07 13:33 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -53,7 +53,7 @@ LoadSequenceSeparators(ContextNode& ctx, EvaluationPasses& passes)
 void
 LoadDeafultLiteralPasses(ContextNode& ctx)
 {
-	AccessLiteralPassesRef(ctx)
+	ctx.EvaluateLiteral
 		= [](TermNode& term, ContextNode&, string_view id) -> ReductionStatus{
 		YAssertNonnull(id.data());
 		if(!id.empty())
