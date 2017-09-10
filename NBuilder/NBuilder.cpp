@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6722
+\version r6736
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-09-07 13:31 +0800
+	2017-09-10 15:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -318,32 +318,36 @@ LoadFunctions(REPLContext& context)
 #else
 	context.Perform(u8R"NPL($def! id $lambda (x) x)NPL");
 #endif
-	// NOTE: Definitions of first, rest are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of $defv!, $defl!, first, rest are in
+	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! xcons (x y) cons y x;
 	)NPL");
-	// NOTE: Definitions of apply, list*, $cond, $defl!, $defv!,
-	//	$defw!, $lambdae, not?, $when, $unless, $and?, $or?, first-null?,
-	//	list-rest, accl, accr, foldr1 are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of apply, list*, $defw!, $lambdae, $cond,
+	//	not?, $when, $unless, $and?, $or?, first-null?,
+	//	list-rest, accl, accr are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! foldl1 (kons knil l) accl l null? knil first rest kons;
 		$defw! map1-reverse (appv l) env foldl1
 			($lambda (x xs) cons (apply appv (list x) env) xs) () l;
 	)NPL");
-	// NOTE: Definitions of map1, list-concat are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of foldr1, map1, list-concat are in
+	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! list-copy-strict (l) foldr1 cons () l;
 		$defl! list-copy (obj) $if (list? obj) (list-copy-strict obj) obj;
+	)NPL");
+	// NOTE: Definitions of append is in %YFramework.NPL.Dependency.
+	context.Perform(u8R"NPL(
 		$defl! reverse (l) foldl1 cons () l;
 		$defl! snoc (x r) (list-concat r (list x));
 	)NPL");
-	// NOTE: Definitions of append, $let, $let* are in
-	//	%YFramework.NPL.Dependency.
+	// NOTE: Definitions of $let, $let* are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defv! $letrec (bindings .body) env
-			eval (list $let () $sequence (list $defrec! (map1 first bindings)
+			eval (list $let () $sequence (list $def! (map1 first bindings)
 				(list* () list (map1 rest bindings))) body) env;
-		$defrec! $letrec* $vau (bindings .body) env
+		$defv! $letrec* (bindings .body) env
 			eval ($if (null? bindings) (list* $letrec bindings body)
 				(list $letrec (list (first bindings))
 				(list* $letrec* (rest bindings) body))) env;
