@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6736
+\version r6738
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-09-10 15:00 +0800
+	2017-09-14 22:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -493,8 +493,7 @@ LoadFunctions(REPLContext& context)
 	// NOTE: String library.
 	// NOTE: Definitions of ++, string-empty?, string<- are in
 	//	%YFramework.NPL.Dependency.
-	RegisterStrict(root, "string=?", std::bind(CallBinaryFold<string,
-		ystdex::equal_to<>>, ystdex::equal_to<>(), string(), _1));
+	RegisterStrictBinary<string>(root, "string=?", ystdex::equal_to<>());
 	context.Perform(u8R"NPL($defl! retain-string (str) ++ "\"" str "\"")NPL");
 	RegisterStrictUnary<const int>(root, "itos", [](int x){
 		return to_string(x);
