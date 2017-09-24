@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6739
+\version r6741
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-09-25 01:26 +0800
+	2017-09-25 01:33 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -231,8 +231,8 @@ LoadFunctions(REPLContext& context)
 #if true
 	// NOTE: Primitive features, listed as RnRK, except mentioned above. See
 	//	%YFramework.NPL.Dependency.
-	RegisterStrict(root, "eq?", EqualReference);
-//	RegisterStrict(root, "eqv?", EqualValue);
+	// NOTE: Definitions of eq?, eql?, eqr?, eqv? are in
+	//	%YFramework.NPL.Dependency.
 	RegisterStrictUnary<const string>(root, "symbol-string?", IsSymbol);
 	// NOTE: Like Scheme but not Kernel, '$if' treats non-boolean value as
 	//	'#f', for zero overhead principle.
