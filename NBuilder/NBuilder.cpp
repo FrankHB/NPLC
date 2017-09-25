@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6741
+\version r6802
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-09-25 01:33 +0800
+	2017-09-25 10:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -172,6 +172,12 @@ TermCopyOrMove(TermNode& term, _fCallable f)
 	return ReductionStatus::Retained;
 }
 
+/// 805
+int
+FetchListLength(TermNode& term) ynothrow
+{
+	return int(term.size());
+}
 
 /// 802
 void
@@ -237,7 +243,8 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Like Scheme but not Kernel, '$if' treats non-boolean value as
 	//	'#f', for zero overhead principle.
 //	RegisterForm(root, "$if", If);
-	RegisterStrictUnary(root, "list?", IsList);
+	RegisterStrictUnary(root, "list?", ComposeReferencedTermOp(IsList));
+	RegisterStrictUnary(root, "listpr?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
 	// NOTE: Definitions of null?, cons, eval, copy-environment,
 	//	make-environment, get-current-environment, weaken-environment,
@@ -324,7 +331,28 @@ LoadFunctions(REPLContext& context)
 		$defl! xcons (x y) cons y x;
 	)NPL");
 	// NOTE: Definitions of apply, list*, $defw!, $lambdae, $cond,
-	//	not?, $when, $unless, $and?, $or?, first-null?,
+	//	not?, $when, $unless are in %YFramework.NPL.Dependency.
+	context.Perform(u8R"NPL(
+		$defl! and? x
+		(
+			$defl! and2? (x y) $if (null? y) x
+			(
+				$def! h first y;
+				and2? ($if h x #f) (rest y)
+			);
+			and2? #t x
+		);
+		$defl! or? x
+		(
+			$defl! or2? (x y) $if (null? y) x
+			(
+				$def! h first y;
+				or2? ($if h h x) (rest y)
+			);
+			or2? #f x
+		);
+	)NPL");
+	// NOTE: Definitions of $and?, $or?, first-null?,
 	//	list-rest, accl, accr are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! foldl1 (kons knil l) accl l null? knil first rest kons;
@@ -342,7 +370,29 @@ LoadFunctions(REPLContext& context)
 		$defl! reverse (l) foldl1 cons () l;
 		$defl! snoc (x r) (list-concat r (list x));
 	)NPL");
-	// NOTE: Definitions of $let, $let* are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of $let is in %YFramework.NPL.Dependency.
+	context.Perform(u8R"NPL(
+		$defl! filter (accept? ls) apply append
+			(map1 ($lambda (x) $if (apply accept? (list x)) (list x) ()) ls);
+		$defl! reduce (ls bin id) $cond
+			((null? ls) id)
+			((null? (rest ls)) first ls)
+			(#t bin (first ls) (reduce (rest ls) bin id));
+		$defl! assv (object alist) $let
+			((alist filter ($lambda (record) eqv? object (first record)) alist))
+				$if (null? alist) () (first alist);
+		$defl! memv? (object ls)
+			apply or? (map1 ($lambda (x) eqv? object x) ls);
+		$defl! assq (object alist) $let
+			((alist filter ($lambda (record) eq? object (first record)) alist))
+				($if (null? alist) () (first alist));
+		$defl! memq? (object ls) apply or? (map1 ($lambda (x) eq? object x) ls);
+		$defl! equal? (x y) $if ($and? (branch? x) (branch? y))
+			($and? (equal? (first x) (first y)) (equal? (rest x) (rest y)))
+			(eqv? x y);
+	)NPL");
+	// NOTE: Definitions of $let* are in
+	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defv! $letrec (bindings .body) env
 			eval (list $let () $sequence (list $def! (map1 first bindings)
@@ -487,9 +537,14 @@ LoadFunctions(REPLContext& context)
 		$defl! string? (x) typeid-match? x "string";
 	)NPL");
 	// NOTE: List library.
-	RegisterStrictUnary(root, "list-length", [&](TermNode& term){
-		return int(term.size());
-	});
+	// TODO: Check list type?
+	RegisterStrictUnary(root, "list-length",
+		ComposeReferencedTermOp(FetchListLength));
+	RegisterStrictUnary(root, "listv-length", FetchListLength);
+	RegisterStrictUnary(root, "branch?", ComposeReferencedTermOp(IsBranch));
+	RegisterStrictUnary(root, "branchpr?", IsBranch);
+	RegisterStrictUnary(root, "leaf?", ComposeReferencedTermOp(IsLeaf));
+	RegisterStrictUnary(root, "leafpr?", IsLeaf);
 	// NOTE: String library.
 	// NOTE: Definitions of ++, string-empty?, string<- are in
 	//	%YFramework.NPL.Dependency.
