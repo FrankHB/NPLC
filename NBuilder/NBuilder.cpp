@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6802
+\version r6810
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-09-25 10:35 +0800
+	2017-09-26 00:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -31,6 +31,9 @@
 #include <Helper/YModules.h>
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
 #include YFM_NPL_Dependency // for NPL, NPL::A1, LoadNPLContextForSHBuild;
+#include YFM_YSLib_Service_TextFile // for
+//	YSLib::IO::SharedInputMappedFileStream, YSLib::Text::OpenSkippedBOMtream,
+//	YSLib::Text::BOM_UTF_8;
 
 namespace NPL
 {
@@ -183,13 +186,15 @@ FetchListLength(TermNode& term) ynothrow
 void
 LoadExternal(REPLContext& context, const string& name, ContextNode& ctx)
 {
-	platform::ifstream ifs(name, std::ios_base::in);
+	const auto p_sifs(Text::OpenSkippedBOMtream<
+		IO::SharedInputMappedFileStream>(Text::BOM_UTF_8, name.c_str()));
+	std::istream& is(*p_sifs);
 
-	if(ifs)
+	if(is)
 	{
 		YTraceDe(Notice, "Test unit '%s' found.", name.c_str());
 		FilterExceptions([&]{
-			context.LoadFrom(ifs, ctx);
+			TryLoadSouce(context, name.c_str(), is, ctx);
 		});
 	}
 	else
