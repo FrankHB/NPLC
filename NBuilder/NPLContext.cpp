@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2275
+\version r2286
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2017-09-07 13:33 +0800
+	2017-09-26 09:54 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -42,19 +42,10 @@ namespace NPL
 namespace A1
 {
 
-void
-LoadSequenceSeparators(ContextNode& ctx, EvaluationPasses& passes)
+LiteralPasses::HandlerType
+FetchExtendedLiteralPass()
 {
-	RegisterSequenceContextTransformer(passes, ctx, "$;", TokenValue(";"),
-		true),
-	RegisterSequenceContextTransformer(passes, ctx, "$,", TokenValue(","));
-}
-
-void
-LoadDeafultLiteralPasses(ContextNode& ctx)
-{
-	ctx.EvaluateLiteral
-		= [](TermNode& term, ContextNode&, string_view id) -> ReductionStatus{
+	return [](TermNode& term, ContextNode&, string_view id) -> ReductionStatus{
 		YAssertNonnull(id.data());
 		if(!id.empty())
 		{
