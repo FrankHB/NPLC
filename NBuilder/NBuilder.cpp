@@ -1,5 +1,5 @@
 ﻿/*
-	© 2011-2017 FrankHB.
+	© 2011-2018 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6824
+\version r6833
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2017-09-26 09:59 +0800
+	2018-03-22 08:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -611,9 +611,16 @@ LoadFunctions(REPLContext& context)
 	RegisterStrict(root, "display", ystdex::bind1(LogTermValue, Notice));
 	RegisterStrictUnary<const string>(root, "echo", Echo);
 	RegisterStrictUnary<const string>(root, "load",
-		std::bind(LoadExternal, std::ref(context), _1, _2));
+		std::bind(LoadExternalRoot, std::ref(context), _1));
 	RegisterStrictUnary<const string>(root, "load-at-root",
-		std::bind(LoadExternal, std::ref(context), _1, std::ref(context.Root)));
+		[&](const string& name){
+		auto p_env(root.SwitchEnvironment(root_env.shared_from_this()));
+		const auto gd(ystdex::unique_guard([&, p_env]{
+			root.SwitchEnvironment(p_env);
+		}));
+
+		LoadExternalRoot(context, name);
+	});
 	context.Perform(u8R"NPL(
 		$defl! get-module (filename .opt)
 			$let ((env () make-standard-environment)) $sequence
