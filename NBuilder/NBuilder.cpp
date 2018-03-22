@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6833
+\version r6837
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-03-22 08:56 +0800
+	2018-03-22 11:01 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -614,10 +614,8 @@ LoadFunctions(REPLContext& context)
 		std::bind(LoadExternalRoot, std::ref(context), _1));
 	RegisterStrictUnary<const string>(root, "load-at-root",
 		[&](const string& name){
-		auto p_env(root.SwitchEnvironment(root_env.shared_from_this()));
-		const auto gd(ystdex::unique_guard([&, p_env]{
-			root.SwitchEnvironment(p_env);
-		}));
+		const ystdex::guard<EnvironmentSwitcher>
+			gd(root, root.SwitchEnvironment(root_env.shared_from_this()));
 
 		LoadExternalRoot(context, name);
 	});
