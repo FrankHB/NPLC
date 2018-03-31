@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6837
+\version r6854
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-03-22 11:01 +0800
+	2018-03-30 12:38 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -259,13 +259,11 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Definitions of eq?, eql?, eqr?, eqv? are in
 	//	%YFramework.NPL.Dependency.
 	RegisterStrictUnary<const string>(root, "symbol-string?", IsSymbol);
-	// NOTE: Like Scheme but not Kernel, '$if' treats non-boolean value as
-	//	'#f', for zero overhead principle.
 //	RegisterForm(root, "$if", If);
 	RegisterStrictUnary(root, "list?", ComposeReferencedTermOp(IsList));
 	RegisterStrictUnary(root, "listpr?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
-	// NOTE: Definitions of null?, cons, eval, copy-environment,
+	// NOTE: Definitions of null?, cons, cons&, eval, copy-environment,
 	//	make-environment, get-current-environment, weaken-environment,
 	//	lock-environment are in %YFramework.NPL.Dependency.
 	// NOTE: Environment mutation is optional in Kernel and supported here.
@@ -273,13 +271,10 @@ LoadFunctions(REPLContext& context)
 	//	%YFramework.NPL.Dependency.
 	RegisterForm(root, "$undef!", ystdex::bind1(Undefine, _2, true));
 	RegisterForm(root, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
-	// NOTE: Definitions of $lambda, $vau, $vaue, wrap are in
-	//	%YFramework.NPL.Dependency.
-	// NOTE: This does check before wrapping.
+	// NOTE: Definitions of $vau, $vaue, wrap are in %YFramework.NPL.Dependency.
+	// NOTE: The applicative 'wrap1' does check before wrapping.
 	RegisterStrictUnary<ContextHandler>(root, "wrap1", WrapOnce);
-//	RegisterStrictUnary<ContextHandler>(root, "unwrap", Unwrap);
-	// NOTE: 'eq? (() get-current-environment) (() (wrap ($vau () e e)))' shall
-	//	be '#t'.
+	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
 #endif
 	// NOTE: NPLA value transferring.
 	RegisterStrictUnary(root, "vcopy", [](const TermNode& node){
@@ -333,8 +328,7 @@ LoadFunctions(REPLContext& context)
 		terminate();
 	});
 	// NOTE: Derived functions with probable privmitive implementation.
-	// NOTE: Definitions of list, $quote, $set!, $setrec!, $sequence are in
-	//	%YFramework.NPL.Dependency.
+	// NOTE: Definitions of list, list&, $quote are in %YFramework.NPL.Dependency.
 #if true
 	RegisterStrict(root, "id", [](TermNode& term){
 		RetainN(term);
@@ -344,13 +338,13 @@ LoadFunctions(REPLContext& context)
 #else
 	context.Perform(u8R"NPL($def! id $lambda (x) x)NPL");
 #endif
-	// NOTE: Definitions of $defv!, $defl!, first, rest are in
-	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! xcons (x y) cons y x;
 	)NPL");
-	// NOTE: Definitions of apply, list*, $defw!, $lambdae, $cond,
-	//	not?, $when, $unless are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of $set!, $defv!, $lambda, $setrec!, $defl!, first,
+	//	rest, apply, list*, $defw!, $lambdae, $sequence, $cond,
+	//	make-standard-environment, not?, $when, $unless are in
+	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! and? x
 		(
