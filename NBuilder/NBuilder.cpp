@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6915
+\version r6920
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-04-02 01:57 +0800
+	2018-04-02 02:33 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -419,7 +419,7 @@ LoadFunctions(REPLContext& context)
 				(list $let () $sequence body (list* list symbols))) env;
 		$defv! $import! (&expr .&symbols) env
 			eval (list $set! env symbols (cons list symbols)) (eval expr env);
-		$def! foldr $let ((cenv () make-standard-environment)) wrap
+		$def! foldr $let ((&cenv () make-standard-environment)) wrap
 		(
 			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
 				accr ls null? () ($lambda (&l) cxr (first l)) rest cons;
@@ -428,7 +428,7 @@ LoadFunctions(REPLContext& context)
 				($lambda (&ls) cxrs ls rest) ($lambda (&x &st)
 					apply kons (list-concat x (list st)) env))
 		);
-		$def! map $let ((cenv () make-standard-environment)) wrap
+		$def! map $let ((&cenv () make-standard-environment)) wrap
 		(
 			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
 				accr ls null? () ($lambda (&l) cxr (first l)) rest cons;
@@ -466,9 +466,8 @@ LoadFunctions(REPLContext& context)
 			eval (list bound? str) (eval expr env);
 		$defv! $binds1? (&expr &s) env
 			eval (list (unwrap bound?) (symbol->string s)) (eval expr env);
-		$defv! $binds? (&expr .&ss) env
-			$let ((senv eval expr env))
-				foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
+		$defv! $binds? (&expr .&ss) env $let ((&senv eval expr env))
+			foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
 	)NPL");
 	RegisterStrict(root, "eval-u",
 		ystdex::bind1(EvaluateUnit, std::ref(context)));
@@ -605,7 +604,7 @@ LoadFunctions(REPLContext& context)
 	});
 	context.Perform(u8R"NPL(
 		$defl! get-module (&filename .&opt)
-			$let ((env () make-standard-environment)) $sequence
+			$let ((&env () make-standard-environment)) $sequence
 				($unless (null? opt) ($set! env module-parameters (first opt)))
 				(eval (list load filename) env) env;
 	)NPL");
