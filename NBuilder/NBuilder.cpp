@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6854
+\version r6915
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-03-30 12:38 +0800
+	2018-04-02 01:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -259,7 +259,7 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Definitions of eq?, eql?, eqr?, eqv? are in
 	//	%YFramework.NPL.Dependency.
 	RegisterStrictUnary<const string>(root, "symbol-string?", IsSymbol);
-//	RegisterForm(root, "$if", If);
+	// NOTE: Definitions of $if is in %YFramework.NPL.Dependency.
 	RegisterStrictUnary(root, "list?", ComposeReferencedTermOp(IsList));
 	RegisterStrictUnary(root, "listpr?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
@@ -336,41 +336,29 @@ LoadFunctions(REPLContext& context)
 		return CheckNorm(term);
 	});
 #else
-	context.Perform(u8R"NPL($def! id $lambda (x) x)NPL");
+	context.Perform(u8R"NPL($def! id $lambda (&x) x)NPL");
 #endif
-	context.Perform(u8R"NPL(
-		$defl! xcons (x y) cons y x;
-	)NPL");
+	context.Perform(u8R"NPL($defl! xcons (&x &y) cons y x;)NPL");
 	// NOTE: Definitions of $set!, $defv!, $lambda, $setrec!, $defl!, first,
 	//	rest, apply, list*, $defw!, $lambdae, $sequence, $cond,
 	//	make-standard-environment, not?, $when, $unless are in
 	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defl! and? x
-		(
-			$defl! and2? (x y) $if (null? y) x
-			(
-				$def! h first y;
-				and2? ($if h x #f) (rest y)
-			);
-			and2? #t x
-		);
-		$defl! or? x
-		(
-			$defl! or2? (x y) $if (null? y) x
-			(
-				$def! h first y;
-				or2? ($if h h x) (rest y)
-			);
-			or2? #f x
-		);
+		$defl! and? &x $sequence
+			($defl! and2? (&x &y) $if (null? y) x
+				($sequence ($def! h first y) (and2? ($if h x #f) (rest y))))
+			(and2? #t x);
+		$defl! or? &x $sequence
+			($defl! or2? (&x &y) $if (null? y) x
+				($sequence ($def! h first y) (or2? ($if h h x) (rest y))))
+			(or2? #f x);
 	)NPL");
 	// NOTE: Definitions of $and?, $or?, first-null?,
 	//	list-rest, accl, accr are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defl! foldl1 (kons knil l) accl l null? knil first rest kons;
-		$defw! map1-reverse (appv l) env foldl1
-			($lambda (x xs) cons (apply appv (list x) env) xs) () l;
+		$defl! foldl1 (&kons &knil &l) accl l null? knil first rest kons;
+		$defw! map1-reverse (&appv &l) env foldl1
+			($lambda (&x &xs) cons (apply appv (list x) env) xs) () l;
 	)NPL");
 	// NOTE: Definitions of foldr1, map1, list-concat are in
 	//	%YFramework.NPL.Dependency.
@@ -380,73 +368,75 @@ LoadFunctions(REPLContext& context)
 	)NPL");
 	// NOTE: Definitions of append is in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defl! reverse (l) foldl1 cons () l;
-		$defl! snoc (x r) (list-concat r (list x));
+		$defl! reverse (&l) foldl1 cons () l;
+		$defl! snoc (&x &r) (list-concat r (list x));
 	)NPL");
 	// NOTE: Definitions of $let is in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defl! filter (accept? ls) apply append
-			(map1 ($lambda (x) $if (apply accept? (list x)) (list x) ()) ls);
-		$defl! reduce (ls bin id) $cond
+		$defl! filter (&accept? &ls) apply append
+			(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
+		$defl! reduce (&ls &bin &id) $cond
 			((null? ls) id)
 			((null? (rest ls)) first ls)
 			(#t bin (first ls) (reduce (rest ls) bin id));
-		$defl! assv (object alist) $let
-			((alist filter ($lambda (record) eqv? object (first record)) alist))
+		$defl! assv (&object &alist) $let
+			((alist
+				filter ($lambda (&record) eqv? object (first record)) alist))
 				$if (null? alist) () (first alist);
-		$defl! memv? (object ls)
-			apply or? (map1 ($lambda (x) eqv? object x) ls);
-		$defl! assq (object alist) $let
-			((alist filter ($lambda (record) eq? object (first record)) alist))
+		$defl! memv? (&object &ls)
+			apply or? (map1 ($lambda (&x) eqv? object x) ls);
+		$defl! assq (&object &alist) $let
+			((alist filter ($lambda (&record) eq? object (first record)) alist))
 				($if (null? alist) () (first alist));
-		$defl! memq? (object ls) apply or? (map1 ($lambda (x) eq? object x) ls);
-		$defl! equal? (x y) $if ($and? (branch? x) (branch? y))
+		$defl! memq? (&object &ls)
+			apply or? (map1 ($lambda (&x) eq? object x) ls);
+		$defl! equal? (&x &y) $if ($and? (branch? x) (branch? y))
 			($and? (equal? (first x) (first y)) (equal? (rest x) (rest y)))
 			(eqv? x y);
 	)NPL");
 	// NOTE: Definitions of $let* are in
 	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defv! $letrec (bindings .body) env
+		$defv! $letrec (&bindings .&body) env
 			eval (list $let () $sequence (list $def! (map1 first bindings)
 				(list* () list (map1 rest bindings))) body) env;
-		$defv! $letrec* (bindings .body) env
+		$defv! $letrec* (&bindings .&body) env
 			eval ($if (null? bindings) (list* $letrec bindings body)
 				(list $letrec (list (first bindings))
 				(list* $letrec* (rest bindings) body))) env;
-		$defv! $let-redirect (expr bindings .body) env
+		$defv! $let-redirect (&expr &bindings .&body) env
 			eval (list* () (eval (list* $lambda (map1 first bindings) body)
 				(eval expr env)) (map1 list-rest bindings)) env;
-		$defv! $let-safe (bindings .body) env
+		$defv! $let-safe (&bindings .&body) env
 			eval (list* () $let-redirect
 				(() make-standard-environment) bindings body) env;
-		$defv! $remote-eval (o e) d eval o (eval e d);
-		$defv! $bindings->environment bindings denv
+		$defv! $remote-eval (&o &e) d eval o (eval e d);
+		$defv! $bindings->environment &bindings denv
 			eval (list $let-redirect (() make-environment) bindings
 				(list lock-environment (list () get-current-environment))) denv;
-		$defv! $provide! (symbols .body) env
+		$defv! $provide! (&symbols .&body) env
 			eval (list $def! symbols
 				(list $let () $sequence body (list* list symbols))) env;
-		$defv! $import! (exp .symbols) env
-			eval (list $set! env symbols (cons list symbols)) (eval exp env);
+		$defv! $import! (&expr .&symbols) env
+			eval (list $set! env symbols (cons list symbols)) (eval expr env);
 		$def! foldr $let ((cenv () make-standard-environment)) wrap
 		(
 			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
-				accr ls null? () ($lambda (l) cxr (first l)) rest cons;
+				accr ls null? () ($lambda (&l) cxr (first l)) rest cons;
 			$vaue cenv (kons knil .ls) env
-				(accr ls unfoldable? knil ($lambda (ls) cxrs ls first)
-				($lambda (ls) cxrs ls rest) ($lambda (x st)
+				(accr ls unfoldable? knil ($lambda (&ls) cxrs ls first)
+				($lambda (&ls) cxrs ls rest) ($lambda (&x &st)
 					apply kons (list-concat x (list st)) env))
 		);
 		$def! map $let ((cenv () make-standard-environment)) wrap
 		(
 			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
-				accr ls null? () ($lambda (l) cxr (first l)) rest cons;
+				accr ls null? () ($lambda (&l) cxr (first l)) rest cons;
 			$vaue cenv (appv .ls) env accr ls unfoldable? ()
-				($lambda (ls) cxrs ls first) ($lambda (ls) cxrs ls rest)
-					($lambda (x xs) cons (apply appv x env) xs)
+				($lambda (&ls) cxrs ls first) ($lambda (&ls) cxrs ls rest)
+					($lambda (&x &xs) cons (apply appv x env) xs)
 		);
-		$defw! for-each-rtl ls env $sequence (apply map ls env) inert;
+		$defw! for-each-rtl &ls env $sequence (apply map ls env) inert;
 	)NPL");
 	// NOTE: Definitions of unfoldable?, map-reverse for-each-ltr
 	//	are in %YFramework.NPL.Dependency.
@@ -472,11 +462,11 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Definitions of bound?, value-of is in %YFramework.NPL.Dependency.
 	// NOTE: Only '$binds?' is like in Kernel.
 	context.Perform(u8R"NPL(
-		$defw! environment-bound? (expr str) env
+		$defw! environment-bound? (&expr &str) env
 			eval (list bound? str) (eval expr env);
-		$defv! $binds1? (expr s) env
+		$defv! $binds1? (&expr &s) env
 			eval (list (unwrap bound?) (symbol->string s)) (eval expr env);
-		$defv! $binds? (expr .ss) env
+		$defv! $binds? (&expr .&ss) env
 			$let ((senv eval expr env))
 				foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
 	)NPL");
@@ -506,7 +496,7 @@ LoadFunctions(REPLContext& context)
 		return std::type_index(ReferenceTerm(term).Value.type());
 	});
 	// TODO: Copy of operand cannot be used for move-only types.
-	context.Perform("$defl! ptype (x) puts (nameof (typeid x))");
+	context.Perform("$defl! ptype (&x) puts (nameof (typeid x))");
 	RegisterStrictUnary<string>(root, "get-typeid",
 		[&](const string& str) -> std::type_index{
 		if(str == "bool")
@@ -535,19 +525,19 @@ LoadFunctions(REPLContext& context)
 		return std::type_index(h.target_type());
 	});
 	context.Perform(u8R"NPL(
-		$defl! typeid-match? (x id) eqv? (get-typeid id) (typeid x);
-		$defl! bool? (x) typeid-match? x "bool";
-		$defl! symbol? (x) $and? (typeid-match? x "symbol")
+		$defl! typeid-match? (&x &id) eqv? (get-typeid id) (typeid x);
+		$defl! bool? (&x) typeid-match? x "bool";
+		$defl! symbol? (&x) $and? (typeid-match? x "symbol")
 			(symbol-string? (symbol->string x));
-		$defl! environment? (x) $or? (typeid-match? x "environment")
+		$defl! environment? (&x) $or? (typeid-match? x "environment")
 			(typeid-match? x "environment#owned");
-		$defl! combiner? (x) typeid-match? x "combiner";
-		$defl! operative? (x) $and? (combiner? x)
+		$defl! combiner? (&x) typeid-match? x "combiner";
+		$defl! operative? (&x) $and? (combiner? x)
 			(eqv? (get-combiner-type x) (get-typeid "operative"));
-		$defl! applicative? (x) $and? (combiner? x)
+		$defl! applicative? (&x) $and? (combiner? x)
 			(eqv? (get-combiner-type x) (get-typeid "applicative"));
-		$defl! int? (x) typeid-match? x "int";
-		$defl! string? (x) typeid-match? x "string";
+		$defl! int? (&x) typeid-match? x "int";
+		$defl! string? (&x) typeid-match? x "string";
 	)NPL");
 	// NOTE: List library.
 	// TODO: Check list type?
@@ -562,7 +552,7 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Definitions of ++, string-empty?, string<- are in
 	//	%YFramework.NPL.Dependency.
 	RegisterStrictBinary<string>(root, "string=?", ystdex::equal_to<>());
-	context.Perform(u8R"NPL($defl! retain-string (str) ++ "\"" str "\"")NPL");
+	context.Perform(u8R"NPL($defl! retain-string (&str) ++ "\"" str "\"")NPL");
 	RegisterStrictUnary<const int>(root, "itos", [](int x){
 		return to_string(x);
 	});
@@ -614,7 +604,7 @@ LoadFunctions(REPLContext& context)
 		LoadExternalRoot(context, name);
 	});
 	context.Perform(u8R"NPL(
-		$defl! get-module (filename .opt)
+		$defl! get-module (&filename .&opt)
 			$let ((env () make-standard-environment)) $sequence
 				($unless (null? opt) ($set! env module-parameters (first opt)))
 				(eval (list load filename) env) env;
@@ -677,7 +667,7 @@ LoadFunctions(REPLContext& context)
 			cout << te.LockForeColor(DarkRed) << val;
 			cout << '"' << endl;
 	})), true);
-	context.Perform("$defl! iput (x) puts (itos x)");
+	context.Perform("$defl! iput (&x) puts (itos x)");
 	LoadExternalRoot(context, "test.txt");
 	root.EvaluateList.Add(DefaultDebugAction, 255);
 	root.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
