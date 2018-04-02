@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6920
+\version r6929
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-04-02 02:33 +0800
+	2018-04-02 14:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -328,17 +328,24 @@ LoadFunctions(REPLContext& context)
 		terminate();
 	});
 	// NOTE: Derived functions with probable privmitive implementation.
-	// NOTE: Definitions of list, list&, $quote are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of list, list&, $quote are in
+	//	%YFramework.NPL.Dependency.
 #if true
 	RegisterStrict(root, "id", [](TermNode& term){
 		RetainN(term);
 		LiftTerm(term, Deref(std::next(term.begin())));
+		LiftToSelfSafe(term);
 		return CheckNorm(term);
 	});
 #else
 	context.Perform(u8R"NPL($def! id $lambda (&x) x)NPL");
 #endif
-	context.Perform(u8R"NPL($defl! xcons (&x &y) cons y x;)NPL");
+	RegisterStrict(root, "id&", [](TermNode& term){
+		RetainN(term);
+		LiftTerm(term, Deref(std::next(term.begin())));
+		return CheckNorm(term);
+	});
+	context.Perform(u8R"NPL($defl! xcons (&x &y) cons y x)NPL");
 	// NOTE: Definitions of $set!, $defv!, $lambda, $setrec!, $defl!, first,
 	//	rest, apply, list*, $defw!, $lambdae, $sequence, $cond,
 	//	make-standard-environment, not?, $when, $unless are in
