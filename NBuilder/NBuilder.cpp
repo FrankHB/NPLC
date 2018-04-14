@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6929
+\version r6930
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-04-02 14:11 +0800
+	2018-04-15 02:14 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -511,7 +511,7 @@ LoadFunctions(REPLContext& context)
 			return typeid(TokenValue);
 		// XXX: The environment type is not unique.
 		if(str == "environment")
-			return typeid(weak_ptr<NPL::Environment>);
+			return typeid(EnvironmentReference);
 		if(str == "environment#owned")
 			return typeid(shared_ptr<NPL::Environment>);
 		if(str == "int")
