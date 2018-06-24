@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6932
+\version r6951
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-06-25 03:24 +0800
+	2018-06-25 03:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -328,24 +328,13 @@ LoadFunctions(REPLContext& context)
 		terminate();
 	});
 	// NOTE: Derived functions with probable privmitive implementation.
-	// NOTE: Definitions of list, list&, $quote are in
+	// NOTE: Definitions of id, idv, list, list&, $quote, $defl!, first, first%,
+	//first&, rest, rest%, rest& are in
 	//	%YFramework.NPL.Dependency.
-#if true
-	RegisterStrict(root, "id", [](TermNode& term){
-		RetainN(term);
-		LiftTerm(term, Deref(std::next(term.begin())));
-		LiftToSelfSafe(term);
-		return CheckNorm(term);
-	});
-#else
-	context.Perform(u8R"NPL($def! id $lambda (&x) x)NPL");
-#endif
-	RegisterStrict(root, "id&", [](TermNode& term){
-		RetainN(term);
-		LiftTerm(term, Deref(std::next(term.begin())));
-		return CheckNorm(term);
-	});
-	context.Perform(u8R"NPL($defl! xcons (&x &y) cons y x)NPL");
+	context.Perform(u8R"NPL(
+		$defl! xcons (&x &y) cons y x;
+		$defl! xcons% (&x &y) cons% y x;
+	)NPL");
 	// NOTE: Definitions of $set!, $defv!, $lambda, $setrec!, $defl!, first,
 	//	rest, apply, list*, $defw!, $lambdae, $sequence, $cond,
 	//	make-standard-environment, not?, $when, $unless are in
@@ -377,6 +366,7 @@ LoadFunctions(REPLContext& context)
 	context.Perform(u8R"NPL(
 		$defl! reverse (&l) foldl1 cons () l;
 		$defl! snoc (&x &r) (list-concat r (list x));
+		$defl! snoc% (&x &r) (list-concat r (list% x));
 	)NPL");
 	// NOTE: Definitions of $let is in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
