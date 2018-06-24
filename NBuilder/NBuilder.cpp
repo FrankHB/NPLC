@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6930
+\version r6932
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-04-15 02:14 +0800
+	2018-06-25 03:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -273,7 +273,7 @@ LoadFunctions(REPLContext& context)
 	RegisterForm(root, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
 	// NOTE: Definitions of $vau, $vaue, wrap are in %YFramework.NPL.Dependency.
 	// NOTE: The applicative 'wrap1' does check before wrapping.
-	RegisterStrictUnary<ContextHandler>(root, "wrap1", WrapOnce);
+	RegisterStrictUnary<const ContextHandler>(root, "wrap1", WrapOnce);
 	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
 #endif
 	// NOTE: NPLA value transferring.
@@ -503,7 +503,7 @@ LoadFunctions(REPLContext& context)
 	});
 	// TODO: Copy of operand cannot be used for move-only types.
 	context.Perform("$defl! ptype (&x) puts (nameof (typeid x))");
-	RegisterStrictUnary<string>(root, "get-typeid",
+	RegisterStrictUnary<const string>(root, "get-typeid",
 		[&](const string& str) -> std::type_index{
 		if(str == "bool")
 			return typeid(bool);
