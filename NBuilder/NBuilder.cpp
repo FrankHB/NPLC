@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6951
+\version r6958
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-06-25 03:31 +0800
+	2018-06-25 03:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -394,13 +394,13 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Definitions of $let* are in
 	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defv! $letrec (&bindings .&body) env
-			eval (list $let () $sequence (list $def! (map1 first bindings)
-				(list* () list (map1 rest bindings))) body) env;
-		$defv! $letrec* (&bindings .&body) env
-			eval ($if (null? bindings) (list* $letrec bindings body)
-				(list $letrec (list (first bindings))
-				(list* $letrec* (rest bindings) body))) env;
+		$defv%! $letrec (&bindings .&body) env forward
+			(eval% (list $let () $sequence (list% $def! (map1 first% bindings)
+				(list*% () list (map1 rest% bindings))) body) env);
+		$defv%! $letrec* (&bindings .&body) env forward
+			(eval% ($if (null? bindings) (list*% $letrec bindings body)
+				(list $letrec (list% (first% bindings))
+				(list*% $letrec* (rest% bindings) body))) env);
 		$defv! $let-redirect (&expr &bindings .&body) env
 			eval (list* () (eval (list* $lambda (map1 first bindings) body)
 				(eval expr env)) (map1 list-rest bindings)) env;
