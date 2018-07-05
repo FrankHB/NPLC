@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6958
+\version r6960
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-06-25 03:35 +0800
+	2018-07-06 00:04 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -374,8 +374,8 @@ LoadFunctions(REPLContext& context)
 			(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
 		$defl! reduce (&ls &bin &id) $cond
 			((null? ls) id)
-			((null? (rest ls)) first ls)
-			(#t bin (first ls) (reduce (rest ls) bin id));
+			((null? (rest& ls)) first& ls)
+			(#t bin (first& ls) (reduce (rest& ls) bin id));
 		$defl! assv (&object &alist) $let
 			((alist
 				filter ($lambda (&record) eqv? object (first record)) alist))
