@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6980
+\version r6984
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-07-06 00:09 +0800
+	2018-07-06 00:12 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -269,6 +269,10 @@ LoadFunctions(REPLContext& context)
 	// NOTE: Definitions of null?, cons, cons&, eval, copy-environment,
 	//	make-environment, get-current-environment, weaken-environment,
 	//	lock-environment are in %YFramework.NPL.Dependency.
+	RegisterStrictUnary(root, "resolve-environment",
+		[](TermNode& term){
+		return ResolveEnvironment(term.Value).first;
+	});
 	// NOTE: Environment mutation is optional in Kernel and supported here.
 	// NOTE: Definitions of $deflazy!, $def!, $defrec! are in
 	//	%YFramework.NPL.Dependency.
