@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6963
+\version r6980
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-07-06 00:06 +0800
+	2018-07-06 00:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -329,6 +329,24 @@ LoadFunctions(REPLContext& context)
 	});
 	RegisterForm(root, "$crash", []{
 		terminate();
+	});
+	RegisterStrictUnary<const string>(root, "trace", [&](const string& cmd){
+		const auto set_t_lv([&](const string& s) -> Logger::Level{
+			if(s == "on")
+				return Logger::Level::Debug;
+			else if(s == "off")
+				return Logger::Level::Informative;
+			else
+				throw std::invalid_argument(
+					"Invalid predefined trace option found.");
+		});
+
+		if(cmd == "on" || cmd == "off")
+			root.Trace.FilterLevel = set_t_lv(cmd);
+		else if(cmd == "reset")
+			root.Trace.FilterLevel = set_t_lv(init_trace_option);
+		else
+			throw std::invalid_argument("Invalid trace option found.");
 	});
 	// NOTE: Derived functions with probable privmitive implementation.
 	// NOTE: Definitions of id, idv, list, list&, $quote, $defl!, first, first%,
