@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6960
+\version r6963
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-07-06 00:04 +0800
+	2018-07-06 00:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -220,7 +220,10 @@ LoadFunctions(REPLContext& context)
 	using namespace Forms;
 	auto& root(context.Root);
 	auto& root_env(root.GetRecordRef());
+	string init_trace_option;
 
+	root.Trace.FilterLevel = FetchEnvironmentVariable(init_trace_option,
+		"NBUILDER_TRACE") ? Logger::Level::Debug : Logger::Level::Informative;
 	p_context = make_observer(&context);
 	LoadNPLContextForSHBuild(context);
 	// TODO: Extract literal configuration API.
