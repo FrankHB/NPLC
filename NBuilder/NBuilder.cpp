@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6984
+\version r6990
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-07-06 00:12 +0800
+	2018-07-06 00:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -613,6 +613,14 @@ LoadFunctions(REPLContext& context)
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
 	// NOTE: I/O library.
+	RegisterStrict(root, "read-line", [](TermNode& term){
+		RetainN(term, 0);
+
+		string line;
+
+		std::getline(std::cin, line);
+		term.Value = line;
+	});
 	RegisterStrict(root, "display", ystdex::bind1(LogTermValue, Notice));
 	RegisterStrictUnary<const string>(root, "echo", Echo);
 	RegisterStrictUnary<const string>(root, "load",
