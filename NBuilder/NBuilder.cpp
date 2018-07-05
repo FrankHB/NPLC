@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r6990
+\version r7001
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-07-06 00:17 +0800
+	2018-07-06 00:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -34,6 +34,9 @@
 #include YFM_YSLib_Service_TextFile // for
 //	YSLib::IO::SharedInputMappedFileStream, YSLib::Text::OpenSkippedBOMtream,
 //	YSLib::Text::BOM_UTF_8;
+#include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
+//	std::chrono::duration_cast;
+#include <ytest/timing.hpp> // for ytest::timing::once;
 
 namespace NPL
 {
@@ -721,7 +724,15 @@ main(int argc, char* argv[])
 	CommandArguments.Reset(argc, argv);
 	return FilterExceptions([]{
 		Application app;
-		Interpreter intp(app, LoadFunctions);
+		Interpreter intp(app, [&](REPLContext& context){
+			using namespace chrono;
+			const auto d(ytest::timing::once(
+				YSLib::Timers::HighResolutionClock::now,
+				LoadFunctions, context));
+
+			cout << "NPLC initialization finished in " << d.count() / 1e9
+				<< " second(s)." << endl;
+		});
 
 		while(intp.WaitForLine() && intp.Process())
 			;
