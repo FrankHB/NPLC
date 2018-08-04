@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7009
+\version r7011
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-08-04 20:12 +0800
+	2018-08-04 20:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -30,7 +30,7 @@
 #include <typeindex>
 #include <Helper/YModules.h>
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
-#include YFM_NPL_Dependency // for NPL, NPL::A1, LoadNPLContextForSHBuild;
+#include YFM_NPL_Dependency // for NPL, NPL::A1, LoadNPLContextGround;
 #include YFM_YSLib_Service_TextFile // for
 //	YSLib::IO::SharedInputMappedFileStream, YSLib::Text::OpenSkippedBOMtream,
 //	YSLib::Text::BOM_UTF_8;
@@ -228,7 +228,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	root.Trace.FilterLevel = FetchEnvironmentVariable(init_trace_option,
 		"NBUILDER_TRACE") ? Logger::Level::Debug : Logger::Level::Informative;
 	p_context = make_observer(&context);
-	LoadNPLContextForSHBuild(context);
+	LoadNPLContextGround(context);
 	// TODO: Extract literal configuration API.
 	{
 		// TODO: Blocked. Use C++14 lambda initializers to simplify
