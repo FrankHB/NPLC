@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2017 FrankHB.
+	© 2013-2018 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r153
+\version r159
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2017-09-25 01:28 +0800
+	2018-08-04 20:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -85,6 +85,8 @@ private:
 	YSLib::unique_ptr<YSLib::Environment> p_env;
 	/// 674
 	string line;
+	/// 834
+	shared_ptr<Environment> p_ground{};
 	/// 740
 	REPLContext context;
 
@@ -97,6 +99,10 @@ public:
 
 	bool
 	Process();
+
+	/// 834
+	bool
+	SaveGround();
 
 	std::istream&
 	WaitForLine();

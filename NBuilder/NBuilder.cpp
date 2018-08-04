@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7001
+\version r7009
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-07-06 00:35 +0800
+	2018-08-04 20:12 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -215,14 +215,14 @@ LoadExternalRoot(REPLContext& context, const string& name)
 ArgumentsVector CommandArguments;
 
 
-/// 740
+/// 834
 void
-LoadFunctions(REPLContext& context)
+LoadFunctions(Interpreter& intp, REPLContext& context)
 {
 	using namespace std::placeholders;
 	using namespace Forms;
 	auto& root(context.Root);
-	auto& root_env(root.GetRecordRef());
+	auto& ground(root.GetRecordRef());
 	string init_trace_option;
 
 	root.Trace.FilterLevel = FetchEnvironmentVariable(init_trace_option,
@@ -254,8 +254,12 @@ LoadFunctions(REPLContext& context)
 	RegisterLiteralSignal(root, "license", SSignal::License);
 	// NOTE: Definition of %inert is in %YFramework.NPL.Dependency.
 	// NOTE: Context builtins.
-	root_env.Define("REPL-context", ValueObject(context, OwnershipTag<>()), {});
-	root_env.Define("root-context", ValueObject(root, OwnershipTag<>()), {});
+	ground.Define("REPL-context", ValueObject(context, OwnershipTag<>()), {});
+	ground.Define("root-context", ValueObject(root, OwnershipTag<>()), {});
+	intp.SaveGround();
+
+	auto& root_env(root.GetRecordRef());
+
 	// NOTE: Literal expression forms.
 	RegisterForm(root, "$retain", Retain);
 	RegisterForm(root, "$retain1", ystdex::bind1(RetainN, 1));
@@ -728,7 +732,7 @@ main(int argc, char* argv[])
 			using namespace chrono;
 			const auto d(ytest::timing::once(
 				YSLib::Timers::HighResolutionClock::now,
-				LoadFunctions, context));
+				LoadFunctions, std::ref(intp), context));
 
 			cout << "NPLC initialization finished in " << d.count() / 1e9
 				<< " second(s)." << endl;
