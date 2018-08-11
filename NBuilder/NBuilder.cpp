@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7048
+\version r7049
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-08-12 05:45 +0800
+	2018-08-12 05:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -663,6 +663,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	RegisterStrictUnary<std::istringstream>(root, "parse-s", ParseStream);
 	RegisterStrictUnary<const string>(root, "put", [&](const string& str){
 		std::cout << EncodeArg(str);
+		return ValueToken::Unspecified;
 	});
 	RegisterStrictUnary<const string>(root, "puts", [&](const string& str){
 		// XXX: Overridding.
