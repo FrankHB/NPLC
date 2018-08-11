@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7011
+\version r7048
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-08-04 20:13 +0800
+	2018-08-12 05:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -268,14 +268,15 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Definitions of eq?, eql?, eqr?, eqv? are in
 	//	%YFramework.NPL.Dependency.
-	RegisterStrictUnary<const string>(root, "symbol-string?", IsSymbol);
 	// NOTE: Definitions of $if is in %YFramework.NPL.Dependency.
+	RegisterStrictUnary<const string>(root, "symbol-string?", IsSymbol);
 	RegisterStrictUnary(root, "list?", ComposeReferencedTermOp(IsList));
 	RegisterStrictUnary(root, "listpr?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
-	// NOTE: Definitions of null?, cons, cons&, eval, copy-environment,
-	//	make-environment, get-current-environment, weaken-environment,
-	//	lock-environment are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of null?, cons, cons%, set-first!, set-first%!,
+	//	set-rest!, set-rest%!, eval, copy-environment, make-environment,
+	//	get-current-environment, weaken-environment, lock-environment are in
+	//	%YFramework.NPL.Dependency.
 	RegisterStrictUnary(root, "resolve-environment",
 		[](TermNode& term){
 		return ResolveEnvironment(term.Value).first;
@@ -283,6 +284,9 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	// NOTE: Environment mutation is optional in Kernel and supported here.
 	// NOTE: Definitions of $deflazy!, $def!, $defrec! are in
 	//	%YFramework.NPL.Dependency.
+	// NOTE: Removing definitions do not guaranteed supported by all
+	//	environments. They are as-is for the current environment implementation,
+	//	but may not work for some specific environments in future.
 	RegisterForm(root, "$undef!", ystdex::bind1(Undefine, _2, true));
 	RegisterForm(root, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
 	// NOTE: Definitions of $vau, $vaue, wrap are in %YFramework.NPL.Dependency.
@@ -498,15 +502,6 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		$defv! $binds? (&expr .&ss) env $let ((&senv eval expr env))
 			foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
 	)NPL");
-	RegisterStrict(root, "eval-u",
-		ystdex::bind1(EvaluateUnit, std::ref(context)));
-	RegisterStrict(root, "eval-u-in", [](TermNode& term){
-		const auto i(std::next(term.begin()));
-		const auto& rctx(Access<REPLContext>(Deref(i)));
-
-		term.Remove(i);
-		EvaluateUnit(term, rctx);
-	}, ystdex::bind1(RetainN, 2));
 	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
 		LexicalAnalyzer lex;
 
@@ -576,10 +571,14 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	RegisterStrictUnary(root, "branchpr?", IsBranch);
 	RegisterStrictUnary(root, "leaf?", ComposeReferencedTermOp(IsLeaf));
 	RegisterStrictUnary(root, "leafpr?", IsLeaf);
+	// NOTE: Encapsulations.
+	// NOTE: Definition of make-encapsulation-type is in
+	//	%YFramework.NPL.Dependency.
 	// NOTE: String library.
 	// NOTE: Definitions of ++, string-empty?, string<- are in
 	//	%YFramework.NPL.Dependency.
-	RegisterStrictBinary<string>(root, "string=?", ystdex::equal_to<>());
+	RegisterStrictBinary<const string, const string>(root, "string=?",
+		ystdex::equal_to<>());
 	context.Perform(u8R"NPL($defl! retain-string (&str) ++ "\"" str "\"")NPL");
 	RegisterStrictUnary<const int>(root, "itos", [](int x){
 		return to_string(x);
@@ -591,30 +590,35 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	// NOTE: Definitions of string->symbol, symbol->string, string->regex,
 	//	regex-match? are in %YFramework.NPL.Dependency.
 	// NOTE: Comparison.
-	RegisterStrictBinary<int>(root, "=?", ystdex::equal_to<>());
-	RegisterStrictBinary<int>(root, "<?", ystdex::less<>());
-	RegisterStrictBinary<int>(root, "<=?", ystdex::less_equal<>());
-	RegisterStrictBinary<int>(root, ">=?", ystdex::greater_equal<>());
-	RegisterStrictBinary<int>(root, ">?", ystdex::greater<>());
+	RegisterStrictBinary<const int, const int>(root, "=?",
+		ystdex::equal_to<>());
+	RegisterStrictBinary<const int, const int>(root, "<?", ystdex::less<>());
+	RegisterStrictBinary<const int, const int>(root, "<=?",
+		ystdex::less_equal<>());
+	RegisterStrictBinary<const int, const int>(root, ">=?",
+		ystdex::greater_equal<>());
+	RegisterStrictBinary<const int, const int>(root, ">?",
+		ystdex::greater<>());
 	// NOTE: Arithmetic procedures.
 	// FIXME: Overflow?
 	RegisterStrict(root, "+", std::bind(CallBinaryFold<int, ystdex::plus<>>,
 		ystdex::plus<>(), 0, _1));
 	// FIXME: Overflow?
-	RegisterStrictBinary<int>(root, "add2", ystdex::plus<>());
+	RegisterStrictBinary<const int, const int>(root, "add2", ystdex::plus<>());
 	// FIXME: Underflow?
-	RegisterStrictBinary<int>(root, "-", ystdex::minus<>());
+	RegisterStrictBinary<const int, const int>(root, "-", ystdex::minus<>());
 	// FIXME: Overflow?
 	RegisterStrict(root, "*", std::bind(CallBinaryFold<int,
 		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1));
 	// FIXME: Overflow?
-	RegisterStrictBinary<int>(root, "multiply2", ystdex::multiplies<>());
-	RegisterStrictBinary<int>(root, "/", [](int e1, int e2){
+	RegisterStrictBinary<const int, const int>(root, "multiply2",
+		ystdex::multiplies<>());
+	RegisterStrictBinary<const int, const int>(root, "/", [](int e1, int e2){
 		if(e2 != 0)
 			return e1 / e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	RegisterStrictBinary<int>(root, "%", [](int e1, int e2){
+	RegisterStrictBinary<const int, const int>(root, "%", [](int e1, int e2){
 		if(e2 != 0)
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
@@ -669,7 +673,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	//	are in %YFramework.NPL.Dependency.
 	// NOTE: Definition of env-set, cmd-get-args, system-get are also in
 	//	%Tools.SHBuild.Main.
-	RegisterStrictBinary<const string>(root, "env-set",
+	RegisterStrictBinary<const string, const string>(root, "env-set",
 		[&](const string& var, const string& val){
 		SetEnvironmentVariable(var.c_str(), val.c_str());
 	});
