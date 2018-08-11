@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7049
+\version r7055
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-08-12 05:49 +0800
+	2018-08-12 05:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -686,11 +686,14 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	});
 	RegisterStrict(root, "system-get", [](TermNode& term){
 		CallUnaryAs<const string>([&](const string& cmd){
+			TermNode::Container con;
 			auto res(FetchCommandOutput(cmd.c_str()));
 
-			term.Clear();
-			term.AddValue(MakeIndex(0), ystdex::trim(std::move(res.first)));
-			term.AddValue(MakeIndex(1), res.second);
+			TermNode::AddValueTo(con, MakeIndex(0),
+				ystdex::trim(std::move(res.first)));
+			TermNode::AddValueTo(con, MakeIndex(1),
+				res.second);
+			swap(con, term.GetContainerRef());
 		}, term);
 		return ReductionStatus::Retained;
 	});
