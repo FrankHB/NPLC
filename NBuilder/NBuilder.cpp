@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7055
+\version r7090
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-08-12 05:50 +0800
+	2018-08-12 21:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -45,9 +45,9 @@ namespace A1
 {
 
 void
-RegisterLiteralSignal(ContextNode& node, const string& name, SSignal sig)
+RegisterLiteralSignal(ContextNode& ctx, const string& name, SSignal sig)
 {
-	RegisterLiteralHandler(node, name,
+	NPL::EmplaceLeaf<LiteralHandler>(ctx, name,
 		[=](const ContextNode&) YB_ATTR(noreturn) -> ReductionStatus{
 		throw sig;
 	});
@@ -197,7 +197,7 @@ LoadExternal(REPLContext& context, const string& name, ContextNode& ctx)
 	{
 		YTraceDe(Notice, "Test unit '%s' found.", name.c_str());
 		FilterExceptions([&]{
-			TryLoadSouce(context, name.c_str(), is, ctx);
+			TryLoadSource(context, name.c_str(), is, ctx);
 		});
 	}
 	else
@@ -274,8 +274,8 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	RegisterStrictUnary(root, "listpr?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
 	// NOTE: Definitions of null?, cons, cons%, set-first!, set-first%!,
-	//	set-rest!, set-rest%!, eval, copy-environment, make-environment,
-	//	get-current-environment, weaken-environment, lock-environment are in
+	//	set-rest!, set-rest%!, eval, copy-environment, lock-current-environment,
+	//	lock-environment, make-environment, weaken-environment are in
 	//	%YFramework.NPL.Dependency.
 	RegisterStrictUnary(root, "resolve-environment",
 		[](TermNode& term){
@@ -372,9 +372,9 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		$defl! xcons% (&x &y) cons% y x;
 	)NPL");
 	// NOTE: Definitions of $set!, $defv!, $lambda, $setrec!, $defl!, first,
-	//	rest, apply, list*, $defw!, $lambdae, $sequence, $cond,
-	//	make-standard-environment, not?, $when, $unless are in
-	//	%YFramework.NPL.Dependency.
+	//	rest, apply, list*, $defw!, $lambdae, $sequence,
+	//	get-current-environment, $cond, make-standard-environment, not?, $when,
+	//	$unless are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! and? &x $sequence
 			($defl! and2? (&x &y) $if (null? y) x
@@ -427,31 +427,26 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			($and? (equal? (first x) (first y)) (equal? (rest x) (rest y)))
 			(eqv? x y);
 	)NPL");
-	// NOTE: Definitions of $let* are in
-	//	%YFramework.NPL.Dependency.
+	// NOTE: Definitions of $let*, $letrec are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defv%! $letrec (&bindings .&body) env forward
-			(eval% (list $let () $sequence (list% $def! (map1 first% bindings)
-				(list*% () list (map1 rest% bindings))) body) env);
 		$defv%! $letrec* (&bindings .&body) env forward
 			(eval% ($if (null? bindings) (list*% $letrec bindings body)
 				(list $letrec (list% (first% bindings))
 				(list*% $letrec* (rest% bindings) body))) env);
-		$defv! $let-redirect (&expr &bindings .&body) env
-			eval (list* () (eval (list* $lambda (map1 first bindings) body)
-				(eval expr env)) (map1 list-rest bindings)) env;
-		$defv! $let-safe (&bindings .&body) env
-			eval (list* () $let-redirect
-				(() make-standard-environment) bindings body) env;
-		$defv! $remote-eval (&o &e) d eval o (eval e d);
-		$defv! $bindings->environment &bindings denv
-			eval (list $let-redirect (() make-environment) bindings
-				(list lock-environment (list () get-current-environment))) denv;
-		$defv! $provide! (&symbols .&body) env
-			eval (list $def! symbols
-				(list $let () $sequence body (list* list symbols))) env;
-		$defv! $import! (&expr .&symbols) env
-			eval (list $set! env symbols (cons list symbols)) (eval expr env);
+		$defv! $let-redirect (&e &bindings .&body) env forward
+			(eval% (list* () (eval (list* $lambda (map1 first bindings) body)
+				(eval e env)) (map1 list-rest bindings)) env);
+		$defv! $let-safe (&bindings .&body) env forward
+			(eval% (list* () $let-redirect
+				(() make-standard-environment) bindings body) env);
+		$defv! $remote-eval (&o &e) d forward (eval% o (eval e d));
+		$defv! $bindings->environment &bindings denv forward
+			(eval% (list $let-redirect (() make-environment) bindings
+				(list () lock-current-environment)) denv);
+	)NPL");
+	// NOTE: Definitions of $provide!, $import! are in
+	//	%YFramework.NPL.Dependency.
+	context.Perform(u8R"NPL(
 		$def! foldr $let ((&cenv () make-standard-environment)) wrap
 		(
 			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
@@ -492,14 +487,15 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	// NOTE: Object interoperation.
 	// NOTE: Definitions of ref is in %YFramework.NPL.Dependency.
 	// NOTE: Environments.
-	// NOTE: Definitions of bound?, value-of is in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of lock-current-environment, bound?, value-of is in
+	//	%YFramework.NPL.Dependency.
 	// NOTE: Only '$binds?' is like in Kernel.
 	context.Perform(u8R"NPL(
-		$defw! environment-bound? (&expr &str) env
-			eval (list bound? str) (eval expr env);
-		$defv! $binds1? (&expr &s) env
-			eval (list (unwrap bound?) (symbol->string s)) (eval expr env);
-		$defv! $binds? (&expr .&ss) env $let ((&senv eval expr env))
+		$defw! environment-bound? (&e &str) env
+			eval (list bound? str) (eval e env);
+		$defv! $binds1? (&e &s) env
+			eval (list (unwrap bound?) (symbol->string s)) (eval e env);
+		$defv! $binds? (&e .&ss) env $let ((&senv eval e env))
 			foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
 	)NPL");
 	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
