@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 415
+\version 417
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2018-08-04 20:12 +0800
+	2018-08-12 20:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -237,8 +237,8 @@ Interpreter::SaveGround()
 	{
 		auto& ctx(context.Root);
 
-		p_ground = ctx.SwitchEnvironmentUnchecked(
-			make_shared<Environment>(ValueObject(ctx.WeakenRecord())));
+		p_ground = NPL::SwitchToFreshEnvironment(ctx,
+			ValueObject(ctx.WeakenRecord()));
 		return true;
 	}
 	return {};
