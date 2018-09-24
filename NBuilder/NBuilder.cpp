@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7099
+\version r7187
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-09-24 17:52 +0800
+	2018-09-24 18:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -220,11 +220,11 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 {
 	using namespace std::placeholders;
 	using namespace Forms;
-	auto& root(context.Root);
-	auto& ground(root.GetRecordRef());
+	auto& rctx(context.Root);
+	auto& renv(rctx.GetRecordRef());
 	string init_trace_option;
 
-	root.Trace.FilterLevel = FetchEnvironmentVariable(init_trace_option,
+	rctx.Trace.FilterLevel = FetchEnvironmentVariable(init_trace_option,
 		"NBUILDER_TRACE") ? Logger::Level::Debug : Logger::Level::Informative;
 	p_context = make_observer(&context);
 	LoadNPLContextGround(context);
@@ -232,10 +232,10 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	{
 		// TODO: Blocked. Use C++14 lambda initializers to simplify
 		//	implementation.
-		auto lit_base(std::move(root.EvaluateLiteral.begin()->second));
+		auto lit_base(std::move(rctx.EvaluateLiteral.begin()->second));
 		auto lit_ext(FetchExtendedLiteralPass());
 
-		root.EvaluateLiteral = [lit_base, lit_ext](TermNode& term,
+		rctx.EvaluateLiteral = [lit_base, lit_ext](TermNode& term,
 			ContextNode& ctx, string_view id) -> ReductionStatus{
 			const auto res(lit_ext(term, ctx, id));
 
@@ -246,37 +246,37 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		};
 	}
 	// NOTE: Literal builtins.
-	RegisterLiteralSignal(root, "exit", SSignal::Exit);
-	RegisterLiteralSignal(root, "cls", SSignal::ClearScreen);
-	RegisterLiteralSignal(root, "about", SSignal::About);
-	RegisterLiteralSignal(root, "help", SSignal::Help);
-	RegisterLiteralSignal(root, "license", SSignal::License);
+	RegisterLiteralSignal(rctx, "exit", SSignal::Exit);
+	RegisterLiteralSignal(rctx, "cls", SSignal::ClearScreen);
+	RegisterLiteralSignal(rctx, "about", SSignal::About);
+	RegisterLiteralSignal(rctx, "help", SSignal::Help);
+	RegisterLiteralSignal(rctx, "license", SSignal::License);
 	// NOTE: Definition of %inert is in %YFramework.NPL.Dependency.
 	// NOTE: Context builtins.
-	ground.Define("REPL-context", ValueObject(context, OwnershipTag<>()), {});
-	ground.Define("root-context", ValueObject(root, OwnershipTag<>()), {});
+	renv.Define("REPL-context", ValueObject(context, OwnershipTag<>()), {});
+	renv.Define("root-context", ValueObject(rctx, OwnershipTag<>()), {});
 	intp.SaveGround();
 
-	auto& root_env(root.GetRecordRef());
+	auto& root_env(rctx.GetRecordRef());
 
 	// NOTE: Literal expression forms.
-	RegisterForm(root, "$retain", Retain);
-	RegisterForm(root, "$retain1", ystdex::bind1(RetainN, 1));
+	RegisterForm(rctx, "$retain", Retain);
+	RegisterForm(rctx, "$retain1", ystdex::bind1(RetainN, 1));
 #if true
 	// NOTE: Primitive features, listed as RnRK, except mentioned above. See
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Definitions of eq?, eql?, eqr?, eqv? are in
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Definitions of $if is in %YFramework.NPL.Dependency.
-	RegisterStrictUnary<const string>(root, "symbol-string?", IsSymbol);
-	RegisterStrictUnary(root, "list?", ComposeReferencedTermOp(IsList));
-	RegisterStrictUnary(root, "listpr?", IsList);
+	RegisterStrictUnary<const string>(rctx, "symbol-string?", IsSymbol);
+	RegisterStrictUnary(rctx, "list?", ComposeReferencedTermOp(IsList));
+	RegisterStrictUnary(rctx, "listpr?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
 	// NOTE: Definitions of null?, cons, cons%, set-first!, set-first%!,
 	//	set-rest!, set-rest%!, eval, copy-environment, lock-current-environment,
 	//	lock-environment, make-environment, weaken-environment are in
 	//	%YFramework.NPL.Dependency.
-	RegisterStrictUnary(root, "resolve-environment",
+	RegisterStrictUnary(rctx, "resolve-environment",
 		[](TermNode& term){
 		return ResolveEnvironment(term.Value).first;
 	});
@@ -286,54 +286,54 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	// NOTE: Removing definitions do not guaranteed supported by all
 	//	environments. They are as-is for the current environment implementation,
 	//	but may not work for some specific environments in future.
-	RegisterForm(root, "$undef!", ystdex::bind1(Undefine, _2, true));
-	RegisterForm(root, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
+	RegisterForm(rctx, "$undef!", ystdex::bind1(Undefine, _2, true));
+	RegisterForm(rctx, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
 	// NOTE: Definitions of $vau, $vaue, wrap are in %YFramework.NPL.Dependency.
 	// NOTE: The applicative 'wrap1' does check before wrapping.
-	RegisterStrictUnary<const ContextHandler>(root, "wrap1", WrapOnce);
+	RegisterStrictUnary<const ContextHandler>(rctx, "wrap1", WrapOnce);
 	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
 #endif
 	// NOTE: NPLA value transferring.
-	RegisterStrictUnary(root, "vcopy", [](const TermNode& node){
+	RegisterStrictUnary(rctx, "vcopy", [](const TermNode& node){
 		return node.Value.MakeCopy();
 	});
-	RegisterStrictUnary(root, "vcopymove", [](TermNode& node){
+	RegisterStrictUnary(rctx, "vcopymove", [](TermNode& node){
 		// NOTE: Shallow copy or move.
 		return node.Value.CopyMove();
 	});
-	RegisterStrictUnary(root, "vmove", [](const TermNode& node){
+	RegisterStrictUnary(rctx, "vmove", [](const TermNode& node){
 		return node.Value.MakeMove();
 	});
-	RegisterStrictUnary(root, "vmovecopy", [](const TermNode& node){
+	RegisterStrictUnary(rctx, "vmovecopy", [](const TermNode& node){
 		return node.Value.MakeMoveCopy();
 	});
-	RegisterStrict(root, "lcopy", [](TermNode& term){
+	RegisterStrict(rctx, "lcopy", [](TermNode& term){
 		return ListCopyOrMove<const TermNode>(term, &ValueObject::MakeCopy);
 	});
-	RegisterStrict(root, "lcopymove", [](TermNode& term){
+	RegisterStrict(rctx, "lcopymove", [](TermNode& term){
 		return ListCopyOrMove<TermNode>(term, &ValueObject::CopyMove);
 	});
-	RegisterStrict(root, "lmove", [](TermNode& term){
+	RegisterStrict(rctx, "lmove", [](TermNode& term){
 		return ListCopyOrMove<const TermNode>(term, &ValueObject::MakeMove);
 	});
-	RegisterStrict(root, "lmovecopy", [](TermNode& term){
+	RegisterStrict(rctx, "lmovecopy", [](TermNode& term){
 		return ListCopyOrMove<const TermNode>(term, &ValueObject::MakeMoveCopy);
 	});
-	RegisterStrict(root, "tcopy", [](TermNode& term){
+	RegisterStrict(rctx, "tcopy", [](TermNode& term){
 		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeCopy);
 	});
-	RegisterStrict(root, "tcopymove", [](TermNode& term){
+	RegisterStrict(rctx, "tcopymove", [](TermNode& term){
 		return TermCopyOrMove<TermNode>(term, &ValueObject::CopyMove);
 	});
-	RegisterStrict(root, "tmove", [](TermNode& term){
+	RegisterStrict(rctx, "tmove", [](TermNode& term){
 		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeMove);
 	});
-	RegisterStrict(root, "tmovecopy", [](TermNode& term){
+	RegisterStrict(rctx, "tmovecopy", [](TermNode& term){
 		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeMoveCopy);
 	});
 	// XXX: For test or debug only.
-	RegisterStrictUnary(root, "tt", DefaultDebugAction);
-	RegisterStrictUnary<const string>(root, "dbg", [](const string& cmd){
+	RegisterStrictUnary(rctx, "tt", DefaultDebugAction);
+	RegisterStrictUnary<const string>(rctx, "dbg", [](const string& cmd){
 		if(cmd == "on")
 			use_debug = true;
 		else if(cmd == "off")
@@ -341,10 +341,10 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		else if(cmd == "crash")
 			terminate();
 	});
-	RegisterForm(root, "$crash", []{
+	RegisterForm(rctx, "$crash", []{
 		terminate();
 	});
-	RegisterStrictUnary<const string>(root, "trace", [&](const string& cmd){
+	RegisterStrictUnary<const string>(rctx, "trace", [&](const string& cmd){
 		const auto set_t_lv([&](const string& s) -> Logger::Level{
 			if(s == "on")
 				return Logger::Level::Debug;
@@ -356,9 +356,9 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		});
 
 		if(cmd == "on" || cmd == "off")
-			root.Trace.FilterLevel = set_t_lv(cmd);
+			rctx.Trace.FilterLevel = set_t_lv(cmd);
 		else if(cmd == "reset")
-			root.Trace.FilterLevel = set_t_lv(init_trace_option);
+			rctx.Trace.FilterLevel = set_t_lv(init_trace_option);
 		else
 			throw std::invalid_argument("Invalid trace option found.");
 	});
@@ -467,7 +467,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	)NPL");
 	// NOTE: Definitions of unfoldable?, map-reverse for-each-ltr
 	//	are in %YFramework.NPL.Dependency.
-	RegisterForm(root, "$delay", [](TermNode& term, ContextNode&){
+	RegisterForm(rctx, "$delay", [](TermNode& term, ContextNode&){
 		term.Remove(term.begin());
 
 		ValueObject x(DelayedTerm(std::move(term)));
@@ -476,9 +476,9 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		return ReductionStatus::Clean;
 	});
 	// TODO: Provide 'equal?'.
-	RegisterForm(root, "evalv",
+	RegisterForm(rctx, "evalv",
 		static_cast<void(&)(TermNode&, ContextNode&)>(ReduceChildren));
-	RegisterStrict(root, "force", [](TermNode& term){
+	RegisterStrict(rctx, "force", [](TermNode& term){
 		RetainN(term);
 		return EvaluateDelayed(term,
 			Access<DelayedTerm>(Deref(std::next(term.begin()))));
@@ -497,25 +497,25 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		$defv! $binds? (&e .&ss) env $let ((&senv eval e env))
 			foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
 	)NPL");
-	RegisterStrictUnary<const string>(root, "lex", [&](const string& unit){
+	RegisterStrictUnary<const string>(rctx, "lex", [&](const string& unit){
 		LexicalAnalyzer lex;
 
 		for(const auto& c : unit)
 			lex.ParseByte(c);
 		return lex;
 	});
-	RegisterStrictUnary<const std::type_index>(root, "nameof",
+	RegisterStrictUnary<const std::type_index>(rctx, "nameof",
 		[](const std::type_index& ti){
 		return string(ti.name());
 	});
 	// NOTE: Type operation library.
-	RegisterStrictUnary(root, "typeid", [](const TermNode& term){
+	RegisterStrictUnary(rctx, "typeid", [](const TermNode& term){
 		// FIXME: Get it work with %YB_Use_LightweightTypeID.
 		return std::type_index(ReferenceTerm(term).Value.type());
 	});
 	// TODO: Copy of operand cannot be used for move-only types.
 	context.Perform("$defl! ptype (&x) puts (nameof (typeid x))");
-	RegisterStrictUnary<const string>(root, "get-typeid",
+	RegisterStrictUnary<const string>(rctx, "get-typeid",
 		[&](const string& str) -> std::type_index{
 		if(str == "bool")
 			return typeid(bool);
@@ -538,7 +538,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			return typeid(string);
 		return typeid(void);
 	});
-	RegisterStrictUnary<const ContextHandler>(root, "get-combiner-type",
+	RegisterStrictUnary<const ContextHandler>(rctx, "get-combiner-type",
 		[&](const ContextHandler& h){
 		return std::type_index(h.target_type());
 	});
@@ -559,67 +559,67 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	)NPL");
 	// NOTE: List library.
 	// TODO: Check list type?
-	RegisterStrictUnary(root, "list-length",
+	RegisterStrictUnary(rctx, "list-length",
 		ComposeReferencedTermOp(FetchListLength));
-	RegisterStrictUnary(root, "listv-length", FetchListLength);
-	RegisterStrictUnary(root, "branch?", ComposeReferencedTermOp(IsBranch));
-	RegisterStrictUnary(root, "branchpr?", IsBranch);
-	RegisterStrictUnary(root, "leaf?", ComposeReferencedTermOp(IsLeaf));
-	RegisterStrictUnary(root, "leafpr?", IsLeaf);
+	RegisterStrictUnary(rctx, "listv-length", FetchListLength);
+	RegisterStrictUnary(rctx, "branch?", ComposeReferencedTermOp(IsBranch));
+	RegisterStrictUnary(rctx, "branchpr?", IsBranch);
+	RegisterStrictUnary(rctx, "leaf?", ComposeReferencedTermOp(IsLeaf));
+	RegisterStrictUnary(rctx, "leafpr?", IsLeaf);
 	// NOTE: Encapsulations.
 	// NOTE: Definition of make-encapsulation-type is in
 	//	%YFramework.NPL.Dependency.
 	// NOTE: String library.
 	// NOTE: Definitions of ++, string-empty?, string<- are in
 	//	%YFramework.NPL.Dependency.
-	RegisterStrictBinary<const string, const string>(root, "string=?",
+	RegisterStrictBinary<const string, const string>(rctx, "string=?",
 		ystdex::equal_to<>());
 	context.Perform(u8R"NPL($defl! retain-string (&str) ++ "\"" str "\"")NPL");
-	RegisterStrictUnary<const int>(root, "itos", [](int x){
+	RegisterStrictUnary<const int>(rctx, "itos", [](int x){
 		return to_string(x);
 	});
-	RegisterStrictUnary<const string>(root, "string-length",
+	RegisterStrictUnary<const string>(rctx, "string-length",
 		[&](const string& str) ynothrow{
 		return int(str.length());
 	});
 	// NOTE: Definitions of string->symbol, symbol->string, string->regex,
-	//	regex-match? are in %YFramework.NPL.Dependency.
+	//	regex-match? are in module std.strings in %YFramework.NPL.Dependency.
 	// NOTE: Comparison.
-	RegisterStrictBinary<const int, const int>(root, "=?",
+	RegisterStrictBinary<const int, const int>(rctx, "=?",
 		ystdex::equal_to<>());
-	RegisterStrictBinary<const int, const int>(root, "<?", ystdex::less<>());
-	RegisterStrictBinary<const int, const int>(root, "<=?",
+	RegisterStrictBinary<const int, const int>(rctx, "<?", ystdex::less<>());
+	RegisterStrictBinary<const int, const int>(rctx, "<=?",
 		ystdex::less_equal<>());
-	RegisterStrictBinary<const int, const int>(root, ">=?",
+	RegisterStrictBinary<const int, const int>(rctx, ">=?",
 		ystdex::greater_equal<>());
-	RegisterStrictBinary<const int, const int>(root, ">?",
+	RegisterStrictBinary<const int, const int>(rctx, ">?",
 		ystdex::greater<>());
 	// NOTE: Arithmetic procedures.
 	// FIXME: Overflow?
-	RegisterStrict(root, "+", std::bind(CallBinaryFold<int, ystdex::plus<>>,
+	RegisterStrict(rctx, "+", std::bind(CallBinaryFold<int, ystdex::plus<>>,
 		ystdex::plus<>(), 0, _1));
 	// FIXME: Overflow?
-	RegisterStrictBinary<const int, const int>(root, "add2", ystdex::plus<>());
+	RegisterStrictBinary<const int, const int>(rctx, "add2", ystdex::plus<>());
 	// FIXME: Underflow?
-	RegisterStrictBinary<const int, const int>(root, "-", ystdex::minus<>());
+	RegisterStrictBinary<const int, const int>(rctx, "-", ystdex::minus<>());
 	// FIXME: Overflow?
-	RegisterStrict(root, "*", std::bind(CallBinaryFold<int,
+	RegisterStrict(rctx, "*", std::bind(CallBinaryFold<int,
 		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1));
 	// FIXME: Overflow?
-	RegisterStrictBinary<const int, const int>(root, "multiply2",
+	RegisterStrictBinary<const int, const int>(rctx, "multiply2",
 		ystdex::multiplies<>());
-	RegisterStrictBinary<const int, const int>(root, "/", [](int e1, int e2){
+	RegisterStrictBinary<const int, const int>(rctx, "/", [](int e1, int e2){
 		if(e2 != 0)
 			return e1 / e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	RegisterStrictBinary<const int, const int>(root, "%", [](int e1, int e2){
+	RegisterStrictBinary<const int, const int>(rctx, "%", [](int e1, int e2){
 		if(e2 != 0)
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
 	// NOTE: I/O library.
-	RegisterStrict(root, "read-line", [](TermNode& term){
+	RegisterStrict(rctx, "read-line", [](TermNode& term){
 		RetainN(term, 0);
 
 		string line;
@@ -627,14 +627,14 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		std::getline(std::cin, line);
 		term.Value = line;
 	});
-	RegisterStrict(root, "display", ystdex::bind1(LogTermValue, Notice));
-	RegisterStrictUnary<const string>(root, "echo", Echo);
-	RegisterStrictUnary<const string>(root, "load",
+	RegisterStrict(rctx, "display", ystdex::bind1(LogTermValue, Notice));
+	RegisterStrictUnary<const string>(rctx, "echo", Echo);
+	RegisterStrictUnary<const string>(rctx, "load",
 		std::bind(LoadExternalRoot, std::ref(context), _1));
-	RegisterStrictUnary<const string>(root, "load-at-root",
+	RegisterStrictUnary<const string>(rctx, "load-at-root",
 		[&](const string& name){
 		const ystdex::guard<EnvironmentSwitcher>
-			gd(root, root.SwitchEnvironment(root_env.shared_from_this()));
+			gd(rctx, rctx.SwitchEnvironment(root_env.shared_from_this()));
 
 		return LoadExternalRoot(context, name);
 	});
@@ -644,23 +644,23 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 				($unless (null? opt) ($set! env module-parameters (first opt)))
 				(eval (list load filename) env) env;
 	)NPL");
-	RegisterStrictUnary<const string>(root, "ofs", [&](const string& path){
+	RegisterStrictUnary<const string>(rctx, "ofs", [&](const string& path){
 		if(ifstream ifs{path})
 			return ifs;
 		throw LoggedEvent(
 			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
 	});
-	RegisterStrictUnary<const string>(root, "oss", [&](const string& str){
+	RegisterStrictUnary<const string>(rctx, "oss", [&](const string& str){
 		return std::istringstream(str);
 	});
-	RegisterStrictUnary<ifstream>(root, "parse-f", ParseStream);
-	RegisterStrictUnary<LexicalAnalyzer>(root, "parse-lex", ParseOutput);
-	RegisterStrictUnary<std::istringstream>(root, "parse-s", ParseStream);
-	RegisterStrictUnary<const string>(root, "put", [&](const string& str){
+	RegisterStrictUnary<ifstream>(rctx, "parse-f", ParseStream);
+	RegisterStrictUnary<LexicalAnalyzer>(rctx, "parse-lex", ParseOutput);
+	RegisterStrictUnary<std::istringstream>(rctx, "parse-s", ParseStream);
+	RegisterStrictUnary<const string>(rctx, "put", [&](const string& str){
 		std::cout << EncodeArg(str);
 		return ValueToken::Unspecified;
 	});
-	RegisterStrictUnary<const string>(root, "puts", [&](const string& str){
+	RegisterStrictUnary<const string>(rctx, "puts", [&](const string& str){
 		// XXX: Overridding.
 		std::cout << EncodeArg(str) << std::endl;
 		return ValueToken::Unspecified;
@@ -670,17 +670,17 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	//	are in %YFramework.NPL.Dependency.
 	// NOTE: Definition of env-set, cmd-get-args, system-get are also in
 	//	%Tools.SHBuild.Main.
-	RegisterStrictBinary<const string, const string>(root, "env-set",
+	RegisterStrictBinary<const string, const string>(rctx, "env-set",
 		[&](const string& var, const string& val){
 		SetEnvironmentVariable(var.c_str(), val.c_str());
 	});
-	RegisterStrict(root, "cmd-get-args", [](TermNode& term){
+	RegisterStrict(rctx, "cmd-get-args", [](TermNode& term){
 		term.Clear();
 		for(const auto& s : CommandArguments.Arguments)
 			term.AddValue(MakeIndex(term), s);
 		return ReductionStatus::Retained;
 	});
-	RegisterStrict(root, "system-get", [](TermNode& term){
+	RegisterStrict(rctx, "system-get", [](TermNode& term){
 		CallUnaryAs<const string>([&](const string& cmd){
 			TermNode::Container con;
 			auto res(FetchCommandOutput(cmd.c_str()));
@@ -709,8 +709,8 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	})), true);
 	context.Perform("$defl! iput (&x) puts (itos x)");
 	LoadExternalRoot(context, "test.txt");
-	root.EvaluateList.Add(DefaultDebugAction, 255);
-	root.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
+	rctx.EvaluateList.Add(DefaultDebugAction, 255);
+	rctx.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
 }
 
 } // unnamed namespace;
