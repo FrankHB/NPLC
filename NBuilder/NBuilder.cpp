@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7090
+\version r7094
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-08-12 21:17 +0800
+	2018-09-24 17:48 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -204,11 +204,12 @@ LoadExternal(REPLContext& context, const string& name, ContextNode& ctx)
 		YTraceDe(Notice, "Test unit '%s' not found.", name.c_str());
 }
 
-/// 802
-void
+/// 839
+ValueToken
 LoadExternalRoot(REPLContext& context, const string& name)
 {
 	LoadExternal(context, name, context.Root);
+	return ValueToken::Unspecified;
 }
 
 /// 797
@@ -637,7 +638,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		const ystdex::guard<EnvironmentSwitcher>
 			gd(root, root.SwitchEnvironment(root_env.shared_from_this()));
 
-		LoadExternalRoot(context, name);
+		return LoadExternalRoot(context, name);
 	});
 	context.Perform(u8R"NPL(
 		$defl! get-module (&filename .&opt)
