@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7098
+\version r7099
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-09-24 17:49 +0800
+	2018-09-24 17:52 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -663,6 +663,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	RegisterStrictUnary<const string>(root, "puts", [&](const string& str){
 		// XXX: Overridding.
 		std::cout << EncodeArg(str) << std::endl;
+		return ValueToken::Unspecified;
 	});
 	// NOTE: Interoperation library.
 	// NOTE: Definitions of env-get, system
