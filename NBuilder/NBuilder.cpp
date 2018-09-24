@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7187
+\version r7199
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-09-24 18:02 +0800
+	2018-09-24 18:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -222,12 +222,23 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	using namespace Forms;
 	auto& rctx(context.Root);
 	auto& renv(rctx.GetRecordRef());
+	const auto load_std_module([&](string_view module_name,
+		void(&load_module)(REPLContext&)){
+		LoadModule(rctx, "std." + string(module_name),
+			std::bind(load_module, std::ref(context)));
+	});
 	string init_trace_option;
 
 	rctx.Trace.FilterLevel = FetchEnvironmentVariable(init_trace_option,
 		"NBUILDER_TRACE") ? Logger::Level::Debug : Logger::Level::Informative;
 	p_context = make_observer(&context);
-	LoadNPLContextGround(context);
+	LoadGroundContext(context);
+	load_std_module("strings", LoadModule_std_strings);
+	load_std_module("environments", LoadModule_std_environments),
+	load_std_module("io", LoadModule_std_io),
+	load_std_module("system", LoadModule_std_system);
+	LoadModule(rctx, "env_SHBuild_", std::bind(LoadModule_SHBuild,
+		std::ref(context)));
 	// TODO: Extract literal configuration API.
 	{
 		// TODO: Blocked. Use C++14 lambda initializers to simplify
