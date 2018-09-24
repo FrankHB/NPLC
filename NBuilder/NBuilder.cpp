@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7094
+\version r7098
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-09-24 17:48 +0800
+	2018-09-24 17:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -189,11 +189,9 @@ FetchListLength(TermNode& term) ynothrow
 void
 LoadExternal(REPLContext& context, const string& name, ContextNode& ctx)
 {
-	const auto p_sifs(Text::OpenSkippedBOMtream<
-		IO::SharedInputMappedFileStream>(Text::BOM_UTF_8, name.c_str()));
-	std::istream& is(*p_sifs);
+	const auto p_is(A1::OpenFile(name.c_str()));
 
-	if(is)
+	if(std::istream& is{*p_is})
 	{
 		YTraceDe(Notice, "Test unit '%s' found.", name.c_str());
 		FilterExceptions([&]{
