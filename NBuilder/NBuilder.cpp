@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7199
+\version r7211
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-09-24 18:03 +0800
+	2018-09-26 18:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -299,7 +299,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	//	but may not work for some specific environments in future.
 	RegisterForm(rctx, "$undef!", ystdex::bind1(Undefine, _2, true));
 	RegisterForm(rctx, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
-	// NOTE: Definitions of $vau, $vaue, wrap are in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of $vau, $vau/e, wrap are in %YFramework.NPL.Dependency.
 	// NOTE: The applicative 'wrap1' does check before wrapping.
 	RegisterStrictUnary<const ContextHandler>(rctx, "wrap1", WrapOnce);
 	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
@@ -382,7 +382,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		$defl! xcons% (&x &y) cons% y x;
 	)NPL");
 	// NOTE: Definitions of $set!, $defv!, $lambda, $setrec!, $defl!, first,
-	//	rest, apply, list*, $defw!, $lambdae, $sequence,
+	//	rest, apply, list*, $defw!, $lambda/e, $sequence,
 	//	get-current-environment, $cond, make-standard-environment, not?, $when,
 	//	$unless are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
@@ -396,7 +396,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			(or2? #f x);
 	)NPL");
 	// NOTE: Definitions of $and?, $or?, first-null?,
-	//	list-rest, accl, accr are in %YFramework.NPL.Dependency.
+	//	list-rest%, accl, accr are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! foldl1 (&kons &knil &l) accl l null? knil first rest kons;
 		$defw! map1-reverse (&appv &l) env foldl1
@@ -443,15 +443,12 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			(eval% ($if (null? bindings) (list*% $letrec bindings body)
 				(list $letrec (list% (first% bindings))
 				(list*% $letrec* (rest% bindings) body))) env);
-		$defv! $let-redirect (&e &bindings .&body) env forward
-			(eval% (list* () (eval (list* $lambda (map1 first bindings) body)
-				(eval e env)) (map1 list-rest bindings)) env);
 		$defv! $let-safe (&bindings .&body) env forward
-			(eval% (list* () $let-redirect
+			(eval% (list* () $let/e
 				(() make-standard-environment) bindings body) env);
 		$defv! $remote-eval (&o &e) d forward (eval% o (eval e d));
 		$defv! $bindings->environment &bindings denv forward
-			(eval% (list $let-redirect (() make-environment) bindings
+			(eval% (list $let/e (() make-environment) bindings
 				(list () lock-current-environment)) denv);
 	)NPL");
 	// NOTE: Definitions of $provide!, $import! are in
@@ -459,18 +456,18 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	context.Perform(u8R"NPL(
 		$def! foldr $let ((&cenv () make-standard-environment)) wrap
 		(
-			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
+			$set! cenv cxrs $lambda/e (weaken-environment cenv) (ls cxr)
 				accr ls null? () ($lambda (&l) cxr (first l)) rest cons;
-			$vaue cenv (kons knil .ls) env
+			$vau/e cenv (kons knil .ls) env
 				(accr ls unfoldable? knil ($lambda (&ls) cxrs ls first)
 				($lambda (&ls) cxrs ls rest) ($lambda (&x &st)
 					apply kons (list-concat x (list st)) env))
 		);
 		$def! map $let ((&cenv () make-standard-environment)) wrap
 		(
-			$set! cenv cxrs $lambdae (weaken-environment cenv) (ls cxr)
+			$set! cenv cxrs $lambda/e (weaken-environment cenv) (ls cxr)
 				accr ls null? () ($lambda (&l) cxr (first l)) rest cons;
-			$vaue cenv (appv .ls) env accr ls unfoldable? ()
+			$vau/e cenv (appv .ls) env accr ls unfoldable? ()
 				($lambda (&ls) cxrs ls first) ($lambda (&ls) cxrs ls rest)
 					($lambda (&x &xs) cons (apply appv x env) xs)
 		);
