@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7211
+\version r7241
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-09-26 18:50 +0800
+	2018-11-13 14:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -209,9 +209,6 @@ LoadExternalRoot(REPLContext& context, const string& name)
 	LoadExternal(context, name, context.Root);
 	return ValueToken::Unspecified;
 }
-
-/// 797
-ArgumentsVector CommandArguments;
 
 
 /// 834
@@ -674,33 +671,9 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		return ValueToken::Unspecified;
 	});
 	// NOTE: Interoperation library.
-	// NOTE: Definitions of env-get, system
-	//	are in %YFramework.NPL.Dependency.
-	// NOTE: Definition of env-set, cmd-get-args, system-get are also in
-	//	%Tools.SHBuild.Main.
-	RegisterStrictBinary<const string, const string>(rctx, "env-set",
-		[&](const string& var, const string& val){
-		SetEnvironmentVariable(var.c_str(), val.c_str());
-	});
-	RegisterStrict(rctx, "cmd-get-args", [](TermNode& term){
-		term.Clear();
-		for(const auto& s : CommandArguments.Arguments)
-			term.AddValue(MakeIndex(term), s);
-		return ReductionStatus::Retained;
-	});
-	RegisterStrict(rctx, "system-get", [](TermNode& term){
-		CallUnaryAs<const string>([&](const string& cmd){
-			TermNode::Container con;
-			auto res(FetchCommandOutput(cmd.c_str()));
-
-			TermNode::AddValueTo(con, MakeIndex(0),
-				ystdex::trim(std::move(res.first)));
-			TermNode::AddValueTo(con, MakeIndex(1),
-				res.second);
-			swap(con, term.GetContainerRef());
-		}, term);
-		return ReductionStatus::Retained;
-	});
+	// NOTE: Definitions of cmd-get-args, env-get, env-set, env-empty?, system,
+	//	system-get, system-quote are introduced.
+	LoadModule_std_system(context);
 	// NOTE: SHBuild builitins.
 	// XXX: Overriding.
 	root_env.Define("SHBuild_BaseTerminalHook_",
@@ -737,7 +710,7 @@ main(int argc, char* argv[])
 	//	'ios_base::sync_with_stdio({})' would also fix this problem but it would
 	//	disturb prompt color setting.
 	ystdex::setnbuf(stdout);
-	CommandArguments.Reset(argc, argv);
+	Deref(LockCommandArguments()).Reset(argc, argv);
 	return FilterExceptions([]{
 		Application app;
 		Interpreter intp(app, [&](REPLContext& context){
