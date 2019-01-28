@@ -1,5 +1,5 @@
 ﻿/*
-	© 2011-2018 FrankHB.
+	© 2011-2019 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7241
+\version r7244
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2018-11-13 14:26 +0800
+	2019-01-29 07:46 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -37,6 +37,7 @@
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
 //	std::chrono::duration_cast;
 #include <ytest/timing.hpp> // for ytest::timing::once;
+#include YFM_Helper_Initialization // for YSLib::TraceForOutermost;
 
 namespace NPL
 {
@@ -725,6 +726,6 @@ main(int argc, char* argv[])
 
 		while(intp.WaitForLine() && intp.Process())
 			;
-	}, "::main") ? EXIT_FAILURE : EXIT_SUCCESS;
+	}, yfsig, Alert, TraceForOutermost) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
