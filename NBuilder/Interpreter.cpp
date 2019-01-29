@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2018 FrankHB.
+	© 2013-2019 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 511
+\version 521
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2018-11-26 04:59 +0800
+	2019-01-29 07:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -68,13 +68,22 @@ PrintError(Terminal& terminal, const LoggedEvent& e, const char* name = "Error")
 //	ExtractAndTrace(e, e.GetLevel());
 }
 
+/// 851
+string
+DecodeName(const string& name)
+{
+	TryRet(std::to_string(YSLib::DecodeIndex(name)))
+	CatchIgnore(std::invalid_argument&);
+	return name;
+}
+
 /// 803
 void
 PrintTermNode(std::ostream& os, const ValueNode& node, NodeToString node_to_str,
 	IndentGenerator igen = DefaultGenerateIndent, size_t depth = 0)
 {
 	PrintIndent(os, igen, depth);
-	os << EscapeLiteral(node.GetName()) << ' ';
+	os << EscapeLiteral(DecodeName(node.GetName())) << ' ';
 
 	const auto print_node_str(
 		[&](const ValueNode& nd) -> pair<lref<const ValueNode>, bool>{
