@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 521
+\version 523
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2019-01-29 07:59 +0800
+	2019-02-02 06:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -87,9 +87,9 @@ PrintTermNode(std::ostream& os, const ValueNode& node, NodeToString node_to_str,
 
 	const auto print_node_str(
 		[&](const ValueNode& nd) -> pair<lref<const ValueNode>, bool>{
-		const TermNode& term(nd);
+		const TermNode& term(MapToTermNode(nd));
 		const auto& tm(ReferenceTerm(term));
-		const ValueNode& vnode(tm);
+		const ValueNode& vnode(MapToValueNode(tm));
 
 		if(&tm != &term)
 			os << '*';
@@ -153,7 +153,7 @@ LogTree(const ValueNode& node, Logger::Level lv)
 void
 LogTermValue(const TermNode& term, Logger::Level lv)
 {
-	LogTree(term, lv);
+	LogTree(MapToValueNode(term), lv);
 }
 
 /// 845
