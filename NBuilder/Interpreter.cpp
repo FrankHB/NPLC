@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 523
+\version 624
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2019-02-02 06:26 +0800
+	2019-02-07 16:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -68,48 +68,95 @@ PrintError(Terminal& terminal, const LoggedEvent& e, const char* name = "Error")
 //	ExtractAndTrace(e, e.GetLevel());
 }
 
-/// 851
-string
-DecodeName(const string& name)
-{
-	TryRet(std::to_string(YSLib::DecodeIndex(name)))
-	CatchIgnore(std::invalid_argument&);
-	return name;
-}
+/// 852
+inline PDefH(const TermNode&, MapToTermNode, const ValueNode& nd) ynothrowv
+	ImplRet(Deref(static_cast<const TermNode*>(static_cast<const void*>(&nd))))
 
-/// 803
+/// 852
+//@{
 void
-PrintTermNode(std::ostream& os, const ValueNode& node, NodeToString node_to_str,
-	IndentGenerator igen = DefaultGenerateIndent, size_t depth = 0)
+PrintTermNode(std::ostream& os, const TermNode& term,
+	TermNodeToString term_to_str, IndentGenerator igen = DefaultGenerateIndent,
+	size_t depth = 0)
 {
 	PrintIndent(os, igen, depth);
-	os << EscapeLiteral(DecodeName(node.GetName())) << ' ';
+	os << EscapeLiteral(DecodeNodeIndex(term.GetName())) << ' ';
 
 	const auto print_node_str(
-		[&](const ValueNode& nd) -> pair<lref<const ValueNode>, bool>{
-		const TermNode& term(MapToTermNode(nd));
-		const auto& tm(ReferenceTerm(term));
-		const ValueNode& vnode(MapToValueNode(tm));
+		[&](const TermNode& subterm) -> pair<lref<const TermNode>, bool>{
+		const auto& tm(ReferenceTerm(subterm));
 
-		if(&tm != &term)
+		if(&tm != &subterm)
 			os << '*';
-		return {vnode, PrintNodeString(os, vnode, node_to_str)};
+		try
+		{
+			os << term_to_str(tm) << '\n';
+			return {tm, true};
+		}
+		CatchIgnore(bad_any_cast&)
+		return {tm, false};
 	});
-	const auto pr(print_node_str(node));
+	const auto pr(print_node_str(term));
 
 	if(!pr.second)
 	{
-		const auto& vnode(pr.first.get());
+		const auto& vterm(pr.first.get());
 
 		os << '\n';
-		if(vnode)
-			TraverseNodeChildAndPrint(os, vnode, [&]{
+		if(vterm)
+			TraverseNodeChildAndPrint(os, vterm, [&]{
 				PrintIndent(os, igen, depth);
-			}, print_node_str, [&](const ValueNode& nd){
-				return PrintTermNode(os, nd, node_to_str, igen, depth + 1);
+			}, print_node_str, [&](const TermNode& nd){
+				return PrintTermNode(os, nd, term_to_str, igen, depth + 1);
 			});
 	}
 }
+
+string
+StringifyValueObject(const ValueObject& vo)
+{
+	if(vo != A1::ValueToken::Null)
+	{
+		if(const auto p = vo.AccessPtr<string>())
+			return *p;
+		if(const auto p = vo.AccessPtr<TokenValue>())
+			return sfmt("[TokenValue] %s", p->c_str());
+		if(const auto p = vo.AccessPtr<A1::ValueToken>())
+			return sfmt("[ValueToken] %s", to_string(*p).c_str());
+		if(const auto p = vo.AccessPtr<bool>())
+			return *p ? "[bool] #t" : "[bool] #f";
+		if(const auto p = vo.AccessPtr<int>())
+			return sfmt("[int] %d", *p);
+		if(const auto p = vo.AccessPtr<unsigned>())
+			return sfmt("[uint] %u", *p);
+		if(const auto p = vo.AccessPtr<double>())
+			return sfmt("[double] %lf", *p);
+
+		const auto& t(vo.type());
+
+		if(t != ystdex::type_id<void>())
+			return ystdex::quote(string(t.name()), '[', ']');
+	}
+	throw ystdex::bad_any_cast();
+}
+
+string
+LogValueObject(const ValueObject& vo)
+{
+	return EscapeLiteral(StringifyValueObject(vo));
+}
+
+
+struct NodeValueLogger
+{
+	template<class _tNode>
+	string
+	operator()(const _tNode& node) const
+	{
+		return LogValueObject(node.Value);
+	}
+};
+//@}
 
 } // unnamed namespace;
 
@@ -119,41 +166,17 @@ LogTree(const ValueNode& node, Logger::Level lv)
 {
 	std::ostringstream oss;
 
-	PrintTermNode(oss, node, [](const ValueNode& nd){
-		return EscapeLiteral([&]() -> string{
-			if(nd.Value != A1::ValueToken::Null)
-			{
-				if(const auto p = AccessPtr<string>(nd))
-					return *p;
-				if(const auto p = AccessPtr<TokenValue>(nd))
-					return sfmt("[TokenValue] %s", p->c_str());
-				if(const auto p = AccessPtr<A1::ValueToken>(nd))
-					return sfmt("[ValueToken] %s", to_string(*p).c_str());
-				if(const auto p = AccessPtr<bool>(nd))
-					return *p ? "[bool] #t" : "[bool] #f";
-				if(const auto p = AccessPtr<int>(nd))
-					return sfmt("[int] %d", *p);
-				if(const auto p = AccessPtr<unsigned>(nd))
-					return sfmt("[uint] %u", *p);
-				if(const auto p = AccessPtr<double>(nd))
-					return sfmt("[double] %lf", *p);
-
-				const auto& v(nd.Value);
-				const auto& t(v.type());
-
-				if(t != ystdex::type_id<void>())
-					return ystdex::quote(string(t.name()), '[', ']');
-			}
-			throw ystdex::bad_any_cast();
-		}());
-	});
+	PrintNode(oss, node, NodeValueLogger());
 	YTraceDe(lv, "%s", oss.str().c_str());
 }
 
 void
 LogTermValue(const TermNode& term, Logger::Level lv)
 {
-	LogTree(MapToValueNode(term), lv);
+	std::ostringstream oss;
+
+	PrintTermNode(oss, term, NodeValueLogger());
+	YTraceDe(lv, "%s", oss.str().c_str());
 }
 
 /// 845
