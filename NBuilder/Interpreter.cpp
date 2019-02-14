@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 624
+\version 625
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2019-02-07 16:13 +0800
+	2019-02-14 13:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -80,7 +80,6 @@ PrintTermNode(std::ostream& os, const TermNode& term,
 	size_t depth = 0)
 {
 	PrintIndent(os, igen, depth);
-	os << EscapeLiteral(DecodeNodeIndex(term.GetName())) << ' ';
 
 	const auto print_node_str(
 		[&](const TermNode& subterm) -> pair<lref<const TermNode>, bool>{
