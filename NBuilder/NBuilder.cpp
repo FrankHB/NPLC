@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7292
+\version r7297
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-05-13 14:25 +0800
+	2019-05-13 14:34 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -382,9 +382,8 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			throw std::invalid_argument("Invalid trace option found.");
 	});
 	// NOTE: Derived functions with probable privmitive implementation.
-	// NOTE: Definitions of id, idv, list, list&, $quote, $defl!, first, first%,
-	//first&, rest, rest%, rest& are in
-	//	%YFramework.NPL.Dependency.
+	// NOTE: Definitions of id, idv, list, list&, $quote, $defl!, first, first&,
+	//	rest, rest%, rest& %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! xcons (&x &y) cons y x;
 		$defl! xcons% (&x &y) cons% y x;
@@ -449,7 +448,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	context.Perform(u8R"NPL(
 		$defv%! $letrec* (&bindings .&body) d forward
 			(eval% ($if (null? bindings) (list*% $letrec bindings body)
-				(list $letrec (list% (first% bindings))
+				(list $letrec (list% (first bindings))
 				(list*% $letrec* (rest% bindings) body))) d);
 		$defv! $let-safe (&bindings .&body) d forward
 			(eval% (list* () $let/e
@@ -652,7 +651,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	context.Perform(u8R"NPL(
 		$defl! get-module (&filename .&opt)
 			$let ((&env () make-standard-environment)) $sequence
-				($unless (null? opt) ($set! env module-parameters (first opt)))
+				($unless (null? opt) ($set! env module-parameters (first& opt)))
 				(eval (list load filename) env) env;
 	)NPL");
 	RegisterStrictUnary<const string>(rctx, "ofs", [&](const string& path){
