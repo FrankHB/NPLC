@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7257
+\version r7292
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-05-13 14:06 +0800
+	2019-05-13 14:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -171,7 +171,9 @@ ReductionStatus
 ListCopyOrMove(TermNode& term, _fCallable f)
 {
 	Forms::CallUnary([&](_tNode& node){
-		term.GetContainerRef() = node.CreateWith(f);
+		auto con(node.CreateWith(f));
+
+		ystdex::swap_dependent(term.GetContainerRef(), con);
 	}, term);
 	return ReductionStatus::Retained;
 }
@@ -241,10 +243,11 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	LoadGroundContext(context);
 	load_std_module("strings", LoadModule_std_strings);
 	load_std_module("environments", LoadModule_std_environments),
+	load_std_module("promises", LoadModule_std_promises);
 	load_std_module("io", LoadModule_std_io),
 	load_std_module("system", LoadModule_std_system);
-	LoadModule(rctx, "env_SHBuild_", std::bind(LoadModule_SHBuild,
-		std::ref(context)));
+	LoadModule(rctx, "env_SHBuild_",
+		std::bind(LoadModule_SHBuild, std::ref(context)));
 	// TODO: Extract literal configuration API.
 	{
 		// TODO: Blocked. Use C++14 lambda initializers to simplify
@@ -293,9 +296,8 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	//	set-rest!, set-rest%!, eval, copy-environment, lock-current-environment,
 	//	lock-environment, make-environment, weaken-environment are in
 	//	%YFramework.NPL.Dependency.
-	RegisterStrictUnary(rctx, "resolve-environment",
-		[](TermNode& term){
-		return ResolveEnvironment(term.Value).first;
+	RegisterStrictUnary(rctx, "resolve-environment", [](const TermNode& term){
+		return ResolveEnvironment(term).first;
 	});
 	// NOTE: Environment mutation is optional in Kernel and supported here.
 	// NOTE: Definitions of $deflazy!, $def!, $defrec! are in
@@ -405,8 +407,8 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	//	list-rest%, accl, accr are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! foldl1 (&kons &knil &l) accl l null? knil first rest kons;
-		$defw! map1-reverse (&appv &l) env foldl1
-			($lambda (&x &xs) cons (apply appv (list x) env) xs) () l;
+		$defw! map1-reverse (&appv &l) d foldl1
+			($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
 	)NPL");
 	// NOTE: Definitions of foldr1, map1, list-concat are in
 	//	%YFramework.NPL.Dependency.
@@ -445,44 +447,41 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	)NPL");
 	// NOTE: Definitions of $let*, $letrec are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defv%! $letrec* (&bindings .&body) env forward
+		$defv%! $letrec* (&bindings .&body) d forward
 			(eval% ($if (null? bindings) (list*% $letrec bindings body)
 				(list $letrec (list% (first% bindings))
-				(list*% $letrec* (rest% bindings) body))) env);
-		$defv! $let-safe (&bindings .&body) env forward
+				(list*% $letrec* (rest% bindings) body))) d);
+		$defv! $let-safe (&bindings .&body) d forward
 			(eval% (list* () $let/e
-				(() make-standard-environment) bindings body) env);
+				(() make-standard-environment) bindings body) d);
 		$defv! $remote-eval (&o &e) d forward (eval% o (eval e d));
-		$defv! $bindings->environment &bindings denv forward
-			(eval% (list $let/e (() make-environment) bindings
-				(list () lock-current-environment)) denv);
 	)NPL");
-	// NOTE: Definitions of $provide!, $import! are in
-	//	%YFramework.NPL.Dependency.
+	// NOTE: Definitions of $bindings/p->environment, $bindings->environment,
+	//	$provide!, $import! are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$def! foldr $let ((&cenv () make-standard-environment)) wrap
 		(
 			$set! cenv cxrs $lambda/e (weaken-environment cenv) (ls cxr)
 				accr ls null? () ($lambda (&l) cxr (first l)) rest cons;
-			$vau/e cenv (kons knil .ls) env
+			$vau/e cenv (kons knil .ls) d
 				(accr ls unfoldable? knil ($lambda (&ls) cxrs ls first)
 				($lambda (&ls) cxrs ls rest) ($lambda (&x &st)
-					apply kons (list-concat x (list st)) env))
+					apply kons (list-concat x (list st)) d))
 		);
 		$def! map $let ((&cenv () make-standard-environment)) wrap
 		(
 			$set! cenv cxrs $lambda/e (weaken-environment cenv) (ls cxr)
 				accr ls null? () ($lambda (&l) cxr (first l)) rest cons;
-			$vau/e cenv (appv .ls) env accr ls unfoldable? ()
+			$vau/e cenv (appv .ls) d accr ls unfoldable? ()
 				($lambda (&ls) cxrs ls first) ($lambda (&ls) cxrs ls rest)
-					($lambda (&x &xs) cons (apply appv x env) xs)
+					($lambda (&x &xs) cons (apply appv x d) xs)
 		);
 		$defw! for-each-rtl &ls env $sequence (apply map ls env) inert;
 	)NPL");
 	// NOTE: Definitions of unfoldable?, map-reverse for-each-ltr
 	//	are in %YFramework.NPL.Dependency.
 	RegisterForm(rctx, "$delay", [](TermNode& term, ContextNode&){
-		term.Remove(term.begin());
+		RemoveHead(term);
 
 		ValueObject x(DelayedTerm(std::move(term)));
 
@@ -492,11 +491,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	// TODO: Provide 'equal?'.
 	RegisterForm(rctx, "evalv",
 		static_cast<void(&)(TermNode&, ContextNode&)>(ReduceChildren));
-	RegisterStrict(rctx, "force", [](TermNode& term){
-		RetainN(term);
-		return EvaluateDelayed(term,
-			Access<DelayedTerm>(Deref(std::next(term.begin()))));
-	});
+
 	// NOTE: Object interoperation.
 	// NOTE: Definitions of ref is in %YFramework.NPL.Dependency.
 	// NOTE: Environments.
@@ -504,11 +499,13 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Only '$binds?' is like in Kernel.
 	context.Perform(u8R"NPL(
-		$defw! environment-bound? (&e &str) env
-			eval (list bound? str) (eval e env);
-		$defv! $binds1? (&e &s) env
-			eval (list (unwrap bound?) (symbol->string s)) (eval e env);
-		$defv! $binds? (&e .&ss) env $let ((&senv eval e env))
+		$defw! environment-bound? (&e &str) d
+			eval (list bound? str) (eval e d);
+	)NPL");
+	// NOTE: Definitions of $binds1? is in module std.environments in
+	//	%YFramework.NPL.Dependency.
+	context.Perform(u8R"NPL(
+		$defv! $binds? (&e .&ss) d $let ((&senv eval e d))
 			foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
 	)NPL");
 	RegisterStrictUnary<const string>(rctx, "lex", [&](const string& unit){
