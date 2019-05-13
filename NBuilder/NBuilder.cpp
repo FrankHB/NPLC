@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7244
+\version r7257
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-01-29 07:46 +0800
+	2019-05-13 14:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -117,6 +117,8 @@ begin:
 	getline(std::cin, cmd);
 	if(cmd == "r")
 		return ReductionStatus::Retrying;
+	if(cmd == "q")
+		use_debug = {};
 	else if(p_context && !cmd.empty())
 	{
 		const bool u(use_debug);
@@ -128,31 +130,37 @@ begin:
 		use_debug = u;
 		goto begin;
 	}
-	return ReductionStatus::Clean;
+	return ReductionStatus::Partial;
 }
 
+/// 858
 ReductionStatus
-DefaultDebugAction(TermNode& term)
+DefaultDebugAction(TermNode& term, ContextNode& ctx)
 {
 	if(use_debug)
 	{
 		YTraceDe(Debug, "List term: %p", ystdex::pvoid(&term));
 		LogTermValue(term);
+		YTraceDe(Debug, "Current action type: %s.",
+			ctx.Current.target_type().name());
 		return ProcessDebugCommand();
 	}
-	return ReductionStatus::Clean;
+	return ReductionStatus::Partial;
 }
 
+/// 858
 ReductionStatus
-DefaultLeafDebugAction(TermNode& term)
+DefaultLeafDebugAction(TermNode& term, ContextNode& ctx)
 {
 	if(use_debug)
 	{
 		YTraceDe(Debug, "Leaf term: %p", ystdex::pvoid(&term));
 		LogTermValue(term);
+		YTraceDe(Debug, "Current action type: %s.",
+			ctx.Current.target_type().name());
 		return ProcessDebugCommand();
 	}
-	return ReductionStatus::Clean;
+	return ReductionStatus::Partial;
 }
 //@}
 
