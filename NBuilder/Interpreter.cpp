@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 625
+\version 643
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2019-02-14 13:26 +0800
+	2019-06-03 21:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -81,19 +81,25 @@ PrintTermNode(std::ostream& os, const TermNode& term,
 {
 	PrintIndent(os, igen, depth);
 
-	const auto print_node_str(
-		[&](const TermNode& subterm) -> pair<lref<const TermNode>, bool>{
-		const auto& tm(ReferenceTerm(subterm));
+	const auto print_node_str([&](const TermNode& subterm){
+		return ResolveTerm([&](const TermNode& tm,
+			ResolvedTermReferencePtr p_ref) -> pair<lref<const TermNode>, bool>{
+			if(p_ref)
+			{
+				const auto tags(p_ref->GetTags());
 
-		if(&tm != &subterm)
-			os << '*';
-		try
-		{
-			os << term_to_str(tm) << '\n';
-			return {tm, true};
-		}
-		CatchIgnore(bad_any_cast&)
-		return {tm, false};
+				os << "*[" << (bool(tags & TermTags::Unique) ? 'U' : ' ')
+					<< (bool(tags & TermTags::Nonmodifying) ? 'N' : ' ')
+					<< (bool(tags & TermTags::Temporary) ? 'T' : ' ') << ']';
+			}
+			try
+			{
+				os << term_to_str(tm) << '\n';
+				return {tm, true};
+			}
+			CatchIgnore(bad_any_cast&)
+			return {tm, false};
+		}, subterm);
 	});
 	const auto pr(print_node_str(term));
 
