@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7297
+\version r7321
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-05-13 14:34 +0800
+	2019-06-03 21:18 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -307,9 +307,18 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	//	but may not work for some specific environments in future.
 	RegisterForm(rctx, "$undef!", ystdex::bind1(Undefine, _2, true));
 	RegisterForm(rctx, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
-	// NOTE: Definitions of $vau, $vau/e, wrap are in %YFramework.NPL.Dependency.
-	// NOTE: The applicative 'wrap1' does check before wrapping.
-	RegisterStrictUnary<const ContextHandler>(rctx, "wrap1", WrapOnce);
+	// NOTE: Definitions of $vau, $vau/e, wrap and wrap% are in
+	//	%YFramework.NPL.Dependency.
+	// NOTE: The applicatives 'wrap1' and 'wrap1%' do check before wrapping.
+	RegisterStrict(rctx, "wrap1", WrapOnce);
+	RegisterStrict(rctx, "wrap1%", WrapOnceRef);
+	// XXX: Use unsigned count.
+	RegisterStrictBinary<const ContextHandler, const int>(rctx, "wrap-n",
+		[](const ContextHandler& h, int n) -> ContextHandler{
+		if(const auto p = h.target<FormContextHandler>())
+			return FormContextHandler(p->Handler, p->Check, size_t(n));
+		return FormContextHandler(h, 1);
+	});
 	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
 #endif
 	// NOTE: NPLA value transferring.
@@ -538,19 +547,18 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			return typeid(shared_ptr<NPL::Environment>);
 		if(str == "int")
 			return typeid(int);
-		if(str == "operative")
-			return typeid(FormContextHandler);
-		if(str == "applicative")
-			return typeid(StrictContextHandler);
 		if(str == "combiner")
 			return typeid(ContextHandler);
 		if(str == "string")
 			return typeid(string);
 		return typeid(void);
 	});
-	RegisterStrictUnary<const ContextHandler>(rctx, "get-combiner-type",
-		[&](const ContextHandler& h){
-		return std::type_index(h.target_type());
+	RegisterStrictUnary<const ContextHandler>(rctx, "get-wrapping-count",
+		// FIXME: Unsigned count shall be used.
+		[&](const ContextHandler& h) -> int{
+		if(const auto p = h.target<FormContextHandler>())
+			return int(p->Wrapping);
+		return 0;
 	});
 	context.Perform(u8R"NPL(
 		$defl! typeid-match? (&x &id) eqv? (get-typeid id) (typeid x);
@@ -561,9 +569,9 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			(typeid-match? x "environment#owned");
 		$defl! combiner? (&x) typeid-match? x "combiner";
 		$defl! operative? (&x) $and? (combiner? x)
-			(eqv? (get-combiner-type x) (get-typeid "operative"));
+			(eqv? (get-wrapping-count x) 0);
 		$defl! applicative? (&x) $and? (combiner? x)
-			(eqv? (get-combiner-type x) (get-typeid "applicative"));
+			(not? (eqv? (get-wrapping-count x) 0));
 		$defl! int? (&x) typeid-match? x "int";
 		$defl! string? (&x) typeid-match? x "string";
 	)NPL");
