@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7321
+\version r7326
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-06-03 21:18 +0800
+	2019-06-03 21:21 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -701,6 +701,11 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			cout << te.LockForeColor(DarkRed) << val;
 			cout << '"' << endl;
 	})), true);
+	// NOTE: Same to function in %NPL.Dependency.
+	RegisterStrictUnary<const string>(renv, "SHBuild_RaiseError_",
+		[](const string& str) YB_ATTR(noreturn){
+		throw LoggedEvent(str);
+	});
 	context.Perform("$defl! iput (&x) puts (itos x)");
 	LoadExternalRoot(context, "test.txt");
 	rctx.EvaluateList.Add(DefaultDebugAction, 255);
