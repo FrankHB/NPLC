@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 643
+\version 659
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2019-06-03 21:11 +0800
+	2019-07-06 03:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -40,6 +40,7 @@ using namespace YSLib;
 #define NPL_Impl_UseDebugMR false
 #define NPL_Impl_UseMonotonic false
 #define NPL_Impl_TestMemoryResource false
+#define NPL_Impl_LogBeforeReduce false
 
 namespace NPL
 {
@@ -294,7 +295,22 @@ Interpreter::Interpreter(Application& app,
 {
 	using namespace std;
 	using namespace platform_ex;
+#if NPL_Impl_LogBeforeReduce
+	// TODO: Avoid reassignment of default passes?
+	using namespace std::placeholders;
 
+	A1::EvaluationPasses
+		passes(std::bind(std::ref(context.ListTermPreprocess), _1, _2));
+	passes += [](TermNode& term){
+		YTraceDe(Notice, "Before ReduceCombined:");
+		LogTermValue(term, Notice);
+		return ReductionStatus::Retained;
+	};
+	passes += ReduceHeadEmptyList;
+	passes += A1::ReduceFirst;
+	passes += A1::ReduceCombined;
+	context.Root.EvaluateList = std::move(passes);
+#endif
 	terminal.UpdateForeColor(TitleColor);
 	cout << title << endl << "Initializing...";
 	p_env.reset(new YSLib::Environment(app));
