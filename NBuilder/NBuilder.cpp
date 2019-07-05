@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7369
+\version r7409
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-07-06 03:16 +0800
+	2019-07-06 03:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -436,25 +436,28 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	//	$unless are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$defl! and? &x $sequence
-			($defl! and2? (&x &y) $if (null? y) x
-				($sequence ($def! h first y) (and2? ($if h x #f) (rest y))))
-			(and2? #t x);
+			($defl! and-aux? (&h &l) forward ($if (null? l) (forward h)
+				($sequence ($def! c first l) (and-aux? (forward ($if h c #f))
+					(rest% (forward l))))))
+			(forward (and-aux? #t (forward x)));
 		$defl! or? &x $sequence
-			($defl! or2? (&x &y) $if (null? y) x
-				($sequence ($def! h first y) (or2? ($if h h x) (rest y))))
-			(or2? #f x);
+			($defl! or-aux? (&h &l) forward ($if (null? l) (forward h)
+				($sequence ($def! c first l) (or-aux? (forward ($if c c h))
+					(rest% (forward l))))))
+			(forward (or-aux? #f (forward x)));
 	)NPL");
 	// NOTE: Definitions of $and?, $or?, first-null?,
 	//	list-rest%, accl, accr are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defl! foldl1 (&kons &knil &l) accl l null? knil first rest kons;
+		$defl! foldl1 (&kons &knil &l)
+			accl (forward l) null? knil first rest kons;
 		$defw! map1-reverse (&appv &l) d foldl1
 			($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
 	)NPL");
 	// NOTE: Definitions of foldr1, map1, list-concat are in
 	//	%YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defl! list-copy-strict (l) foldr1 cons () l;
+		$defl! list-copy-strict (l) foldr1 cons () (forward l);
 		$defl! list-copy (obj) $if (list? obj) (list-copy-strict obj) obj;
 	)NPL");
 	// NOTE: Definitions of append is in %YFramework.NPL.Dependency.
@@ -468,9 +471,10 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		$defl! filter (&accept? &ls) apply append
 			(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
 		$defl! reduce (&ls &bin &id) $cond
-			((null? ls) id)
-			((null? (rest& ls)) first& ls)
-			(#t bin (first& ls) (reduce (rest& ls) bin id));
+			((null? ls) forward id)
+			((null? (rest& ls)) first (forward ls))
+			(#t bin (first (forward ls))
+				(reduce (rest% (forward ls)) bin (forward id)));
 		$defl! assv (&object &alist) $let
 			((alist
 				filter ($lambda (&record) eqv? object (first record)) alist))
@@ -488,32 +492,43 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	)NPL");
 	// NOTE: Definitions of $let*, $letrec are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
-		$defv%! $letrec* (&bindings .&body) d forward
-			(eval% ($if (null? bindings) (list*% $letrec bindings body)
+		$defv%! $letrec* (&bindings .&body) d
+			eval% ($if (null? bindings) (list*% $letrec bindings body)
 				(list $letrec (list% (first bindings))
-				(list*% $letrec* (rest% bindings) body))) d);
-		$defv! $let-safe (&bindings .&body) d forward
-			(eval% (list* () $let/e
-				(() make-standard-environment) bindings body) d);
-		$defv! $remote-eval (&o &e) d forward (eval% o (eval e d));
+				(list*% $letrec* (rest% bindings) body))) d;
+		$defv%! $letrec*% (&bindings .&body) d
+			eval% ($if (null? bindings) (list*% $letrec% bindings body)
+				(list $letrec% (list% (first bindings))
+				(list*% $letrec*% (rest% bindings) body))) d;
+		$defv! $let-safe (&bindings .&body) d
+			eval% (list* () $let/e
+				(() make-standard-environment) bindings body) d;
+		$defv! $let-safe% (&bindings .&body) d
+			eval% (list* () $let/e%
+				(() make-standard-environment) bindings body) d;
+		$defv! $remote-eval (&o &e) d eval o (eval e d);
+		$defv! $remote-eval% (&o &e) d eval% o (eval e d);
 	)NPL");
 	// NOTE: Definitions of $bindings/p->environment, $bindings->environment,
 	//	$provide!, $import! are in %YFramework.NPL.Dependency.
 	context.Perform(u8R"NPL(
 		$def! foldr $let ((&cenv () make-standard-environment)) wrap
 		(
-			$set! cenv cxrs $lambda/e (weaken-environment cenv) (ls cxr)
-				accr ls null? () ($lambda (&l) cxr (first l)) rest cons;
-			$vau/e cenv (kons knil .ls) d
-				(accr ls unfoldable? knil ($lambda (&ls) cxrs ls first)
+			$set! cenv cxrs $lambda/e (weaken-environment cenv) (&ls cxr)
+				accr (forward ls) null? () ($lambda (&l) cxr (first l)) rest
+					cons;
+			$vau/e cenv (kons knil .&ls) d
+				(accr (forward ls) unfoldable? knil ($lambda (&ls) cxrs ls
+					first)
 				($lambda (&ls) cxrs ls rest) ($lambda (&x &st)
 					apply kons (list-concat x (list st)) d))
 		);
 		$def! map $let ((&cenv () make-standard-environment)) wrap
 		(
-			$set! cenv cxrs $lambda/e (weaken-environment cenv) (ls cxr)
-				accr ls null? () ($lambda (&l) cxr (first l)) rest cons;
-			$vau/e cenv (appv .ls) d accr ls unfoldable? ()
+			$set! cenv cxrs $lambda/e (weaken-environment cenv) (&ls cxr)
+				accr (forward ls) null? () ($lambda (&l) cxr (first l)) rest
+					cons;
+			$vau/e cenv (appv .&ls) d accr (forward ls) unfoldable? ()
 				($lambda (&ls) cxrs ls first) ($lambda (&ls) cxrs ls rest)
 					($lambda (&x &xs) cons (apply appv x d) xs)
 		);
