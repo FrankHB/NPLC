@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7409
+\version r7581
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-07-06 03:24 +0800
+	2019-07-06 04:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -424,153 +424,9 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			throw std::invalid_argument("Invalid trace option found.");
 	});
 	// NOTE: Derived functions with probable privmitive implementation.
-	// NOTE: Definitions of id, idv, list, list&, $quote, $defl!, first, first&,
-	//	rest, rest%, rest& %YFramework.NPL.Dependency.
-	context.Perform(u8R"NPL(
-		$defl! xcons (&x &y) cons y x;
-		$defl! xcons% (&x &y) cons% y x;
-	)NPL");
-	// NOTE: Definitions of $set!, $defv!, $lambda, $setrec!, $defl!, first,
-	//	rest, apply, list*, $defw!, $lambda/e, $sequence,
-	//	get-current-environment, $cond, make-standard-environment, not?, $when,
-	//	$unless are in %YFramework.NPL.Dependency.
-	context.Perform(u8R"NPL(
-		$defl! and? &x $sequence
-			($defl! and-aux? (&h &l) forward ($if (null? l) (forward h)
-				($sequence ($def! c first l) (and-aux? (forward ($if h c #f))
-					(rest% (forward l))))))
-			(forward (and-aux? #t (forward x)));
-		$defl! or? &x $sequence
-			($defl! or-aux? (&h &l) forward ($if (null? l) (forward h)
-				($sequence ($def! c first l) (or-aux? (forward ($if c c h))
-					(rest% (forward l))))))
-			(forward (or-aux? #f (forward x)));
-	)NPL");
-	// NOTE: Definitions of $and?, $or?, first-null?,
-	//	list-rest%, accl, accr are in %YFramework.NPL.Dependency.
-	context.Perform(u8R"NPL(
-		$defl! foldl1 (&kons &knil &l)
-			accl (forward l) null? knil first rest kons;
-		$defw! map1-reverse (&appv &l) d foldl1
-			($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
-	)NPL");
-	// NOTE: Definitions of foldr1, map1, list-concat are in
-	//	%YFramework.NPL.Dependency.
-	context.Perform(u8R"NPL(
-		$defl! list-copy-strict (l) foldr1 cons () (forward l);
-		$defl! list-copy (obj) $if (list? obj) (list-copy-strict obj) obj;
-	)NPL");
-	// NOTE: Definitions of append is in %YFramework.NPL.Dependency.
-	context.Perform(u8R"NPL(
-		$defl! reverse (&l) foldl1 cons () l;
-		$defl! snoc (&x &r) (list-concat r (list x));
-		$defl! snoc% (&x &r) (list-concat r (list% x));
-	)NPL");
-	// NOTE: Definitions of $let is in %YFramework.NPL.Dependency.
-	context.Perform(u8R"NPL(
-		$defl! filter (&accept? &ls) apply append
-			(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
-		$defl! reduce (&ls &bin &id) $cond
-			((null? ls) forward id)
-			((null? (rest& ls)) first (forward ls))
-			(#t bin (first (forward ls))
-				(reduce (rest% (forward ls)) bin (forward id)));
-		$defl! assv (&object &alist) $let
-			((alist
-				filter ($lambda (&record) eqv? object (first record)) alist))
-				$if (null? alist) () (first alist);
-		$defl! memv? (&object &ls)
-			apply or? (map1 ($lambda (&x) eqv? object x) ls);
-		$defl! assq (&object &alist) $let
-			((alist filter ($lambda (&record) eq? object (first record)) alist))
-				($if (null? alist) () (first alist));
-		$defl! memq? (&object &ls)
-			apply or? (map1 ($lambda (&x) eq? object x) ls);
-		$defl! equal? (&x &y) $if ($and? (branch? x) (branch? y))
-			($and? (equal? (first x) (first y)) (equal? (rest x) (rest y)))
-			(eqv? x y);
-	)NPL");
-	// NOTE: Definitions of $let*, $letrec are in %YFramework.NPL.Dependency.
-	context.Perform(u8R"NPL(
-		$defv%! $letrec* (&bindings .&body) d
-			eval% ($if (null? bindings) (list*% $letrec bindings body)
-				(list $letrec (list% (first bindings))
-				(list*% $letrec* (rest% bindings) body))) d;
-		$defv%! $letrec*% (&bindings .&body) d
-			eval% ($if (null? bindings) (list*% $letrec% bindings body)
-				(list $letrec% (list% (first bindings))
-				(list*% $letrec*% (rest% bindings) body))) d;
-		$defv! $let-safe (&bindings .&body) d
-			eval% (list* () $let/e
-				(() make-standard-environment) bindings body) d;
-		$defv! $let-safe% (&bindings .&body) d
-			eval% (list* () $let/e%
-				(() make-standard-environment) bindings body) d;
-		$defv! $remote-eval (&o &e) d eval o (eval e d);
-		$defv! $remote-eval% (&o &e) d eval% o (eval e d);
-	)NPL");
-	// NOTE: Definitions of $bindings/p->environment, $bindings->environment,
-	//	$provide!, $import! are in %YFramework.NPL.Dependency.
-	context.Perform(u8R"NPL(
-		$def! foldr $let ((&cenv () make-standard-environment)) wrap
-		(
-			$set! cenv cxrs $lambda/e (weaken-environment cenv) (&ls cxr)
-				accr (forward ls) null? () ($lambda (&l) cxr (first l)) rest
-					cons;
-			$vau/e cenv (kons knil .&ls) d
-				(accr (forward ls) unfoldable? knil ($lambda (&ls) cxrs ls
-					first)
-				($lambda (&ls) cxrs ls rest) ($lambda (&x &st)
-					apply kons (list-concat x (list st)) d))
-		);
-		$def! map $let ((&cenv () make-standard-environment)) wrap
-		(
-			$set! cenv cxrs $lambda/e (weaken-environment cenv) (&ls cxr)
-				accr (forward ls) null? () ($lambda (&l) cxr (first l)) rest
-					cons;
-			$vau/e cenv (appv .&ls) d accr (forward ls) unfoldable? ()
-				($lambda (&ls) cxrs ls first) ($lambda (&ls) cxrs ls rest)
-					($lambda (&x &xs) cons (apply appv x d) xs)
-		);
-		$defw! for-each-rtl &ls env $sequence (apply map ls env) inert;
-	)NPL");
-	// NOTE: Definitions of unfoldable?, map-reverse for-each-ltr
-	//	are in %YFramework.NPL.Dependency.
-	RegisterForm(rctx, "$delay", [](TermNode& term, ContextNode&){
-		RemoveHead(term);
-
-		ValueObject x(DelayedTerm(std::move(term)));
-
-		term.Value = std::move(x);
-		return ReductionStatus::Clean;
-	});
-	// TODO: Provide 'equal?'.
-	RegisterForm(rctx, "evalv",
-		static_cast<void(&)(TermNode&, ContextNode&)>(ReduceChildren));
-
 	// NOTE: Object interoperation.
 	// NOTE: Definitions of ref is in %YFramework.NPL.Dependency.
-	// NOTE: Environments.
-	// NOTE: Definitions of lock-current-environment, bound?, value-of is in
-	//	%YFramework.NPL.Dependency.
-	// NOTE: Only '$binds?' is like in Kernel.
-	context.Perform(u8R"NPL(
-		$defw! environment-bound? (&e &str) d
-			eval (list bound? str) (eval e d);
-	)NPL");
-	// NOTE: Definitions of $binds1? is in module std.environments in
-	//	%YFramework.NPL.Dependency.
-	context.Perform(u8R"NPL(
-		$defv! $binds? (&e .&ss) d $let ((&senv eval e d))
-			foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
-	)NPL");
-	RegisterStrictUnary<const string>(rctx, "lex", [&](const string& unit){
-		LexicalAnalyzer lex;
-
-		for(const auto& c : unit)
-			lex.ParseByte(c);
-		return lex;
-	});
+	// NOTE: Environments library.
 	RegisterStrictUnary<const std::type_index>(rctx, "nameof",
 		[](const std::type_index& ti){
 		return string(ti.name());
@@ -581,7 +437,6 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		return std::type_index(ReferenceTerm(term).Value.type());
 	});
 	// TODO: Copy of operand cannot be used for move-only types.
-	context.Perform("$defl! ptype (&x) puts (nameof (typeid x))");
 	RegisterStrictUnary<const string>(rctx, "get-typeid",
 		[&](const string& str) -> std::type_index{
 		if(str == "bool")
@@ -608,21 +463,6 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			return int(p->Wrapping);
 		return 0;
 	});
-	context.Perform(u8R"NPL(
-		$defl! typeid-match? (&x &id) eqv? (get-typeid id) (typeid x);
-		$defl! bool? (&x) typeid-match? x "bool";
-		$defl! symbol? (&x) $and? (typeid-match? x "symbol")
-			(symbol-string? (symbol->string x));
-		$defl! environment? (&x) $or? (typeid-match? x "environment")
-			(typeid-match? x "environment#owned");
-		$defl! combiner? (&x) typeid-match? x "combiner";
-		$defl! operative? (&x) $and? (combiner? x)
-			(eqv? (get-wrapping-count x) 0);
-		$defl! applicative? (&x) $and? (combiner? x)
-			(not? (eqv? (get-wrapping-count x) 0));
-		$defl! int? (&x) typeid-match? x "int";
-		$defl! string? (&x) typeid-match? x "string";
-	)NPL");
 	// NOTE: List library.
 	// TODO: Check list type?
 	RegisterStrictUnary(rctx, "list-length",
@@ -632,15 +472,12 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	RegisterStrictUnary(rctx, "branchv?", IsBranch);
 	RegisterStrictUnary(rctx, "leaf?", ComposeReferencedTermOp(IsLeaf));
 	RegisterStrictUnary(rctx, "leafv?", IsLeaf);
-	// NOTE: Encapsulations.
-	// NOTE: Definition of make-encapsulation-type is in
-	//	%YFramework.NPL.Dependency.
+	// NOTE: Encapsulations library is in %YFramework.NPL.Dependency.
 	// NOTE: String library.
 	// NOTE: Definitions of ++, string-empty?, string<- are in
 	//	%YFramework.NPL.Dependency.
 	RegisterStrictBinary<const string, const string>(rctx, "string=?",
 		ystdex::equal_to<>());
-	context.Perform(u8R"NPL($defl! retain-string (&str) ++ "\"" str "\"")NPL");
 	RegisterStrictUnary<const int>(rctx, "itos", [](int x){
 		return to_string(x);
 	});
@@ -704,12 +541,6 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 
 		return LoadExternalRoot(context, name);
 	});
-	context.Perform(u8R"NPL(
-		$defl! get-module (&filename .&opt)
-			$let ((&env () make-standard-environment)) $sequence
-				($unless (null? opt) ($set! env module-parameters (first& opt)))
-				(eval (list load filename) env) env;
-	)NPL");
 	RegisterStrictUnary<const string>(rctx, "ofs", [&](const string& path){
 		if(ifstream ifs{path})
 			return ifs;
@@ -720,6 +551,13 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		return std::istringstream(str);
 	});
 	RegisterStrictUnary<ifstream>(rctx, "parse-f", ParseStream);
+	RegisterStrictUnary<const string>(rctx, "lex", [&](const string& unit){
+		LexicalAnalyzer lex;
+
+		for(const auto& c : unit)
+			lex.ParseByte(c);
+		return lex;
+	});
 	RegisterStrictUnary<LexicalAnalyzer>(rctx, "parse-lex", ParseOutput);
 	RegisterStrictUnary<std::istringstream>(rctx, "parse-s", ParseStream);
 	RegisterStrictUnary<const string>(rctx, "put", [&](const string& str){
@@ -754,7 +592,6 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		[](const string& str) YB_ATTR_LAMBDA(noreturn){
 		throw LoggedEvent(str);
 	});
-	context.Perform("$defl! iput (&x) puts (itos x)");
 #if NPL_Impl_NBuilder_TestTemporaryOrder
 	RegisterStrictUnary<const string>(renv, "mark-guard", [](string str){
 		return MarkGuard(std::move(str));
