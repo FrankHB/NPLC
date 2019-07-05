@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7331
+\version r7369
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-07-06 03:13 +0800
+	2019-07-06 03:16 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -41,6 +41,9 @@
 
 namespace NPL
 {
+
+/// 860
+#define NPL_Impl_NBuilder_TestTemporaryOrder false
 
 namespace A1
 {
@@ -221,6 +224,36 @@ LoadExternalRoot(REPLContext& context, const string& name)
 	return ValueToken::Unspecified;
 }
 
+#if NPL_Impl_NBuilder_TestTemporaryOrder
+/// 860
+struct MarkGuard
+{
+	string String;
+
+	MarkGuard(string str)
+		: String(std::move(str))
+	{
+		std::printf("Create guard: %s.\n", String.c_str());
+	}
+	MarkGuard(const MarkGuard& m)
+		: String(m.String)
+	{
+		std::printf("Create guard by copy: %s.\n", String.c_str());
+	}
+	MarkGuard(const MarkGuard&& m)
+		: String(std::move(m.String))
+	{
+		std::printf("Create guard by move: %s.\n", String.c_str());
+	}
+	~MarkGuard()
+	{
+		std::printf("Destroy guard: %s.\n", String.c_str());
+	}
+
+	DefDeCopyAssignment(MarkGuard)
+	DefDeMoveAssignment(MarkGuard)
+};
+#endif
 
 /// 834
 void
@@ -707,6 +740,14 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		throw LoggedEvent(str);
 	});
 	context.Perform("$defl! iput (&x) puts (itos x)");
+#if NPL_Impl_NBuilder_TestTemporaryOrder
+	RegisterStrictUnary<const string>(renv, "mark-guard", [](string str){
+		return MarkGuard(std::move(str));
+	});
+	RegisterStrict(renv, "mark-guard-test", []{
+		MarkGuard("A"), MarkGuard("B"), MarkGuard("C");
+	});
+#endif
 	LoadExternalRoot(context, "test.txt");
 	rctx.EvaluateList.Add(DefaultDebugAction, 255);
 	rctx.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
