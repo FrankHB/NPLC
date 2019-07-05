@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7326
+\version r7328
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-06-03 21:21 +0800
+	2019-07-06 03:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -49,7 +49,7 @@ void
 RegisterLiteralSignal(ContextNode& ctx, const string& name, SSignal sig)
 {
 	NPL::EmplaceLeaf<LiteralHandler>(ctx, name,
-		[=](const ContextNode&) YB_ATTR(noreturn) -> ReductionStatus{
+		[=](const ContextNode&) YB_ATTR_LAMBDA(noreturn) -> ReductionStatus{
 		throw sig;
 	});
 }
@@ -703,7 +703,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	})), true);
 	// NOTE: Same to function in %NPL.Dependency.
 	RegisterStrictUnary<const string>(renv, "SHBuild_RaiseError_",
-		[](const string& str) YB_ATTR(noreturn){
+		[](const string& str) YB_ATTR_LAMBDA(noreturn){
 		throw LoggedEvent(str);
 	});
 	context.Perform("$defl! iput (&x) puts (itos x)");
