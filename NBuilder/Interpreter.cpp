@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 661
+\version 666
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2019-07-08 01:19 +0800
+	2019-07-08 01:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -126,17 +126,17 @@ StringifyValueObject(const ValueObject& vo)
 		if(const auto p = vo.AccessPtr<string>())
 			return *p;
 		if(const auto p = vo.AccessPtr<TokenValue>())
-			return sfmt("[TokenValue] %s", p->c_str());
+			return sfmt<string>("[TokenValue] %s", p->c_str());
 		if(const auto p = vo.AccessPtr<A1::ValueToken>())
-			return sfmt("[ValueToken] %s", to_string(*p).c_str());
+			return sfmt<string>("[ValueToken] %s", to_string(*p).c_str());
 		if(const auto p = vo.AccessPtr<bool>())
 			return *p ? "[bool] #t" : "[bool] #f";
 		if(const auto p = vo.AccessPtr<int>())
-			return sfmt("[int] %d", *p);
+			return sfmt<string>("[int] %d", *p);
 		if(const auto p = vo.AccessPtr<unsigned>())
-			return sfmt("[uint] %u", *p);
+			return sfmt<string>("[uint] %u", *p);
 		if(const auto p = vo.AccessPtr<double>())
-			return sfmt("[double] %lf", *p);
+			return sfmt<string>("[double] %lf", *p);
 
 		const auto& t(vo.type());
 
