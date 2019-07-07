@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7581
+\version r7585
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-07-06 04:11 +0800
+	2019-07-08 01:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -25,9 +25,10 @@
 */
 
 
-#include "NBuilder.h"
-#include <iostream>
+#include "NBuilder.h" // for istringstream;
+#include <iostream> // for std::cout, std::endl;
 #include <typeindex>
+#include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
 #include YFM_NPL_Dependency // for NPL, NPL::A1, LoadNPLContextGround;
@@ -548,7 +549,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
 	});
 	RegisterStrictUnary<const string>(rctx, "oss", [&](const string& str){
-		return std::istringstream(str);
+		return istringstream(str);
 	});
 	RegisterStrictUnary<ifstream>(rctx, "parse-f", ParseStream);
 	RegisterStrictUnary<const string>(rctx, "lex", [&](const string& unit){
