@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 659
+\version 661
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2019-07-06 03:03 +0800
+	2019-07-08 01:19 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -267,7 +267,7 @@ GetPoolResourceRef()
 
 	return r;
 #else
-	return Deref(YSLib::pmr::new_delete_resource());
+	return Deref(pmr::new_delete_resource());
 #endif
 }
 
@@ -275,7 +275,7 @@ GetPoolResourceRef()
 memory_resource&
 GetMonotonicPoolRef()
 {
-	static YSLib::pmr::monotonic_buffer_resource r;
+	static pmr::monotonic_buffer_resource r;
 
 	return r;
 }
