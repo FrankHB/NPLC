@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7586
+\version r7617
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-07-08 01:41 +0800
+	2019-08-13 01:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -280,8 +280,22 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	load_std_module("promises", LoadModule_std_promises);
 	load_std_module("io", LoadModule_std_io),
 	load_std_module("system", LoadModule_std_system);
-	LoadModule(rctx, "env_SHBuild_",
-		std::bind(LoadModule_SHBuild, std::ref(context)));
+	renv.Define("env_SHBuild_", GetModuleFor(rctx, [&]{
+		LoadModule_SHBuild(context);
+		// XXX: Overriding.
+		rctx.GetRecordRef().Define("SHBuild_BaseTerminalHook_",
+			ValueObject(function<void(const string&, const string&)>(
+			[](const string& n, const string& val){
+				// XXX: Errors from stream operations are ignored.
+				using namespace std;
+				Terminal te;
+
+				cout << te.LockForeColor(DarkCyan) << n;
+				cout << " = \"";
+				cout << te.LockForeColor(DarkRed) << val;
+				cout << '"' << endl;
+		})), true);
+	}), {});
 	// TODO: Extract literal configuration API.
 	{
 		// TODO: Blocked. Use C++14 lambda initializers to simplify
@@ -571,23 +585,6 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		return ValueToken::Unspecified;
 	});
 	// NOTE: Interoperation library.
-	// NOTE: Definitions of cmd-get-args, env-get, env-set, env-empty?, system,
-	//	system-get, system-quote are introduced.
-	LoadModule_std_system(context);
-	// NOTE: SHBuild builitins.
-	// XXX: Overriding.
-	root_env.Define("SHBuild_BaseTerminalHook_",
-		ValueObject(std::function<void(const string&, const string&)>(
-		[](const string& n, const string& val){
-			// XXX: Errors from stream operations are ignored.
-			using namespace std;
-			Terminal te;
-
-			cout << te.LockForeColor(DarkCyan) << n;
-			cout << " = \"";
-			cout << te.LockForeColor(DarkRed) << val;
-			cout << '"' << endl;
-	})), true);
 	// NOTE: Same to function in %NPL.Dependency.
 	RegisterStrictUnary<const string>(renv, "SHBuild_RaiseError_",
 		[](const string& str) YB_ATTR_LAMBDA(noreturn){
