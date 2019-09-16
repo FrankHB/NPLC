@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7617
+\version r7625
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-08-13 01:35 +0800
+	2019-08-17 06:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -266,7 +266,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	auto& renv(rctx.GetRecordRef());
 	const auto load_std_module([&](string_view module_name,
 		void(&load_module)(REPLContext&)){
-		LoadModule(rctx, "std." + string(module_name),
+		LoadModuleChecked(rctx, "std." + string(module_name),
 			std::bind(load_module, std::ref(context)));
 	});
 	string init_trace_option;
@@ -280,7 +280,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	load_std_module("promises", LoadModule_std_promises);
 	load_std_module("io", LoadModule_std_io),
 	load_std_module("system", LoadModule_std_system);
-	renv.Define("env_SHBuild_", GetModuleFor(rctx, [&]{
+	renv.DefineChecked("env_SHBuild_", GetModuleFor(rctx, [&]{
 		LoadModule_SHBuild(context);
 		// XXX: Overriding.
 		rctx.GetRecordRef().Define("SHBuild_BaseTerminalHook_",
@@ -294,8 +294,8 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 				cout << " = \"";
 				cout << te.LockForeColor(DarkRed) << val;
 				cout << '"' << endl;
-		})), true);
-	}), {});
+		})));
+	}));
 	// TODO: Extract literal configuration API.
 	{
 		// TODO: Blocked. Use C++14 lambda initializers to simplify
@@ -321,8 +321,8 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	RegisterLiteralSignal(rctx, "license", SSignal::License);
 	// NOTE: Definition of %inert is in %YFramework.NPL.Dependency.
 	// NOTE: Context builtins.
-	renv.Define("REPL-context", ValueObject(context, OwnershipTag<>()), {});
-	renv.Define("root-context", ValueObject(rctx, OwnershipTag<>()), {});
+	renv.DefineChecked("REPL-context", ValueObject(context, OwnershipTag<>()));
+	renv.DefineChecked("root-context", ValueObject(rctx, OwnershipTag<>()));
 	intp.SaveGround();
 
 	auto& root_env(rctx.GetRecordRef());
@@ -353,8 +353,8 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	// NOTE: Removing definitions do not guaranteed supported by all
 	//	environments. They are as-is for the current environment implementation,
 	//	but may not work for some specific environments in future.
-	RegisterForm(rctx, "$undef!", ystdex::bind1(Undefine, _2, true));
-	RegisterForm(rctx, "$undef-checked!", ystdex::bind1(Undefine, _2, false));
+	RegisterForm(rctx, "$undef!", Undefine);
+	RegisterForm(rctx, "$undef-checked!", UndefineChecked);
 	// NOTE: Definitions of $vau, $vau/e, wrap and wrap% are in
 	//	%YFramework.NPL.Dependency.
 	// NOTE: The applicatives 'wrap1' and 'wrap1%' do check before wrapping.
