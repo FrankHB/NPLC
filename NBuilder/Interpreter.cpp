@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 666
+\version 767
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2019-07-08 01:26 +0800
+	2019-09-23 08:04 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -164,7 +164,122 @@ struct NodeValueLogger
 };
 //@}
 
+/// 867
+//@{
+using ystdex::ceiling_lb;
+yconstexpr const auto min_block_size(resource_pool::adjust_for_block(1, 1));
+yconstexpr const size_t init_pool_num(yimpl(12));
+#if YB_IMPL_GNUCPP >= 30400 || __has_builtin(__builtin_clz)
+yconstexpr const auto min_lb_size(sizeof(unsigned) * CHAR_BIT
+	- __builtin_clz(unsigned(min_block_size - 1)));
+yconstexpr const size_t
+	max_fast_block_size(1U << (min_lb_size + init_pool_num));
+#else
+const auto min_lb_size(ceiling_lb(min_block_size));
+const size_t max_fast_block_size(1U << (min_lb_size + init_pool_num));
+#endif
+//@}
+
 } // unnamed namespace;
+
+shared_pool_resource::shared_pool_resource(
+	const pool_options& opts, memory_resource* p_up) ynothrow
+	: saved_options(opts), oversized((yconstraint(p_up), *p_up)), pools(p_up)
+{
+	adjust_pool_options(saved_options);
+	pools.reserve(init_pool_num);
+	for(size_t i(0); i < init_pool_num; ++i)
+		emplace(pools.cend(), min_lb_size + i);
+}
+
+void
+shared_pool_resource::release() yimpl(ynothrow)
+{
+	oversized.release();
+	yassume(pools.size() >= init_pool_num);
+	pools.erase(pools.begin() + init_pool_num, pools.end());
+	for(size_t i(0); i < init_pool_num; ++i)
+		pools[i].clear();
+	pools.shrink_to_fit();
+}
+
+void*
+shared_pool_resource::do_allocate(size_t bytes, size_t alignment)
+{
+	if(bytes <= saved_options.largest_required_pool_block)
+	{
+		const auto ms(resource_pool::adjust_for_block(bytes, alignment));
+		const auto lb_size(ceiling_lb(ms));
+
+		if(ms <= max_fast_block_size)
+		{
+			yassume(lb_size >= min_lb_size);
+			return (pools.begin()
+				+ pools_t::difference_type(lb_size - min_lb_size))->allocate();
+		}
+
+		auto pr(find_pool(lb_size));
+
+		if(!([&]() YB_PURE{
+			return pr.first != pools.end();
+		}() && pr.first->get_extra_data() == pr.second))
+			pr.first = emplace(pr.first, pr.second);
+		return pr.first->allocate();
+	}
+	return oversized.allocate(bytes, alignment);
+}
+
+void
+shared_pool_resource::do_deallocate(void* p, size_t bytes, size_t alignment)
+	yimpl(ynothrowv)
+{
+	if(bytes <= saved_options.largest_required_pool_block)
+	{
+		const auto ms(resource_pool::adjust_for_block(bytes, alignment));
+		const auto lb_size(ceiling_lb(ms));
+
+		if(ms <= max_fast_block_size)
+		{
+			yassume(lb_size >= min_lb_size);
+			return (pools.begin() + pools_t::difference_type(
+				lb_size - min_lb_size))->deallocate(p);
+		}
+
+		auto pr(find_pool(lb_size));
+
+		yverify([&]() YB_PURE{
+			return pr.first != pools.end();
+		}() && pr.first->get_extra_data() == pr.second);
+		return pr.first->deallocate(p);
+	}
+	else
+		oversized.deallocate(p, bytes, alignment);
+}
+
+bool
+shared_pool_resource::do_is_equal(const memory_resource& other) const ynothrow
+{
+	return this == &other;
+}
+
+shared_pool_resource::pools_t::iterator
+shared_pool_resource::emplace(pools_t::const_iterator i, size_t lb_size)
+{
+	return pools.emplace(i, *upstream_resource(),
+		std::min(size_t(PTRDIFF_MAX >> lb_size),
+		saved_options.max_blocks_per_chunk), size_t(1) << lb_size, lb_size);
+}
+
+std::pair<shared_pool_resource::pools_t::iterator, size_t>
+shared_pool_resource::find_pool(size_t lb_size) ynothrow
+{
+	return {ystdex::lower_bound_n(pools.begin(),
+		pools_t::difference_type(pools.size()),
+		lb_size, [](const resource_pool& a, size_t lb)
+		YB_ATTR_LAMBDA_QUAL(ynothrow, YB_PURE){
+		return a.get_extra_data() < lb;
+	}), lb_size};
+}
 
 
 void
