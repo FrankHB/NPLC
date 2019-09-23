@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2018 FrankHB.
+	© 2013-2019 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r161
+\version r224
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2018-11-24 21:34 +0800
+	2019-09-23 08:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -56,6 +56,79 @@ enum class SSignal
 };
 
 
+/// 867
+//@{
+using namespace ystdex::pmr;
+
+class shared_pool_resource : public memory_resource
+{
+private:
+	using pools_t
+		= std::vector<resource_pool, polymorphic_allocator<resource_pool>>;
+
+	pool_options saved_options;
+	oversized_map oversized;
+	pools_t pools;
+
+public:
+	/*!
+	\note 实现定义：参见 adjust_pool_options 的调整的值。
+	\sa adjust_pool_options
+	*/
+	//@{
+	shared_pool_resource() ynothrow
+		: shared_pool_resource(pool_options(), get_default_resource())
+	{}
+	//! \pre 断言：指针参数非空。
+	YB_NONNULL(3)
+	shared_pool_resource(const pool_options&, memory_resource*) ynothrow;
+	//! \pre 间接断言：指针参数非空。
+	explicit
+	shared_pool_resource(memory_resource* upstream)
+		: shared_pool_resource(pool_options(), upstream)
+	{}
+	explicit
+	shared_pool_resource(const pool_options& opts)
+		: shared_pool_resource(opts, get_default_resource())
+	{}
+	//@}
+	~shared_pool_resource() override = default;
+
+	void
+	release() yimpl(ynothrow);
+
+	YB_ATTR_nodiscard YB_ATTR_returns_nonnull YB_PURE memory_resource*
+	upstream_resource() const yimpl(ynothrow)
+	{
+		return pools.get_allocator().resource();
+	}
+
+	YB_ATTR_nodiscard YB_PURE pool_options
+	options() const yimpl(ynothrow)
+	{
+		return saved_options;
+	}
+
+protected:
+	YB_ALLOCATOR void*
+	do_allocate(size_t, size_t) override;
+
+	void
+	do_deallocate(void*, size_t, size_t) yimpl(ynothrowv) override;
+
+	YB_ATTR_nodiscard yimpl(YB_PURE) bool
+	do_is_equal(const memory_resource&) const ynothrow override;
+
+private:
+	pools_t::iterator
+	emplace(pools_t::const_iterator, size_t);
+
+	YB_ATTR_nodiscard YB_PURE std::pair<pools_t::iterator, size_t>
+	find_pool(size_t) ynothrow;
+};
+//@}
+
+
 /// 673
 void
 LogTree(const ValueNode&, Logger::Level = YSLib::Debug);
@@ -81,8 +154,8 @@ private:
 	platform_ex::Terminal terminal;
 	/// 674
 	YSLib::RecordLevel err_threshold;
-	/// 845
-	ystdex::pmr::pool_resource pool_rsrc;
+	/// 867
+	shared_pool_resource pool_rsrc;
 	/// 689
 	YSLib::unique_ptr<YSLib::Environment> p_env;
 	/// 674
