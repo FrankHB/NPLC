@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7639
+\version r7641
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-11-09 11:27 +0800
+	2019-11-09 11:38 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -284,7 +284,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	load_std_module("promises", LoadModule_std_promises);
 	load_std_module("io", LoadModule_std_io),
 	load_std_module("system", LoadModule_std_system);
-	renv.DefineChecked("env_SHBuild_", GetModuleFor(rctx, [&]{
+	LoadModuleChecked(rctx, "env_SHBuild_", [&]{
 		LoadModule_SHBuild(context);
 		// XXX: Overriding.
 		rctx.GetRecordRef().Define("SHBuild_BaseTerminalHook_",
@@ -299,7 +299,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 				cout << te.LockForeColor(DarkRed) << val;
 				cout << '"' << endl;
 		})));
-	}));
+	});
 	// TODO: Extract literal configuration API.
 	{
 		// TODO: Blocked. Use C++14 lambda initializers to simplify
