@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7633
+\version r7639
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-09-26 17:14 +0800
+	2019-11-09 11:27 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -589,12 +589,6 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		// XXX: Overridding.
 		std::cout << EncodeArg(str) << std::endl;
 		return ValueToken::Unspecified;
-	});
-	// NOTE: Interoperation library.
-	// NOTE: Same to function in %NPL.Dependency.
-	RegisterStrictUnary<const string>(renv, "SHBuild_RaiseError_",
-		[](const string& str) YB_ATTR_LAMBDA(noreturn){
-		throw LoggedEvent(str);
 	});
 #if NPL_Impl_NBuilder_TestTemporaryOrder
 	RegisterStrictUnary<const string>(renv, "mark-guard", [](string str){
