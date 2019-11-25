@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r159
+\version r161
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2018-08-04 20:11 +0800
+	2018-11-24 21:34 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -81,6 +81,8 @@ private:
 	platform_ex::Terminal terminal;
 	/// 674
 	YSLib::RecordLevel err_threshold;
+	/// 845
+	ystdex::pmr::pool_resource pool_rsrc;
 	/// 689
 	YSLib::unique_ptr<YSLib::Environment> p_env;
 	/// 674

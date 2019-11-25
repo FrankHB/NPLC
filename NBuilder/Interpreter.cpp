@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 417
+\version 511
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2018-08-12 20:59 +0800
+	2018-11-26 04:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -31,11 +31,15 @@
 #include YFM_YCLib_YCommon
 #include YFM_Helper_Environment
 #include YFM_YSLib_Service_TextFile
+#include <cstdio> // for std::fprintf;
 
 using namespace YSLib;
 
-#define NPL_TracePerform 1
-#define NPL_TracePerformDetails 0
+#define NPL_TracePerform true
+#define NPL_TracePerformDetails false
+#define NPL_Impl_UseDebugMR false
+#define NPL_Impl_UseMonotonic false
+#define NPL_Impl_TestMemoryResource false
 
 namespace NPL
 {
@@ -143,14 +147,113 @@ LogTermValue(const TermNode& term, Logger::Level lv)
 	LogTree(term, lv);
 }
 
+/// 845
+namespace
+{
+
+using namespace pmr;
+
+#if NPL_Impl_TestMemoryResource
+struct test_memory_resource : public memory_resource,
+	private ystdex::noncopyable, private ystdex::nonmovable
+{
+	lref<memory_resource> underlying;
+	unordered_map<void*, pair<size_t, size_t>> ump{};
+
+	test_memory_resource()
+		: underlying(*new_delete_resource())
+	{}
+
+	YB_ALLOCATOR void*
+	do_allocate(size_t bytes, size_t alignment) override
+	{
+		const auto p(underlying.get().allocate(bytes, alignment));
+
+		if(ump.find(p) == ump.cend())
+		{
+			ump.emplace(p, make_pair(bytes, alignment));
+#if NPL_Impl_UseDebugMR
+			std::fprintf(stderr, "Info: Allocated '%p' with bytes"
+				" '%zu' and alignment '%zu'.\n", p, bytes, alignment);
+#endif
+		}
+		else
+			std::fprintf(stderr,
+				"Error: Duplicate alloction for '%p' found.\n", p);
+		return p;
+	}
+
+	void
+	do_deallocate(void* p, size_t bytes, size_t alignment) ynothrow override
+	{
+		const auto i(ump.find(p));
+
+		if(i != ump.cend())
+		{
+			const auto rbytes(i->second.first);
+			const auto ralign(i->second.second);
+
+			if(rbytes == bytes && ralign == alignment)
+			{
+				underlying.get().deallocate(p, bytes, alignment);
+#if NPL_Impl_UseDebugMR
+				std::fprintf(stderr, "Info: Deallocated known '%p' with bytes"
+					" '%zu' and alignment '%zu'.\n", p, bytes, alignment);
+#endif
+			}
+			else
+				std::fprintf(stderr, "Error: Found known '%p' with bytes '%zu'"
+					" and alignment '%zu' in deallocation, distinct to"
+					" recorded bytes '%zu' and alignment '%zu'.\n", p, bytes,
+					alignment, rbytes, ralign);
+			ump.erase(i);
+		}
+		else
+			std::fprintf(stderr, "Error: Found unknown '%p' with bytes '%zu'"
+				" and alignment '%zu' in deallocation.\n", p, bytes, alignment);
+	}
+
+	bool
+	do_is_equal(const memory_resource& other) const ynothrow override
+	{
+		return this == &other;
+	}
+};
+#endif
+
+memory_resource&
+GetPoolResourceRef()
+{
+#if NPL_Impl_TestMemoryResource
+	static test_memory_resource r;
+
+	return r;
+#else
+	return Deref(YSLib::pmr::new_delete_resource());
+#endif
+}
+
+#if NPL_Impl_UseMonotonic
+memory_resource&
+GetMonotonicPoolRef()
+{
+	static YSLib::pmr::monotonic_buffer_resource r;
+
+	return r;
+}
+
+#	define NPL_Impl_PoolName GetMonotonicPoolRef()
+#else
+#	define NPL_Impl_PoolName pool_rsrc
+#endif
+
+} // unnamed namespace;
+
 Interpreter::Interpreter(Application& app,
 	std::function<void(REPLContext&)> loader)
-	: terminal(), err_threshold(RecordLevel(0x10)), line(),
-#if NPL_TracePerformDetails
-	context(true)
-#else
-	context()
-#endif
+	: terminal(), err_threshold(RecordLevel(0x10)),
+	pool_rsrc(&GetPoolResourceRef()), line(),
+	context(NPL_TracePerformDetails, NPL_Impl_PoolName)
 {
 	using namespace std;
 	using namespace platform_ex;
