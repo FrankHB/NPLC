@@ -4,7 +4,7 @@
 
 $def! $rem $vau . #ignore "";
 $def! $redef! $def!;
-$defv%! $unspecified ((&x .)) d forward (eval% x d);
+$defv%! $unspecified ((&x .)) d forward! (eval% x d);
 $defv! $defu! (&x .&xs) d eval (list $set! d x $unspecified xs) d;
 
 $import! std.strings string->symbol symbol->string ++ string<- string-empty?;
@@ -20,25 +20,24 @@ $defl! xcons% (&x &y) cons% y x;
 	" rest, apply, list*, $defw!, $lambda/e, $sequence,",
 	" get-current-environment, $cond, make-standard-environment, not?, $when,",
 	" $unless are in %YFramework.NPL.Dependency.";
-$defl! and? &x $sequence
-	($defl! and-aux? (&h &l) forward ($if (null? l) (forward h)
-		($sequence ($def! c first l) (and-aux? (forward ($if h c #f))
-			(rest% (forward l))))))
-	(forward (and-aux? #t (forward x)));
-$defl! or? &x $sequence
-	($defl! or-aux? (&h &l) forward ($if (null? l) (forward h)
-		($sequence ($def! c first l) (or-aux? (forward ($if c c h))
-			(rest% (forward l))))))
-	(forward (or-aux? #f (forward x)));
+$defl%! and? &x $sequence
+	($defl%! and-aux? (&h &l) $if (null? l) (forward! h)
+		(and-aux? ($if h (first (forward l)) #f) (rest% (forward l))))
+	(and-aux? #t (forward! x));
+$defl%! or? &x $sequence
+	($defl%! or-aux? (&h &l) $if (null? l) (forward! h)
+		($sequence ($def! &c first (forward l)) (or-aux? (forward! ($if c c h))
+			(rest% (forward l)))))
+	(or-aux? #f (forward! x));
 "NOTE", "Definitions of $and?, $or?, first-null?,",
 	" list-rest%, accl, accr are in %YFramework.NPL.Dependency.";
 $defl! foldl1 (&kons &knil &l)
-	accl (forward l) null? knil first rest kons;
+	accl (forward! l) null? knil first rest kons;
 $defw! map1-reverse (&appv &l) d foldl1
 	($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
 "NOTE", "Definitions of foldr1, map1, list-concat are in",
 	" %YFramework.NPL.Dependency.";
-$defl! list-copy-strict (l) foldr1 cons () (forward l);
+$defl! list-copy-strict (l) foldr1 cons () (forward! l);
 $defl! list-copy (obj) $if (list? obj) (list-copy-strict obj) obj;
 "NOTE", "Definitions of append is in %YFramework.NPL.Dependency.";
 $defl! reverse (&l) foldl1 cons () l;
@@ -48,10 +47,10 @@ $defl! snoc% (&x &r) (list-concat r (list% x));
 $defl! filter (&accept? &ls) apply append
 	(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
 $defl! reduce (&ls &bin &id) $cond
-	((null? ls) forward id)
-	((null? (rest& ls)) first (forward ls))
+	((null? ls) forward! id)
+	((null? (rest& ls)) first (forward! ls))
 	(#t bin (first (forward ls))
-		(reduce (rest% (forward ls)) bin (forward id)));
+		(reduce (rest% (forward ls)) bin (forward! id)));
 $defl! assv (&object &alist) $let
 	((alist
 		filter ($lambda (&record) eqv? object (first record)) alist))
@@ -161,9 +160,9 @@ $defl! fail-on-expect (&expr &res &expected) $sequence
 	(puts "FAIL: Check failed, with the expression:")
 	(display expr)
 	(puts "  with the result:")
-	(display (forward res))
+	(display (forward! res))
 	(puts "  expected result:")
-	(display (forward expected))
+	(display (forward! expected))
 	(report-failure "Test case failed.");
 $defv! $check (.&expr) d
 	$let ((res eval expr d))
@@ -171,7 +170,7 @@ $defv! $check (.&expr) d
 $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
 		$if (equal? res expected) (pass res)
-			(fail-on-expect expr (forward res) (forward expected));
+			(fail-on-expect expr (forward! res) (forward! expected));
 $defl! putss (.&xs) puts (apply ++ xs);
 $defl! info (&msg) putss "Test case: " msg;
 $defl! subinfo (&msg) putss "Sub test case: " msg;
@@ -187,18 +186,18 @@ $defl! maxlens (&l) accr l null? (first-length l) first-length rest& max;
 $defl! minlens (&l) accr l null? (first-length l) first-length rest& min;
 $defl! accr-n (&l &k &base &head &tail &sum)
 (
-	$defl! aux (&l n) ($if (=? n 0) (forward base) (sum (head (forward l))
+	$defl! aux (&l n) ($if (=? n 0) (forward! base) (sum (head (forward l))
 		(aux (tail (forward l)) (- n 1))));
-	aux (forward l) k
+	aux (forward! l) k
 );
-$defl! enlist-n (&ls &k &head &tail) accr-n (forward ls) k () head tail cons;
-$def! mapn $let ((&cenv make-environment (() get-current-environment))) wrap
+$defl! enlist-n (&ls &k &head &tail) accr-n (forward! ls) k () head tail cons;
+$def! mapn $let ((&se make-environment (() get-current-environment))) wrap
 (
-	$set! cenv cxrs $lambda/e (weaken-environment cenv) (&ls &cxr)
-		enlist-n (forward ls) (list-length ls) ($lambda (&l) cxr (firstv l))
+	$set! se cxrs $lambda/e (weaken-environment se) (&ls &sel)
+		enlist-n (forward ls) (list-length ls) ($lambda (&l) sel (firstv l))
 			rest;
-	$vau/e cenv (&n &appv .&ls) d enlist-n (forward ls) n
-		($lambda (&ls) apply appv (cxrs (forward ls) first) d)
+	$vau/e se (&n &appv .&ls) d enlist-n (forward! ls) n
+		($lambda (&ls) apply appv (cxrs (forward! ls) first) d)
 			($lambda (&ls) cxrs ls rest)
 );
 $defw! map-fromn (&appv .&ls) d
@@ -398,10 +397,10 @@ $defl! test (&i)
 		$let ()
 		(
 			$def! count $let
-				((&cenv make-environment (() get-current-environment)))
+				((&se make-environment (() get-current-environment)))
 			(
-				$set! cenv (wenv counter) list (weaken-environment cenv) 0;
-				$lambda/e cenv ()
+				$set! se (wenv counter) list (weaken-environment se) 0;
+				$lambda/e se ()
 				(
 					$set! wenv counter + counter 1;
 					counter
@@ -460,9 +459,9 @@ $defl! test (&i)
 	(
 		$def! $sequence
 		(
-			$lambda (&cenv) ($lambda #ignore $vau/e cenv body env
+			$lambda (&se) ($lambda #ignore $vau/e se body env
 				$if (null? body) #inert (eval (cons $aux body) env))
-				($setrec! cenv $aux $vau/e (weaken-environment cenv)
+				($setrec! se $aux $vau/e (weaken-environment se)
 					(&head .&tail) env
 					$if (null? tail) (eval head env) (($lambda #ignore
 						(eval (cons $aux tail) env)) (eval head env)))
