@@ -1,4 +1,8 @@
-﻿$def! $rem $vau . #ignore "";
+﻿"NOTE", "This is the NPL console basic derivation extension and test module.",
+	"For the test purpose, this file is deliberatedly kept as UTF-8+BOM",
+	"with LF as the EOL mark.";
+
+$def! $rem $vau . #ignore "";
 $def! $redef! $def!;
 $defv%! $unspecified ((&x .)) d forward (eval% x d);
 $defv! $defu! (&x .&xs) d eval (list $set! d x $unspecified xs) d;
