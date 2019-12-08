@@ -1,0 +1,705 @@
+﻿$def! $rem $vau . #ignore "";
+$def! $redef! $def!;
+$defv%! $unspecified ((&x .)) d forward (eval% x d);
+$defv! $defu! (&x .&xs) d eval (list $set! d x $unspecified xs) d;
+
+$import! std.strings string->symbol symbol->string ++ string<- string-empty?;
+$import! std.promises promise? memoize $lazy $lazy/e force;
+$import! env_SHBuild_ SHBuild_RaiseError_;
+
+"NOTE", "Core library.";
+"NOTE", "Definitions of id, idv, list, list&, $quote, $defl!, first, first&,",
+	" rest, rest%, rest& %YFramework.NPL.Dependency.";
+$defl! xcons (&x &y) cons y x;
+$defl! xcons% (&x &y) cons% y x;
+"NOTE", "Definitions of $set!, $defv!, $lambda, $setrec!, $defl!, first,",
+	" rest, apply, list*, $defw!, $lambda/e, $sequence,",
+	" get-current-environment, $cond, make-standard-environment, not?, $when,",
+	" $unless are in %YFramework.NPL.Dependency.";
+$defl! and? &x $sequence
+	($defl! and-aux? (&h &l) forward ($if (null? l) (forward h)
+		($sequence ($def! c first l) (and-aux? (forward ($if h c #f))
+			(rest% (forward l))))))
+	(forward (and-aux? #t (forward x)));
+$defl! or? &x $sequence
+	($defl! or-aux? (&h &l) forward ($if (null? l) (forward h)
+		($sequence ($def! c first l) (or-aux? (forward ($if c c h))
+			(rest% (forward l))))))
+	(forward (or-aux? #f (forward x)));
+"NOTE", "Definitions of $and?, $or?, first-null?,",
+	" list-rest%, accl, accr are in %YFramework.NPL.Dependency.";
+$defl! foldl1 (&kons &knil &l)
+	accl (forward l) null? knil first rest kons;
+$defw! map1-reverse (&appv &l) d foldl1
+	($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
+"NOTE", "Definitions of foldr1, map1, list-concat are in",
+	" %YFramework.NPL.Dependency.";
+$defl! list-copy-strict (l) foldr1 cons () (forward l);
+$defl! list-copy (obj) $if (list? obj) (list-copy-strict obj) obj;
+"NOTE", "Definitions of append is in %YFramework.NPL.Dependency.";
+$defl! reverse (&l) foldl1 cons () l;
+$defl! snoc (&x &r) (list-concat r (list x));
+$defl! snoc% (&x &r) (list-concat r (list% x));
+"NOTE", "Definitions of $let is in %YFramework.NPL.Dependency.";
+$defl! filter (&accept? &ls) apply append
+	(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
+$defl! reduce (&ls &bin &id) $cond
+	((null? ls) forward id)
+	((null? (rest& ls)) first (forward ls))
+	(#t bin (first (forward ls))
+		(reduce (rest% (forward ls)) bin (forward id)));
+$defl! assv (&object &alist) $let
+	((alist
+		filter ($lambda (&record) eqv? object (first record)) alist))
+		$if (null? alist) () (first alist);
+$defl! memv? (&object &ls)
+	apply or? (map1 ($lambda (&x) eqv? object x) ls);
+$defl! assq (&object &alist) $let
+	((alist filter ($lambda (&record) eq? object (first record)) alist))
+		($if (null? alist) () (first alist));
+$defl! memq? (&object &ls)
+	apply or? (map1 ($lambda (&x) eq? object x) ls);
+"TODO", "Provide 'eq%?' and 'equal%?'.";
+$defl! equal? (&x &y) $if ($and? (branch? x) (branch? y))
+	($and? (equal? (first x) (first y)) (equal? (rest x) (rest y)))
+	(eqv? x y);
+"NOTE", "Definitions of $let*, $letrec are in %YFramework.NPL.Dependency.";
+$defv%! $letrec* (&bindings .&body) d
+	eval% ($if (null? bindings) (list*% $letrec bindings body)
+		(list $letrec (list% (first bindings))
+		(list*% $letrec* (rest% bindings) body))) d;
+$defv%! $letrec*% (&bindings .&body) d
+	eval% ($if (null? bindings) (list*% $letrec% bindings body)
+		(list $letrec% (list% (first bindings))
+		(list*% $letrec*% (rest% bindings) body))) d;
+$defv! $let-safe (&bindings .&body) d
+	eval% (list* () $let/e
+		(() make-standard-environment) bindings body) d;
+$defv! $let-safe% (&bindings .&body) d
+	eval% (list* () $let/e%
+		(() make-standard-environment) bindings body) d;
+$defv! $remote-eval (&o &e) d eval o (eval e d);
+$defv! $remote-eval% (&o &e) d eval% o (eval e d);
+"NOTE", "Definitions of $bindings/p->environment, $bindings->environment,",
+	" $provide!, $import! are in %YFramework.NPL.Dependency.";
+$def! foldr $let ((&cenv () make-standard-environment)) wrap
+(
+	$set! cenv cxrs $lambda/e (weaken-environment cenv) (&ls cxr)
+		accr (forward ls) null? () ($lambda (&l) cxr (first l)) rest cons;
+	$vau/e cenv (kons knil .&ls) d
+		(accr (forward ls) unfoldable? knil ($lambda (&ls) cxrs ls
+			first)
+		($lambda (&ls) cxrs ls rest) ($lambda (&x &st)
+			apply kons (list-concat x (list st)) d))
+);
+$def! map $let ((&cenv () make-standard-environment)) wrap
+(
+	$set! cenv cxrs $lambda/e (weaken-environment cenv) (&ls cxr)
+		accr (forward ls) null? () ($lambda (&l) cxr (first l)) rest cons;
+	$vau/e cenv (appv .&ls) d accr (forward ls) unfoldable? ()
+		($lambda (&ls) cxrs ls first) ($lambda (&ls) cxrs ls rest)
+			($lambda (&x &xs) cons (apply appv x d) xs)
+);
+$defw! for-each-rtl &ls env $sequence (apply map ls env) #inert;
+"NOTE", "Definitions of unfoldable?, map-reverse for-each-ltr",
+	" are in %YFramework.NPL.Dependency.";
+
+"NOTE", "Environments library.";
+"NOTE", "Definitions of lock-current-environment, bound?, value-of is in",
+	" %YFramework.NPL.Dependency.";
+"NOTE", "Only '$binds?' is like in Kernel.";
+$defw! environment-bound? (&e &str) d
+	eval (list bound? str) (eval e d);
+"NOTE", "Definitions of $binds1? is in module std.environments in",
+	" %YFramework.NPL.Dependency.";
+$defv! $binds? (&e .&ss) d $let ((&senv eval e d))
+	foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
+
+"NOTE", "Type operation library.";
+$defl! ptype (&x) puts (nameof (typeid x));
+$defl! typeid-match? (&x &id) eqv? (get-typeid id) (typeid x);
+$defl! bool? (&x) typeid-match? x "bool";
+$defl! symbol? (&x) $and? (typeid-match? x "symbol")
+	(symbol-string? (symbol->string x));
+$defl! environment? (&x) $or? (typeid-match? x "environment")
+	(typeid-match? x "environment#owned");
+$defl! combiner? (&x) typeid-match? x "combiner";
+$defl! operative? (&x) $and? (combiner? x)
+	(eqv? (get-wrapping-count x) 0);
+$defl! applicative? (&x) $and? (combiner? x)
+	(not? (eqv? (get-wrapping-count x) 0));
+$defl! int? (&x) typeid-match? x "int";
+$defl! string? (&x) typeid-match? x "string";
+
+"NOTE", "String library.";
+$defl! retain-string (&str) ++ "\"" str "\"";
+
+"NOTE", "I/O library.";
+$defl! get-module (&filename .&opt)
+	$let ((&env () make-standard-environment)) $sequence
+		($unless (null? opt) ($set! env module-parameters (first& opt)))
+		(eval (list load filename) env) env;
+$defl! iput (&x) puts (itos x);
+$defl! b2str (&b) $if b "#t" "#f";
+$defl! bput (&b) put (b2str b);
+$defl! bputs (&b) puts (b2str b);
+
+$def! SS_TestOpts_QuickFail #t;
+$def! report-failure $if SS_TestOpts_QuickFail SHBuild_RaiseError_ puts;
+$defl! pass (.) puts "PASS.";
+$defl! fail-on-check (&expr &res) $sequence
+	(puts "FAIL: Check failed, with the expression:")
+	(display expr)
+	(puts "  with the result:")
+	(display res)
+	(report-failure "Test case failed.");
+$defl! fail-on-expect (&expr &res &expected) $sequence
+	(puts "FAIL: Check failed, with the expression:")
+	(display expr)
+	(puts "  with the result:")
+	(display (forward res))
+	(puts "  expected result:")
+	(display (forward expected))
+	(report-failure "Test case failed.");
+$defv! $check (.&expr) d
+	$let ((res eval expr d))
+		$if (res) (pass res) (fail-on-check expr res);
+$defv! $expect (&expected-expr .&expr) d
+	$let ((&res eval expr d) (&expected eval expected-expr d))
+		$if (equal? res expected) (pass res)
+			(fail-on-expect expr (forward res) (forward expected));
+$defl! putss (.&xs) puts (apply ++ xs);
+$defl! info (&msg) putss "Test case: " msg;
+$defl! subinfo (&msg) putss "Sub test case: " msg;
+
+$def! __make-stdenv copy-environment;
+$defl! list-rest (&x) list (rest x);
+$defu! for-each for-each-rtl for-each-ltr;
+$defl! add1 (&z) + z 1;
+$defl! max (&x &y) $if (>? x y) x y;
+$defl! min (&x &y) $if (<? x y) x y;
+$defl! first-length (&l) list-length (first l);
+$defl! maxlens (&l) accr l null? (first-length l) first-length rest& max;
+$defl! minlens (&l) accr l null? (first-length l) first-length rest& min;
+$defl! accr-n (&l &k &base &head &tail &sum)
+(
+	$defl! aux (&l n) ($if (=? n 0) (forward base) (sum (head (forward l))
+		(aux (tail (forward l)) (- n 1))));
+	aux (forward l) k
+);
+$defl! enlist-n (&ls &k &head &tail) accr-n (forward ls) k () head tail cons;
+$def! mapn $let ((&cenv make-environment (() get-current-environment))) wrap
+(
+	$set! cenv cxrs $lambda/e (weaken-environment cenv) (&ls &cxr)
+		enlist-n (forward ls) (list-length ls) ($lambda (&l) cxr (firstv l))
+			rest;
+	$vau/e cenv (&n &appv .&ls) d enlist-n (forward ls) n
+		($lambda (&ls) apply appv (cxrs (forward ls) first) d)
+			($lambda (&ls) cxrs ls rest)
+);
+$defw! map-fromn (&appv .&ls) d
+	apply mapn (list* (minlens ls) appv (forward ls)) d;
+$defw! map-strict (&appv .&ls) d
+	apply mapn (list* (maxlens ls) appv (forward ls)) d;
+
+$def! q-a 1;
+$def! q-b 4;
+$def! q-li list% q-a 2;
+$def! q-li2 list% 3 q-a;
+$def! q-li3 list q-li 2;
+$def! q-li4 list q-li2 3 4 5;
+
+$defl! test (&i)
+(
+	putss "Test case " (itos i) ":";
+	$cond
+	((eqv? i 1) (
+		$def! $sequence
+		(
+			wrap
+			(
+				$vau (&$seq2) #ignore $seq2
+					($defrec! $aux $vau/e (make-environment
+						(() get-current-environment) (() __make-stdenv))
+						(&first .&rest) env
+						($if (null? rest) (eval first env)
+							($seq2 (eval first env)
+								(eval (cons $aux rest) env))))
+					($vau/e (make-environment (() lock-current-environment)
+						(() __make-stdenv)) &body env
+						($if (null? body) #inert
+							(eval (cons $aux body) env)))
+			)
+		)
+		(
+			$vau (first second) d
+				(wrap ($vau #ignore #ignore (eval second d))) (eval first d)
+		);
+
+		$def! x "ss";
+		puts "testb";
+		$sequence (puts "a") (puts x) (puts "b") (puts x)
+	))
+	((eqv? i 2)
+	(
+		info "basic combiners";
+		subinfo "combiner equals";
+		$check eqv? (idv idv) idv;
+		$check not? (eqv? (wrap idv) idv);
+		$check eqv? (wrap idv) (wrap idv);
+		$check eqv? (wrap% idv) (wrap idv);
+		$check eqv? (wrap% idv) (wrap% idv);
+		$check eqv? (unwrap unwrap) (unwrap unwrap);
+		$def! idv wrap $quote;
+		$check eqv? (unwrap idv) $quote;
+		$check eqv? (unwrap (idv idv)) $quote;
+		$check eqv? (unwrap idv) (unwrap (idv idv));
+		$check eqv? (wrap (unwrap idv)) idv;
+		subinfo "regression for wrap/unwrap; fixed since b859";
+		((unwrap (unwrap (wrap (wrap ($quote)))))) ($quote id);
+		subinfo "test for ref&, etc.";
+		$def! x "xx";
+		$def! rx ref& x;
+		$def! $f1 wrap ($vau/e (() get-current-environment) () env
+			eval (list $sequence (puts x) (assign! x "yy") (puts x)
+				(string<- rx "ee") (puts rx)) env);
+		() $f1
+	))
+	((eqv? i 3)
+	(
+		info "basic combiner calls";
+		$defl! gg fm apply - fm;
+		$defv! $gg fm #ignore eval (list* - fm) (() get-current-environment);
+		$expect (- 0 1) gg 2 3;
+		$expect (- 0 1) $gg 3 4;
+	))
+	((eqv? i 4)
+	(
+		info "recursive functions";
+		subinfo "Fibonacci";
+		$defl! fib (&n) $if (<=? n 1) 1 (+ (fib (- n 1)) (fib (- n 2)));
+		$expect 8 (fib 5);
+		subinfo "Hofstadter Female and Male sequences";
+		$def! (F M) (list ($lambda (&n) $if (=? n 0) 1 (- n (M (F (- n 1)))))
+			($lambda (&n) $if (=? n 0) 0 (- n (F (M (- n 1))))));
+		$expect 5 F 7;
+		$expect 4 M 7;
+	))
+	((eqv? i 5)
+	(
+		info "logical operations";
+		subinfo "non-strict logical operations";
+		$expect #t () $and?;
+		$expect #f () $or?;
+		$expect #f $and? #f #f;
+		$expect #t $or? #f #t;
+		$expect 2 $and? 1 2;
+		$expect 1 $or? 1 #f;
+		$expect 2 $or? #f 2 #f 3;
+		subinfo "strict logical operations";
+		$expect #t () and?;
+		$expect #f () or?;
+		$expect #f and? #f #f;
+		$expect #t or? #f #t;
+		$expect 2 and? 1 2;
+		$expect 1 or? 1 #f;
+		$expect 3 or? #f 2 #f 3;
+		info "list and list utility tests";
+		$def! a list "2" "3";
+		subinfo "sublists eagar logical operations";
+		$expect (list 3 #f 2 #f)
+			list (and? 1 2 3) (and? 1 #f 3) (or? #f 2 #f) (or? #f #f);
+		subinfo "mapn";
+		$expect (list "246" "357")
+			mapn 2 ++ a (list "4" "5") (list "6" "7");
+		subinfo "map-fromn";
+		$expect (list "42" "53")
+			map-fromn ++ (list "4" "5") a;
+		$expect (list "421")
+			map-fromn ++ (list "4" "5") a (list "1");
+		subinfo "map-strict";
+		$expect (list "246" "357")
+			map-strict ++ a (list "4" "5") (list "6" "7");
+		subinfo "map";
+		$expect (list "42" "53")
+			map ++ (list "4" "5") a;
+		$expect (list (list (list 2)) (list (list 4)) (list (list 6)))
+			map list-rest (list (list 1 2) (list 3 4) (list 5 6));
+		$expect (list 5 7 9)
+			map + (list 1 2 3) (list 4 5 6);
+		$expect (list "421")
+			map ++ (list "4" "5") a (list "1");
+		subinfo "filter";
+		$expect (list "2" "3" "1" "2")
+			filter ($lambda (s) not? (string-empty? s))
+				(append a (list "" "1" "" "2"));
+		subinfo "assv";
+		$expect (list 1 "l")
+			assv 1 (list (list 9 2) (list 1 "l") (list 3 4) (list 1 3));
+		subinfo "memv?";
+		$check memv? 1 (list 1 2 4);
+		subinfo "reduce";
+		$expect 10 reduce (list 1 2 3 4) + 5;
+		subinfo "foldr";
+		$expect (list 6 1)
+			foldr ($lambda (&x &y) list (+ x (first y)) x) (list 0 0 0)
+				(list 1 2 3);
+	))
+	((eqv? i 6)
+	(
+		info "well-formed list function definitions";
+		$defl! fold* (&kons &head .&tail) $if (null? tail) head
+			(kons head (apply fold* (cons kons tail)));
+		$defl! xlist* (.&xs) apply fold* (cons cons xs);
+	))
+	((eqv? i 7)
+	(
+		info "local bindings";
+		subinfo "$let";
+		$expect 5 $let ((&x 2) (&y 3)) + x y;
+		subinfo "$let*";
+		$expect 4 $let* ((&x 2) (&y x)) + x y;
+		subinfo "$letrec";
+		$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
+		subinfo "$letrec*";
+		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z;
+	))
+	((eqv? i 8)
+	(
+		info "environment separations";
+		subinfo "simple environment separation";
+		$let ()
+		(
+			$def! count 0;
+			$def! ez () get-current-environment;
+			$defl! ax () $set! ez count + 1 count;
+			() ax;
+			$expect 1 count;
+		);
+		subinfo "$let count";
+		$let ()
+		(
+			$def! count $let ((&counter 0))
+			(
+				$def! self () get-current-environment;
+				$lambda/e (lock-environment self) ()
+				(
+					$set! self counter + counter 1;
+					counter
+				)
+			);
+			$expect 1 () count
+		);
+		subinfo "$let count in new environment";
+		$let ()
+		(
+			$def! count $let
+				((&cenv make-environment (() get-current-environment)))
+			(
+				$set! cenv (wenv counter) list (weaken-environment cenv) 0;
+				$lambda/e cenv ()
+				(
+					$set! wenv counter + counter 1;
+					counter
+				)
+			);
+			$expect 1 () count
+		);
+		subinfo "$letrec count";
+		$let ()
+		(
+			$def! count $letrec
+			(
+				(self () get-current-environment)
+				(counter 0)
+			)
+			(
+				$lambda/e (lock-environment self) ()
+				(
+					$set! self counter + counter 1;
+					counter
+				)
+			);
+			$expect 1 () count
+		);
+		subinfo "$bindings->environment";
+		$let ()
+		(
+			$def! e $bindings->environment (x 1) (y 2);
+			$expect 3 eval (list + (string->symbol "x") (string->symbol "y")) e;
+		)
+	))
+	((eqv? i 9)
+	(
+		info "let* environment encapsulation";
+		$expect (list 3 2 1)
+			$let* ((count 0) (env (() get-current-environment)))
+				map ($lambda (#ignore) (($set! env count add1 count); count))
+				(list 9 8 7)
+	))
+	((eqv? i 10)
+	(
+		info "Y combinatior";
+		$defl! Y (f) ($lambda (&h) h h)
+			(wrap ($vau/e (() copy-environment) (x) #ignore f
+				(wrap ($vau/e (() copy-environment) z #ignore
+					(apply (x x) z)))));
+		$def! fact Y ($lambda (&f)
+			wrap ($vau/e (() copy-environment) (z) #ignore
+				$if (eqv? z 0) 1 (* z (f (- z 1)))));
+		$def! fib Y ($lambda (&f)
+			wrap ($vau/e (() copy-environment) (n) #ignore
+				$if (<? n 2) n (+ (f (- n 1)) (f (- n 2)))));
+		(list (fact 5) (fib 5))
+	))
+	((eqv? i 11)
+	(
+		$def! $sequence
+		(
+			$lambda (&cenv) ($lambda #ignore $vau/e cenv body env
+				$if (null? body) #inert (eval (cons $aux body) env))
+				($setrec! cenv $aux $vau/e (weaken-environment cenv)
+					(&head .&tail) env
+					$if (null? tail) (eval head env) (($lambda #ignore
+						(eval (cons $aux tail) env)) (eval head env)))
+		)
+		(
+			() make-standard-environment
+		);
+
+		$def! x "ss";
+		puts "testb";
+		$sequence (puts "a") (puts x) (puts "b") (puts x)
+	))
+	((eqv? i 12)
+	(
+		info "list operations";
+		subinfo "list access";
+		list% q-li q-li2
+			(idv (first q-li)) (rest q-li)
+			(idv (first q-li2)) (rest q-li2)
+			(first q-li) (rest% q-li)
+			(first q-li2) (rest% q-li2)
+			(first& q-li) (rest& q-li)
+			(first& q-li2) (rest& q-li2)
+			(list*% q-a 1 2 (list% q-a 1 2))
+			(list-concat (list 1 2) q-li)
+			(append q-li (list 1 2) q-li2 (list 3 q-a))
+			($let ((&q-b q-a)) q-b)
+			($let* ((&q-b q-a) (&q-c q-b)) q-c)
+			(first& (first& q-li3))
+			(rest& (first& q-li3))
+			(first (rest& q-li3))
+			(rest% (rest& q-li3));
+		subinfo "list lambda binding";
+		apply ($lambda% (&x &y) x) (list% q-li q-li2);
+		subinfo "list algorithms";
+		reduce (list% q-li q-li2 q-li q-li2) ($lambda% (&x &y) x) q-li;
+		subinfo "list modification";
+		$let ()
+		(
+			set-first! q-li q-b;
+			set-first%! q-li q-b;
+			set-first! q-li 5;
+			set-first%! q-li 7;
+			set-rest! q-li q-li;
+			set-rest%! q-li q-li2;
+			cons% q-li q-li;
+			display (first& (first& q-li4));
+			set-first! (first& q-li4) (list () 2);
+			display (rest& (first& q-li4));
+			display q-li4
+		);
+	))
+	((eqv? i 13)
+	(
+		info "make-encapsulation-type";
+		$let ()
+		(
+			$def! (e p? d) () make-encapsulation-type;
+			p? 1;
+			$def! enc e 1;
+			$expect #t p? enc;
+			$expect #f p? "str";
+			$expect 1 d enc;
+			$expect 2 d (e 2);
+		)
+	))
+	((eqv? i 14)
+	(
+		info "eval-string and eval-unit";
+		$let ()
+		(
+			$import! std.environments eval-string eval-unit get-current-repl;
+			eval-string "1" (() get-current-environment);
+			eval-unit "1;" (() get-current-repl)
+		)
+	))
+	((eqv? i 15)
+	(
+		info "$provide!";
+		$let ()
+		(
+			$def! ee $provide! (a) $def! a 42;
+			$def! el ();
+			$def! b ($lambda (() a ()) a) () a el;
+			$expect 42 a;
+			$expect 42 b
+		)
+	))
+	((eqv? i 16)
+		info "promises";
+		subinfo "test #1 (as RnRK)";
+		$let ()
+		(
+			$def! env_tmp_ $provide! (get-count pb) $sequence
+				($def! count 5)
+				($defl! get-count () count)
+				($def! p ($let ((self () get-current-environment))
+					(
+						$set! self saved_ () lock-current-environment;
+						$lazy $if (<=? count 0) count
+							($sequence
+								($set! self count (- count 1))
+								(force p)
+								($set! self count (+ count 2))
+								count)
+					)
+				))
+				($def! pb box% p);
+			$expect 5 (() get-count);
+			$expect 0 (force (unbox pb));
+			$expect 10 (() get-count);
+		);
+		subinfo "test #2 (as RnRK)";
+		$let ()
+		(
+			puts "expect output: single line of \"*\"";
+			$def! p1 $lazy (puts "*");
+			$def! p2 $lazy p1;
+			force p2;
+			force p1
+		);
+		subinfo "test #3 (as RnRK)";
+		$let ()
+		(
+			$def! maxn 3;
+			$defl! stream-filter (p? s)
+			(
+				$lazy/e (() lock-current-environment) $let ((v (force s)))
+				(
+					$if (null? v) v
+					(
+						$let ((s stream-filter p? (first (rest& v))))
+							$if (p? (first& v)) (list (first v) s) s
+					)
+				)
+			);
+			$defl! from (n)
+				$lazy/e (() lock-current-environment) list n (from (+ n 1));
+			force (stream-filter ($lambda (n) eqv? n maxn) (from 0));
+		)
+	)
+	((eqv? i 17)
+		info "equal? + fwd?";
+		puts "expect result: #t";
+		$def! fwd? $vau% (&x) d
+			($lambda% (%v) bound-lvalue? ($resolve-identifier v))
+				(eval% x d);
+		$expect (list% #f #f #t #t #f)
+			list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
+				(fwd? (idv fwd?));
+	)
+	((eqv? i 18)
+		info "reference collapsing and reference assignment";
+		$def! (a b) list 1 2;
+		$def! li list% a 2;
+		$def! li2 list% 3 4;
+		subinfo "expecting different results for 'first&' and 'first@'";
+		$expect #f eq? (first& li) (first@ li);
+		subinfo "collapsing test";
+		$expect #t (reference? (first@ li));
+		$expect #t (uncollapsed? (first@ li));
+		$expect #t (reference? (idv (first@ li)));
+		$expect #f (uncollapsed? (idv (first@ li)));
+		subinfo "expecting prvalue for reference to reference";
+		$expect 1 idv (idv (first@ li));
+		$expect 1 idv (idv ((wrap ($vau% (%x) #ignore x)) (first@ li)));
+		$expect 1 idv (idv (($lambda% (%x) x) (first@ li)));
+		subinfo "expecting a reference to object";
+		assign%! b (first@ li);
+		display b;
+		subinfo "expecting a reference to object as first element";
+		set-first%! li2 (first@ li);
+		display li2;
+		subinfo "expecting a reference to reference";
+		assign@! b (first@ li);
+		display b;
+		subinfo "expecting a reference to reference as first element";
+		set-first@! li2 (first@ li);
+		display li2;
+		$rem "Following shall signal an error.";
+		$rem set-first%! (first@ li);
+	)
+	((eqv? i 19)
+		info "arithmetic tests";
+		$rem (
+			"The following Kernel code conforms to PTC.";
+			($define! solve ($lambda (n) ($let ((x (* n n)))
+				($if ($and? (=? (div x 1000) (mod (div x 100) 10))
+				(=? (div (mod x 100) 10) (mod x 10))) x (solve (+ n 1))))))
+			(solve 80)
+		);
+		$defl! solve (n) $let ((x * n n))
+			$if ($and? (=? (/ x 1000) (% (/ x 100) 10))
+				(=? (/ (% x 100) 10) (% x 10)))
+			x (solve (+ n 1));
+		$expect 7744 (solve 80)
+	)
+	((eqv? i 20)
+		info "test case for reduce";
+		$defl! |> (&f &g) $lambda/e% ($bindings/p->environment
+			((() make-standard-environment)) (&f (forward f)) (&g (forward g)))
+			(&x) (forward g) ((forward f) (forward x));
+		$defl! double (n) * n 2;
+		$defl! increment (n) + n 1;
+		$expect 42 double (increment (double (double 5)));
+		$expect 42 (|> (|> (|> double double) increment) double) 5;
+		$defl! pipes (fs x) (reduce fs |> idv) x;
+		$expect 42 pipes (list double double increment double) 5;
+	)
+	(#t "No case found.")
+);
+
+$defl! teste (i)
+(
+	$cond
+	((eqv? i 1) (
+		map-strict ++ (list "4" "5") (list "1")
+	))
+	((eqv? i 2) (
+		$let ((&x 2) (&y x)) + x y
+	))
+	((eqv? i 3) (
+		$letrec ((&x 2) (&y x)) + x y
+	))
+	((eqv? i 4) (
+		$defl! fn (w x) fn
+			($lambda (x) w (w x))
+			(puts (itos (get-wrapping-count x)); w (w x));
+		fn wrap (wrap-n fn (- 0 42))
+	))
+	(#t "No case found.")
+);
+
+$defl! iota (&x) $if (eqv? x 0) (() list) (list-concat (iota (- x 1)) (list x));
+$defl! iota-range (first last) $if (<? first last) (cons first (iota-range (+ first 1) last)) ();
+
+$defl! test-in (&l) for-each-ltr test l;
+$defl! test-range (first last) test-in (iota-range first last);
+$defl! test-seq (i) test-in (iota i);
+$defl! test-all () test-seq 20;
+$defl! teste-all () for-each-ltr teste (list 1);
+
+$def! ll ($lambda () load-at-root "0.txt");
+
