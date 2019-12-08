@@ -1,5 +1,7 @@
-﻿"NOTE", "This is the NPL console basic derivation extension and test module.",
-	"For the test purpose, this file is deliberatedly kept as UTF-8+BOM",
+﻿"#", "(C) 2017-2019 FrankHB.",
+"NPLC basic derivation extension and test module.";
+
+"NOTE", "For the test purpose, this file is deliberatedly kept as UTF-8+BOM",
 	"with LF as the EOL mark.";
 
 $def! $rem $vau . #ignore "";
