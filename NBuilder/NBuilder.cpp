@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7698
+\version r7712
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-12-08 19:28 +0800
+	2019-12-08 19:32 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -347,13 +347,24 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Definitions of eq?, eql?, eqr?, eqv? are in
 	//	%YFramework.NPL.Dependency.
-	// NOTE: Definitions of $if is in %YFramework.NPL.Dependency.
+	// NOTE: Definition of $if is in %YFramework.NPL.Dependency.
 	RegisterUnary<Strict, const string>(rctx, "symbol-string?", IsSymbol);
 	RegisterUnary<>(rctx, "list?", ComposeReferencedTermOp(IsList));
 	RegisterUnary<>(rctx, "listv?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
-	// NOTE: Definitions of null?, cons, cons%, set-first!, set-first%!,
-	//	set-rest!, set-rest%!, eval, copy-environment, lock-current-environment,
+	// NOTE: Definitions of null?, nullv?, reference?, bound-lvalue?,
+	//	uncollapsed?, unique?, move!, transfer!, deshare, expire are in
+	//	%YFramework.NPL.Dependency.
+	RegisterStrict(rctx, "as-const", [](TermNode& term){
+		return Forms::CallRawUnary([&](TermNode& tm){
+			if(const auto p = NPL::TryAccessLeaf<TermReference>(tm))
+				p->SetTags(p->GetTags() | TermTags::Nonmodifying);
+			LiftTerm(term, tm);
+			return ReductionStatus::Retained;
+		}, term);
+	});
+	// NOTE: Definitions of ref&, assign@!, cons, cons%, set-rest!, set-rest%!,
+	//	eval, eval%, copy-environment, lock-current-environment,
 	//	lock-environment, make-environment, weaken-environment are in
 	//	%YFramework.NPL.Dependency.
 	RegisterUnary<>(rctx, "resolve-environment", [](const TermNode& term){
