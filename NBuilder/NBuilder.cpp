@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7688
+\version r7698
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-11-10 05:40 +0800
+	2019-12-08 19:28 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -44,9 +44,17 @@ namespace NPL
 {
 
 /// 868
-#define NPL_Impl_NBuilder_EnableDebugAction false
+#ifdef NDEBUG
+#	define NPL_Impl_NBuilder_EnableDebugAction false
+#else
+#	define NPL_Impl_NBuilder_EnableDebugAction true
+#endif
 /// 860
-#define NPL_Impl_NBuilder_TestTemporaryOrder false
+#ifdef NDEBUG
+#	define NPL_Impl_NBuilder_TestTemporaryOrder false
+#else
+#	define NPL_Impl_NBuilder_EnableDebugAction true
+#endif
 
 namespace A1
 {
