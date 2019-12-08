@@ -217,6 +217,8 @@ $defl! test (&i)
 	putss "Test case " (itos i) ":";
 	$cond
 	((eqv? i 1) (
+		info "sanity";
+		subinfo "sequence and __make-stdenv";
 		$def! $sequence
 		(
 			wrap
@@ -245,7 +247,7 @@ $defl! test (&i)
 	))
 	((eqv? i 2)
 	(
-		info "basic combiners";
+		info "combiner operations";
 		subinfo "combiner equals";
 		$check eqv? (idv idv) idv;
 		$check not? (eqv? (wrap idv) idv);
@@ -270,7 +272,8 @@ $defl! test (&i)
 	))
 	((eqv? i 3)
 	(
-		info "basic combiner calls";
+		info "funtion calls";
+		subinfo "basic combiner calls";
 		$defl! gg fm apply - fm;
 		$defv! $gg fm #ignore eval (list* - fm) (() get-current-environment);
 		$expect (- 0 1) gg 2 3;
@@ -307,6 +310,9 @@ $defl! test (&i)
 		$expect 2 and? 1 2;
 		$expect 1 or? 1 #f;
 		$expect 3 or? #f 2 #f 3;
+	))
+	((eqv? i 6)
+	(
 		info "list and list utility tests";
 		$def! a list "2" "3";
 		subinfo "sublists eagar logical operations";
@@ -344,18 +350,36 @@ $defl! test (&i)
 		subinfo "reduce";
 		$expect 10 reduce (list 1 2 3 4) + 5;
 		subinfo "foldr";
+		$def! a0 0;
+		$def! a1 1;
+		$def! li1 list% 4 5 a1;
 		$expect (list 6 1)
-			foldr ($lambda (&x &y) list (+ x (first y)) x) (list 0 0 0)
-				(list 1 2 3);
-	))
-	((eqv? i 6)
-	(
+			foldr ($lambda (&x &y) list (+ x (first y)) x) (list% 0 a0 0)
+				(list a1 2 3);
+		$expect (list 16 1)
+			foldr ($lambda (&x &y &s) list (+ x y (first s)) x) (list% 0 a0 0)
+				(list% a1 2 3) (list% 4 5 a1);
 		info "well-formed list function definitions";
 		$defl! fold* (&kons &head .&tail) $if (null? tail) head
 			(kons head (apply fold* (cons kons tail)));
 		$defl! xlist* (.&xs) apply fold* (cons cons xs);
 	))
 	((eqv? i 7)
+	(
+		info "environment basic operations";
+		subinfo "test case for freeze-environment!";
+		$def! e0 make-environment (() get-current-environment);
+		$set! e0 q0 0;
+		$def! e1 make-environment e0;
+		$set! e1 q1 1;
+		$set! e1 q2 2;
+		freeze-environment! e0;
+		eval ($quote (
+			$rem assign! q1 1;
+			$rem $def! q2 2;
+		)) e1;
+	))
+	((eqv? i 8)
 	(
 		info "local bindings";
 		subinfo "$let";
@@ -367,9 +391,9 @@ $defl! test (&i)
 		subinfo "$letrec*";
 		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z;
 	))
-	((eqv? i 8)
+	((eqv? i 9)
 	(
-		info "environment separations";
+		info "environment encapsulation";
 		subinfo "simple environment separation";
 		$let ()
 		(
@@ -430,11 +454,8 @@ $defl! test (&i)
 		(
 			$def! e $bindings->environment (x 1) (y 2);
 			$expect 3 eval (list + (string->symbol "x") (string->symbol "y")) e;
-		)
-	))
-	((eqv? i 9)
-	(
-		info "let* environment encapsulation";
+		);
+		subinfo "let* environment encapsulation";
 		$expect (list 3 2 1)
 			$let* ((count 0) (env (() get-current-environment)))
 				map ($lambda (#ignore) (($set! env count add1 count); count))
@@ -643,6 +664,47 @@ $defl! test (&i)
 		display li2;
 		$rem "Following shall signal an error.";
 		$rem set-first%! (first@ li);
+		subinfo "id and reference tests";
+		$def! a 1;
+		$def! b 2;
+		$def! li list% a 2;
+		assign@! b (first@ li);
+		$expect #f eqv? (id b) 1;
+		$def! b 2;
+		$def! li list% a 2;
+		assign@! b (first@ li);
+		$expect #t reference? (id b);
+		$def! b 2;
+		$def! li list% a 2;
+		assign@! b (first@ li);
+		$expect #t uncollapsed? (id b);
+		$def! b 2;
+		$def! li list% a 2;
+		assign@! b (first@ li);
+		$expect #t eqv? (idv (idv (id b))) 1;
+		subinfo "idv move! tests";
+		$expect #t eqv? (idv (move! 42)) 42;
+		$def! b 2;
+		$def! li list% a 2;
+		assign@! b (first@ li);
+		$expect #t eqv? (idv (move! b)) 1;
+		$def! b 2;
+		$def! li list% a 2;
+		assign@! b (first@ li);
+		$expect #f reference? (idv (move! b));
+		subinfo "move! tests";
+		$def! b 2;
+		$def! li list% a 2;
+		assign@! b (first@ li);
+		$expect #t eqv? (move! b) 1;
+		$def! b 2;
+		$def! li list% a 2;
+		assign@! b (first@ li);
+		$expect #t reference? (move! b);
+		$def! b 2;
+		$def! li list% a 2;
+		assign@! b (first@ li);
+		$expect #f uncollapsed? (move! b);
 	)
 	((eqv? i 19)
 		info "arithmetic tests";
