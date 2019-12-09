@@ -320,6 +320,10 @@ $defl! test (&i)
 		subinfo "sublists eagar logical operations";
 		$expect (list 3 #f 2 #f)
 			list (and? 1 2 3) (and? 1 #f 3) (or? #f 2 #f) (or? #f #f);
+		subinfo "map1";
+		$expect (list% id 2 3) map1 id (list% id 2 3);
+		$expect (list "afx" "bfx" "cfx")
+			map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
 		subinfo "mapn";
 		$expect (list "246" "357")
 			mapn 2 ++ a (list "4" "5") (list "6" "7");
