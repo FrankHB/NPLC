@@ -198,14 +198,14 @@ $def! mapn $let ((&se make-environment (() get-current-environment))) wrap
 	$set! se cxrs $lambda/e (weaken-environment se) (&ls &sel)
 		enlist-n (forward ls) (list-length ls) ($lambda (&l) sel (firstv l))
 			rest;
-	$vau/e se (&n &appv .&ls) d enlist-n (forward! ls) n
+	$vau/e se (&n &appv .&ls) d enlist-n (move! ls) n
 		($lambda (&ls) apply appv (cxrs (forward! ls) first) d)
 			($lambda (&ls) cxrs ls rest)
 );
 $defw! map-fromn (&appv .&ls) d
-	apply mapn (list* (minlens ls) appv (forward ls)) d;
+	apply mapn (list* (minlens ls) appv (move! ls)) d;
 $defw! map-strict (&appv .&ls) d
-	apply mapn (list* (maxlens ls) appv (forward ls)) d;
+	apply mapn (list* (maxlens ls) appv (move! ls)) d;
 
 $def! q-a 1;
 $def! q-b 4;
