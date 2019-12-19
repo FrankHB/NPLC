@@ -320,6 +320,16 @@ $defl! test (&i)
 		subinfo "sublists eagar logical operations";
 		$expect (list 3 #f 2 #f)
 			list (and? 1 2 3) (and? 1 #f 3) (or? #f 2 #f) (or? #f #f);
+		subinfo "accr";
+		accr (list (list "2") (list "3")) null? () first rest%
+			($lambda% (&x &y) accr (forward x) null? y first rest% cons%);
+		subinfo "foldr1";
+		$expect (list "2" "3")
+			foldr1 list-concat () (list (list "2") (list "3"));
+		subinfo "list-concat";
+		$expect (list "2" "3") list-concat (list "2") (list "3");
+		subinfo "append";
+		$expect (list% "2" id) append (list "2") (list% id);
 		subinfo "map1";
 		$expect (list% id 2 3) map1 id (list% id 2 3);
 		$expect (list "afx" "bfx" "cfx")
