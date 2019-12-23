@@ -34,7 +34,7 @@ $defl%! or? &x $sequence
 "NOTE", "Definitions of $and?, $or?, first-null?,",
 	" list-rest%, accl, accr are in %YFramework.NPL.Dependency.";
 $defl! foldl1 (&kons &knil &l)
-	accl (forward! l) null? knil first rest kons;
+	accl (forward! l) null? (forward! knil) first-forward! rest kons;
 $defw! map1-reverse (&appv &l) d foldl1
 	($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
 "NOTE", "Definitions of foldr1, map1, list-concat are in",
