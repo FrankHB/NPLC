@@ -305,6 +305,46 @@ $defl! test (&i)
 	))
 	((eqv? i 6)
 	(
+		info "list operations";
+		subinfo "list access";
+		list% q-li q-li2
+			(idv (first q-li)) (rest q-li)
+			(idv (first q-li2)) (rest q-li2)
+			(first q-li) (rest% q-li)
+			(first q-li2) (rest% q-li2)
+			(first& q-li) (rest& q-li)
+			(first& q-li2) (rest& q-li2)
+			(list*% q-a 1 2 (list% q-a 1 2))
+			(list-concat (list 1 2) q-li)
+			(append q-li (list 1 2) q-li2 (list 3 q-a))
+			($let ((&q-b q-a)) q-b)
+			($let* ((&q-b q-a) (&q-c q-b)) q-c)
+			(first& (first& q-li3))
+			(rest& (first& q-li3))
+			(first (rest& q-li3))
+			(rest% (rest& q-li3));
+		subinfo "list lambda binding";
+		apply ($lambda% (&x &y) x) (list% q-li q-li2);
+		subinfo "list algorithms";
+		reduce (list% q-li q-li2 q-li q-li2) ($lambda% (&x &y) x) q-li;
+		subinfo "list modification";
+		$let ()
+		(
+			set-first! q-li q-b;
+			set-first%! q-li q-b;
+			set-first! q-li 5;
+			set-first%! q-li 7;
+			set-rest! q-li q-li;
+			set-rest%! q-li q-li2;
+			cons% q-li q-li;
+			display (first& (first& q-li4));
+			set-first! (first& q-li4) (list () 2);
+			display (rest& (first& q-li4));
+			display q-li4
+		);
+	))
+	((eqv? i 7)
+	(
 		info "list and list utility tests";
 		$def! a list "2" "3";
 		subinfo "sublists eagar logical operations";
@@ -370,7 +410,7 @@ $defl! test (&i)
 			(kons head (apply fold* (cons kons tail)));
 		$defl! xlist* (.&xs) apply fold* (cons cons xs);
 	))
-	((eqv? i 7)
+	((eqv? i 8)
 	(
 		info "environment basic operations";
 		subinfo "test case for freeze-environment!";
@@ -385,7 +425,7 @@ $defl! test (&i)
 			$rem $def! q2 2;
 		)) e1;
 	))
-	((eqv? i 8)
+	((eqv? i 9)
 	(
 		info "local bindings";
 		subinfo "$let";
@@ -397,7 +437,7 @@ $defl! test (&i)
 		subinfo "$letrec*";
 		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z;
 	))
-	((eqv? i 9)
+	((eqv? i 10)
 	(
 		info "environment encapsulation";
 		subinfo "simple environment separation";
@@ -467,7 +507,7 @@ $defl! test (&i)
 				map ($lambda (#ignore) (($set! env count add1 count); count))
 				(list 9 8 7)
 	))
-	((eqv? i 10)
+	((eqv? i 11)
 	(
 		info "Y combinatior";
 		$defl! Y (f) ($lambda (&h) h h)
@@ -482,7 +522,7 @@ $defl! test (&i)
 				$if (<? n 2) n (+ (f (- n 1)) (f (- n 2)))));
 		(list (fact 5) (fib 5))
 	))
-	((eqv? i 11)
+	((eqv? i 12)
 	(
 		$def! $sequence
 		(
@@ -500,46 +540,6 @@ $defl! test (&i)
 		$def! x "ss";
 		puts "testb";
 		$sequence (puts "a") (puts x) (puts "b") (puts x)
-	))
-	((eqv? i 12)
-	(
-		info "list operations";
-		subinfo "list access";
-		list% q-li q-li2
-			(idv (first q-li)) (rest q-li)
-			(idv (first q-li2)) (rest q-li2)
-			(first q-li) (rest% q-li)
-			(first q-li2) (rest% q-li2)
-			(first& q-li) (rest& q-li)
-			(first& q-li2) (rest& q-li2)
-			(list*% q-a 1 2 (list% q-a 1 2))
-			(list-concat (list 1 2) q-li)
-			(append q-li (list 1 2) q-li2 (list 3 q-a))
-			($let ((&q-b q-a)) q-b)
-			($let* ((&q-b q-a) (&q-c q-b)) q-c)
-			(first& (first& q-li3))
-			(rest& (first& q-li3))
-			(first (rest& q-li3))
-			(rest% (rest& q-li3));
-		subinfo "list lambda binding";
-		apply ($lambda% (&x &y) x) (list% q-li q-li2);
-		subinfo "list algorithms";
-		reduce (list% q-li q-li2 q-li q-li2) ($lambda% (&x &y) x) q-li;
-		subinfo "list modification";
-		$let ()
-		(
-			set-first! q-li q-b;
-			set-first%! q-li q-b;
-			set-first! q-li 5;
-			set-first%! q-li 7;
-			set-rest! q-li q-li;
-			set-rest%! q-li q-li2;
-			cons% q-li q-li;
-			display (first& (first& q-li4));
-			set-first! (first& q-li4) (list () 2);
-			display (rest& (first& q-li4));
-			display q-li4
-		);
 	))
 	((eqv? i 13)
 	(
