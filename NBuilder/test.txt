@@ -87,24 +87,14 @@ $defv! $remote-eval (&o &e) d eval o (eval e d);
 $defv! $remote-eval% (&o &e) d eval% o (eval e d);
 "NOTE", "Definitions of $bindings/p->environment, $bindings->environment,",
 	" $provide!, $import! are in %YFramework.NPL.Dependency.";
-$def! foldr $let ((&cenv () make-standard-environment)) wrap
-(
-	$set! cenv cxrs $lambda/e (weaken-environment cenv) (&ls cxr)
-		accr (forward ls) null? () ($lambda (&l) cxr (first l)) rest cons;
-	$vau/e cenv (kons knil .&ls) d
-		(accr (forward ls) unfoldable? knil ($lambda (&ls) cxrs ls
-			first)
-		($lambda (&ls) cxrs ls rest) ($lambda (&x &st)
-			apply kons (list-concat x (list st)) d))
-);
-$def! map $let ((&cenv () make-standard-environment)) wrap
-(
-	$set! cenv cxrs $lambda/e (weaken-environment cenv) (&ls cxr)
-		accr (forward ls) null? () ($lambda (&l) cxr (first l)) rest cons;
-	$vau/e cenv (appv .&ls) d accr (forward ls) unfoldable? ()
-		($lambda (&ls) cxrs ls first) ($lambda (&ls) cxrs ls rest)
-			($lambda (&x &xs) cons (apply appv x d) xs)
-);
+$defw%! foldr (&kons &knil .&ls) d
+	accr (move! ls) unfoldable? (forward! knil) list-extract-first-forward!
+		list-extract-rest%
+		($lambda (&x &st) apply kons (list-concat x (list% (forward! st))) d);
+$defw%! map (&appv .&ls) d
+	accr (move! ls) unfoldable? () list-extract-first-forward!
+		list-extract-rest%
+		($lambda (&x &xs) cons% (apply appv (forward! x) d) xs);
 $defw! for-each-rtl &ls env $sequence (apply map ls env) #inert;
 "NOTE", "Definitions of unfoldable?, map-reverse for-each-ltr",
 	" are in %YFramework.NPL.Dependency.";
