@@ -306,6 +306,12 @@ $defl! test (&i)
 	((eqv? i 6)
 	(
 		info "list operations";
+		$def! a list 2 3;
+		subinfo "list lvalue elements read and move";
+		$expect 2 first (id a);
+		$expect 2 first a;
+		$expect 2 first (expire a);
+		$expect () first a;
 		subinfo "list access";
 		list% q-li q-li2
 			(idv (first q-li)) (rest q-li)
