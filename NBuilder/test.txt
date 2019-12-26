@@ -15,13 +15,13 @@ $import! env_SHBuild_ SHBuild_RaiseError_;
 
 "NOTE", "Core library.";
 "NOTE", "Definitions of id, idv, list, list&, $quote, $defl!, first, first&,",
-	" rest, rest%, rest& %YFramework.NPL.Dependency.";
+	" restv, rest%, rest& %YFramework.NPL.Dependency.";
 $defl! xcons (&x &y) cons y x;
 $defl! xcons% (&x &y) cons% y x;
-"NOTE", "Definitions of $set!, $defv!, $lambda, $setrec!, $defl!, first,",
-	" rest, apply, list*, $defw!, $lambda/e, $sequence,",
-	" get-current-environment, $cond, make-standard-environment, not?, $when,",
-	" $unless are in %YFramework.NPL.Dependency.";
+"NOTE", "Definitions of $set!, $defv!, $lambda, $setrec!, $defl!,",
+	" apply, list*, $defw!, $lambda/e, $sequence, get-current-environment,",
+	" $cond, make-standard-environment, not?, $when, $unless are in",
+	" %YFramework.NPL.Dependency.";
 $defl%! and? &x $sequence
 	($defl%! and-aux? (&h &l) $if (null? l) (forward! h)
 		(and-aux? ($if h (first (forward l)) #f) (rest% (forward l))))
@@ -34,7 +34,7 @@ $defl%! or? &x $sequence
 "NOTE", "Definitions of $and?, $or?, first-null?,",
 	" list-rest%, accl, accr are in %YFramework.NPL.Dependency.";
 $defl! foldl1 (&kons &knil &l)
-	accl (forward! l) null? (forward! knil) first-forward! rest kons;
+	accl (forward! l) null? (forward! knil) first-forward! rest% kons;
 $defw! map1-reverse (&appv &l) d foldl1
 	($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
 "NOTE", "Definitions of foldr1, map1, list-concat are in",
@@ -66,7 +66,7 @@ $defl! memq? (&object &ls)
 	apply or? (map1 ($lambda (&x) eq? object x) ls);
 "TODO", "Provide 'eq%?' and 'equal%?'.";
 $defl! equal? (&x &y) $if ($and? (branch? x) (branch? y))
-	($and? (equal? (first x) (first y)) (equal? (rest x) (rest y)))
+	($and? (equal? (first x) (first y)) (equal? (restv x) (restv y)))
 	(eqv? x y);
 "NOTE", "Definitions of $let*, $letrec are in %YFramework.NPL.Dependency.";
 $defv%! $letrec* (&bindings .&body) d
@@ -168,7 +168,7 @@ $defl! info (&msg) putss "Test case: " msg;
 $defl! subinfo (&msg) putss "Sub test case: " msg;
 
 $def! __make-stdenv copy-environment;
-$defl! list-rest (&x) list (rest x);
+$defl! list-restv (&x) list (restv x);
 $defu! for-each for-each-rtl for-each-ltr;
 $defl! add1 (&z) + z 1;
 $defl! max (&x &y) $if (>? x y) x y;
@@ -187,10 +187,10 @@ $def! mapn $let ((&se make-environment (() get-current-environment))) wrap
 (
 	$set! se cxrs $lambda/e (weaken-environment se) (&ls &sel)
 		enlist-n (forward ls) (list-length ls) ($lambda (&l) sel (firstv l))
-			rest;
+			restv;
 	$vau/e se (&n &appv .&ls) d enlist-n (move! ls) n
 		($lambda (&ls) apply appv (cxrs (forward! ls) first) d)
-			($lambda (&ls) cxrs ls rest)
+			($lambda (&ls) cxrs ls restv)
 );
 $defw! map-fromn (&appv .&ls) d
 	apply mapn (list* (minlens ls) appv (move! ls)) d;
@@ -314,8 +314,8 @@ $defl! test (&i)
 		$expect () first a;
 		subinfo "list access";
 		list% q-li q-li2
-			(idv (first q-li)) (rest q-li)
-			(idv (first q-li2)) (rest q-li2)
+			(idv (first q-li)) (restv q-li)
+			(idv (first q-li2)) (restv q-li2)
 			(first q-li) (rest% q-li)
 			(first q-li2) (rest% q-li2)
 			(first& q-li) (rest& q-li)
@@ -385,7 +385,7 @@ $defl! test (&i)
 		$expect (list "42" "53")
 			map ++ (list "4" "5") a;
 		$expect (list (list (list 2)) (list (list 4)) (list (list 6)))
-			map list-rest (list (list 1 2) (list 3 4) (list 5 6));
+			map list-restv (list (list 1 2) (list 3 4) (list 5 6));
 		$expect (list 5 7 9)
 			map + (list 1 2 3) (list 4 5 6);
 		$expect (list "421")
