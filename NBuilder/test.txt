@@ -310,6 +310,7 @@ $defl! test (&i)
 		subinfo "list lvalue elements read and move";
 		$expect 2 first (id a);
 		$expect 2 first a;
+		$expect 2 first (as-const (expire a));
 		$expect 2 first (expire a);
 		$expect () first a;
 		subinfo "list access";
