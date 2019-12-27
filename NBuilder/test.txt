@@ -307,6 +307,25 @@ $defl! test (&i)
 	(
 		info "list operations";
 		$def! a list 2 3;
+		subinfo "sanity test of list-forward-first";
+		$rem
+		(
+			"NOTE: ", "The following implementations are not conforming.";
+			$defl%! forward-list-first (&list-appv &appv &l)
+				($lambda% ((&x .)) (forward! appv) ($resolve-identifier x))
+					((forward! list-appv) l);
+			$defl%! forward-list-first (&list-appv &appv &l)
+				($lambda% ((&x .)) eval% (list% (forward! appv)
+					($resolve-identifier x)) (() make-environment))
+					(eval% (list% (forward! list-appv) l)
+						(() make-environment));
+		);
+		$defl%! first-test (%l0)
+			($lambda% (fwd) forward-list-first fwd
+				(wrap ($vau% (&x) d
+					$sequence (eval ($quote l0) d) (forward! (forward! x)))) l0)
+				($if (bound-lvalue? ($resolve-identifier l0)) id expire);
+		$expect 1 (first-test (list 1 2));
 		subinfo "list lvalue elements read and move";
 		$expect 2 first (id a);
 		$expect 2 first a;
