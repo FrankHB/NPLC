@@ -254,6 +254,31 @@ $defl! test (&i)
 		$check eqv? (wrap (unwrap idv)) idv;
 		subinfo "regression for wrap/unwrap; fixed since b859";
 		((unwrap (unwrap (wrap (wrap ($quote)))))) ($quote id);
+		subinfo "sanity on irregular representations; fixed since b876";
+		$let ()
+		(
+			$def! f idv;
+			$def! e () make-environment;
+			$set! e $f unwrap f;
+			$set! e &$fr unwrap f;
+			$def! $uf eval% ($quote $f) e;
+			$def! $ufr eval% ($quote $fr) e;
+			$def! &$urf eval% ($quote $f) e;
+			$def! &$urfr eval% ($quote $fr) e;
+			$def! &$urfri eval% (list $resolve-identifier ($quote $fr)) e;
+			$undef! e;
+			$uf 1;
+			$ufr 2;
+			$rem "Undefined behavior:"
+				"Expected failure on NPL_NPLA_CheckTermReferenceIndirection:"
+				($urf 3);
+			$rem "The following evaluations rely on correctly returning an"
+				" object of irregular representation, when only one of '$urfr'"
+				" and '$urfri' is defined (and thus the terms in the irregular"
+				" representation are not shared elsewhere).";
+			$urfr 4;
+			$rem $urfri 5;
+		);
 		subinfo "test for ref&, etc.";
 		$def! x "xx";
 		$def! rx ref& x;
