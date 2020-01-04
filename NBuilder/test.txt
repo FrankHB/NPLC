@@ -786,6 +786,14 @@ $defl! teste (i)
 			(puts (itos (get-wrapping-count x)); w (w x));
 		fn wrap (wrap-n fn (- 0 42))
 	))
+	((eqv? i 5) (
+		$rem "UB: Checked by NPL_NPLA_CheckTermReferenceIndirection.";
+		$let ()
+		(
+			$defl%! foo (&x) x;
+			display (foo 42)
+		)
+	))
 	(#t "No case found.")
 );
 
