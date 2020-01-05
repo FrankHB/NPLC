@@ -797,27 +797,44 @@ $defl! teste (i)
 (
 	$cond
 	((eqv? i 1) (
+		"Expected: ParameterMismatchE:",
+			" Insufficient term found for list parameter.";
 		map-strict ++ (list "4" "5") (list "1")
 	))
 	((eqv? i 2) (
+		"Expected: BadIdentifier: Unknown identifier: 'x'.";
 		$let ((&x 2) (&y x)) + x y
 	))
 	((eqv? i 3) (
+		"Expected: BadIdentifier: Unknown identifier: 'x'.";
 		$letrec ((&x 2) (&y x)) + x y
 	))
 	((eqv? i 4) (
+		"Expected: NPLExceptionE: Wrapping count overflow detected.";
 		$defl! fn (w x) fn
 			($lambda (x) w (w x))
 			(puts (itos (get-wrapping-count x)); w (w x));
 		fn wrap (wrap-n fn (- 0 42))
 	))
 	((eqv? i 5) (
-		$rem "UB: Checked by NPL_NPLA_CheckTermReferenceIndirection.";
+		"UB: Checked by NPL_NPLA_CheckTermReferenceIndirection.";
+		"Expected on check: InvalidReferenceE:",
+			"Invalid reference found on indirection,"
+			" probably due to invalid context access by a dangling reference.";
 		$let ()
 		(
 			$defl%! foo (&x) x;
 			display (foo 42)
 		)
+	))
+	((eqv? i 6) (
+		"Expected: BadIdentifier: Unknown identifier: 'a'.";
+		$def! (a b) list (($lambda (x y) x y y) a b) (($lambda (x y) x x y) b a)
+	))
+	((eqv? i 7) (
+		"Expected: InvalidReference: Invalid cyclic reference found.";
+		$defrec! (a b) list (($lambda (x y) x y y) a b)
+			(($lambda (x y) x x y) b a)
 	))
 	(#t "No case found.")
 );
