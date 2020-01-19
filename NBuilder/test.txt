@@ -336,17 +336,17 @@ $defl! test (&i)
 		$rem
 		(
 			"NOTE: ", "The following implementations are not conforming.";
-			$defl%! forward-list-first (&list-appv &appv &l)
+			$defl%! forward-list-first% (&list-appv &appv &l)
 				($lambda% ((&x .)) (forward! appv) ($resolve-identifier x))
 					((forward! list-appv) l);
-			$defl%! forward-list-first (&list-appv &appv &l)
+			$defl%! forward-list-first% (&list-appv &appv &l)
 				($lambda% ((&x .)) eval% (list% (forward! appv)
 					($resolve-identifier x)) (() make-environment))
 					(eval% (list% (forward! list-appv) l)
 						(() make-environment));
 		);
 		$defl%! first-test (%l0)
-			($lambda% (fwd) forward-list-first fwd
+			($lambda% (fwd) forward-list-first% fwd
 				(wrap ($vau% (&x) d
 					$sequence (eval ($quote l0) d) (forward! (forward! x)))) l0)
 				($if (bound-lvalue? ($resolve-identifier l0)) id expire);
