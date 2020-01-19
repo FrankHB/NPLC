@@ -1,5 +1,5 @@
 ﻿/*
-	© 2011-2019 FrankHB.
+	© 2011-2020 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7713
+\version r7715
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2019-12-23 18:55 +0800
+	2020-01-19 17:32 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -387,7 +387,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	RegisterBinary<Strict, const ContextHandler, const int>(rctx, "wrap-n",
 		[](const ContextHandler& h, int n) -> ContextHandler{
 		if(const auto p = h.target<FormContextHandler>())
-			return FormContextHandler(p->Handler, p->Check, size_t(n));
+			return FormContextHandler(p->Handler, size_t(n));
 		return FormContextHandler(h, 1);
 	});
 	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
