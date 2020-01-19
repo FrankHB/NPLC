@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7715
+\version r7731
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-01-19 17:32 +0800
+	2020-01-20 01:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -43,17 +43,12 @@
 namespace NPL
 {
 
-/// 868
 #ifdef NDEBUG
-#	define NPL_Impl_NBuilder_EnableDebugAction false
+#	define NPLC_Impl_DebugAction false
+#	define NPLC_Impl_TestTemporaryOrder false
 #else
-#	define NPL_Impl_NBuilder_EnableDebugAction true
-#endif
-/// 860
-#ifdef NDEBUG
-#	define NPL_Impl_NBuilder_TestTemporaryOrder false
-#else
-#	define NPL_Impl_NBuilder_TestTemporaryOrder true
+#	define NPLC_Impl_DebugAction true
+#	define NPLC_Impl_TestTemporaryOrder true
 #endif
 
 namespace A1
@@ -118,7 +113,7 @@ ParseStream(std::istream& is)
 /// 799
 observer_ptr<REPLContext> p_context;
 
-#if NPL_Impl_NBuilder_EnableDebugAction
+#if NPLC_Impl_DebugAction
 /// 785
 //@{
 bool use_debug = {};
@@ -237,7 +232,7 @@ LoadExternalRoot(REPLContext& context, const string& name)
 	return ValueToken::Unspecified;
 }
 
-#if NPL_Impl_NBuilder_TestTemporaryOrder
+#if NPLC_Impl_TestTemporaryOrder
 /// 860
 struct MarkGuard
 {
@@ -431,7 +426,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeMoveCopy);
 	});
 	// XXX: For test or debug only.
-#if NPL_Impl_NBuilder_EnableDebugAction
+#if NPLC_Impl_DebugAction
 	RegisterUnary<>(rctx, "tt", DefaultDebugAction);
 	RegisterUnary<Strict, const string>(rctx, "dbg", [](const string& cmd){
 		if(cmd == "on")
@@ -609,7 +604,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		std::cout << EncodeArg(str) << std::endl;
 		return ValueToken::Unspecified;
 	});
-#if NPL_Impl_NBuilder_TestTemporaryOrder
+#if NPLC_Impl_TestTemporaryOrder
 	RegisterUnary<Strict, const string>(renv, "mark-guard", [](string str){
 		return MarkGuard(std::move(str));
 	});
@@ -618,7 +613,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 	});
 #endif
 	LoadExternalRoot(context, "test.txt");
-#if NPL_Impl_NBuilder_EnableDebugAction
+#if NPLC_Impl_DebugAction
 	rctx.EvaluateList.Add(DefaultDebugAction, 255);
 	rctx.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
 #endif

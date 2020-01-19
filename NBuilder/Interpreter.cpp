@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2019 FrankHB.
+	© 2013-2020 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 767
+\version 789
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2019-09-23 08:04 +0800
+	2020-01-20 01:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -35,22 +35,22 @@
 
 using namespace YSLib;
 
-#define NPL_TracePerform true
-#define NPL_TracePerformDetails false
-#define NPL_Impl_UseDebugMR false
-#define NPL_Impl_UseMonotonic false
-#define NPL_Impl_TestMemoryResource false
-#define NPL_Impl_LogBeforeReduce false
+#define NPLC_Impl_TracePerform true
+#define NPLC_Impl_TracePerformDetails false
+#define NPLC_Impl_UseDebugMR false
+#define NPLC_Impl_UseMonotonic false
+#define NPLC_Impl_TestMemoryResource false
+#define NPLC_Impl_LogBeforeReduce false
 
 namespace NPL
 {
 
-#define NPL_NAME "NPL console"
-#define NPL_VER "b30xx"
-#define NPL_PLATFORM "[MinGW32]"
+#define NPLC_NAME "NPL console"
+#define NPLC_VER "b30xx"
+#define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto prompt("> ");
-yconstexpr auto title(NPL_NAME" " NPL_VER" @ (" __DATE__", " __TIME__") "
-	NPL_PLATFORM);
+yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
+	NPLC_PLATFORM);
 
 /// 519
 namespace
@@ -306,7 +306,7 @@ namespace
 
 using namespace pmr;
 
-#if NPL_Impl_TestMemoryResource
+#if NPLC_Impl_TestMemoryResource
 struct test_memory_resource : public memory_resource,
 	private ystdex::noncopyable, private ystdex::nonmovable
 {
@@ -325,7 +325,7 @@ struct test_memory_resource : public memory_resource,
 		if(ump.find(p) == ump.cend())
 		{
 			ump.emplace(p, make_pair(bytes, alignment));
-#if NPL_Impl_UseDebugMR
+#if NPLC_Impl_UseDebugMR
 			std::fprintf(stderr, "Info: Allocated '%p' with bytes"
 				" '%zu' and alignment '%zu'.\n", p, bytes, alignment);
 #endif
@@ -349,7 +349,7 @@ struct test_memory_resource : public memory_resource,
 			if(rbytes == bytes && ralign == alignment)
 			{
 				underlying.get().deallocate(p, bytes, alignment);
-#if NPL_Impl_UseDebugMR
+#if NPLC_Impl_UseDebugMR
 				std::fprintf(stderr, "Info: Deallocated known '%p' with bytes"
 					" '%zu' and alignment '%zu'.\n", p, bytes, alignment);
 #endif
@@ -377,7 +377,7 @@ struct test_memory_resource : public memory_resource,
 memory_resource&
 GetPoolResourceRef()
 {
-#if NPL_Impl_TestMemoryResource
+#if NPLC_Impl_TestMemoryResource
 	static test_memory_resource r;
 
 	return r;
@@ -386,7 +386,7 @@ GetPoolResourceRef()
 #endif
 }
 
-#if NPL_Impl_UseMonotonic
+#if NPLC_Impl_UseMonotonic
 memory_resource&
 GetMonotonicPoolRef()
 {
@@ -395,9 +395,9 @@ GetMonotonicPoolRef()
 	return r;
 }
 
-#	define NPL_Impl_PoolName GetMonotonicPoolRef()
+#	define NPLC_Impl_PoolName GetMonotonicPoolRef()
 #else
-#	define NPL_Impl_PoolName pool_rsrc
+#	define NPLC_Impl_PoolName pool_rsrc
 #endif
 
 } // unnamed namespace;
@@ -406,11 +406,11 @@ Interpreter::Interpreter(Application& app,
 	std::function<void(REPLContext&)> loader)
 	: terminal(), err_threshold(RecordLevel(0x10)),
 	pool_rsrc(&GetPoolResourceRef()), line(),
-	context(NPL_TracePerformDetails, NPL_Impl_PoolName)
+	context(NPLC_Impl_TracePerformDetails, NPLC_Impl_PoolName)
 {
 	using namespace std;
 	using namespace platform_ex;
-#if NPL_Impl_LogBeforeReduce
+#if NPLC_Impl_LogBeforeReduce
 	// TODO: Avoid reassignment of default passes?
 	using namespace std::placeholders;
 
@@ -476,7 +476,7 @@ Interpreter::Process()
 
 			auto res(context.Perform(line));
 
-#if NPL_TracePerform
+#if NPLC_Impl_TracePerform
 		//	terminal.UpdateForeColor(InfoColor);
 		//	cout << "Unrecognized reduced token list:" << endl;
 			terminal.UpdateForeColor(ReducedColor);
