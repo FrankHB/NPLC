@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 796
+\version 820
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-01-21 01:29 +0800
+	2020-01-21 01:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -41,6 +41,7 @@ using namespace YSLib;
 #define NPLC_Impl_UseMonotonic false
 #define NPLC_Impl_TestMemoryResource false
 #define NPLC_Impl_LogBeforeReduce false
+#define NPLC_Impl_FastAsyncReduce true
 
 namespace NPL
 {
@@ -411,10 +412,30 @@ Interpreter::Interpreter(Application& app,
 	using namespace platform_ex;
 
 #if NPLC_Impl_TracePerformDetails
-	SetupTraceDepth(cnotext.Root);
+	SetupTraceDepth(context.Root);
 #endif
-#if NPLC_Impl_LogBeforeReduce
 	// TODO: Avoid reassignment of default passes?
+#if NPLC_Impl_FastAsyncReduce
+	if(context.IsAsynchronous())
+		// XXX: Only safe and meaningful for asynchrnous implementations.
+		context.Root.EvaluateList
+			= [&](TermNode& term, ContextNode& ctx) -> ReductionStatus{
+			// XXX: These passes are known safe to synchronize.
+			context.ListTermPreprocess(term, ctx);
+			ReduceHeadEmptyList(term);
+			if(IsBranchedList(term))
+			{
+				RelaySwitched(ctx, [&](ContextNode& c){
+					A1::ContextState::Access(c).SetNextTermRef(term);
+					// TODO: Expose internal implementation of
+					//	%A1::ReduceCombined.
+					return A1::ReduceCombined(term, c);
+				});
+				return A1::ReduceOnce(AccessFirstSubterm(term), ctx);
+			}
+			return ReductionStatus::Clean;
+		};
+#elif NPLC_Impl_LogBeforeReduce
 	using namespace std::placeholders;
 	A1::EvaluationPasses
 		passes(std::bind(std::ref(context.ListTermPreprocess), _1, _2));
