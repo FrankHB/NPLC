@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 789
+\version 796
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-01-20 01:09 +0800
+	2020-01-21 01:29 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -405,17 +405,20 @@ GetMonotonicPoolRef()
 Interpreter::Interpreter(Application& app,
 	std::function<void(REPLContext&)> loader)
 	: terminal(), err_threshold(RecordLevel(0x10)),
-	pool_rsrc(&GetPoolResourceRef()), line(),
-	context(NPLC_Impl_TracePerformDetails, NPLC_Impl_PoolName)
+	pool_rsrc(&GetPoolResourceRef()), line(), context(NPLC_Impl_PoolName)
 {
 	using namespace std;
 	using namespace platform_ex;
+
+#if NPLC_Impl_TracePerformDetails
+	SetupTraceDepth(cnotext.Root);
+#endif
 #if NPLC_Impl_LogBeforeReduce
 	// TODO: Avoid reassignment of default passes?
 	using namespace std::placeholders;
-
 	A1::EvaluationPasses
 		passes(std::bind(std::ref(context.ListTermPreprocess), _1, _2));
+
 	passes += [](TermNode& term){
 		YTraceDe(Notice, "Before ReduceCombined:");
 		LogTermValue(term, Notice);
