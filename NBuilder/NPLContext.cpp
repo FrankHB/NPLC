@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2017 FrankHB.
+	© 2012-2017, 2020 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2286
+\version r2316
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2017-09-26 09:54 +0800
+	2020-01-30 22:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -52,16 +52,10 @@ FetchExtendedLiteralPass()
 			const char f(id.front());
 
 			// NOTE: Handling extended literals.
-			if((f == '#'|| f == '+' || f == '-') && id.size() > 1)
+			if(IsNPLAExtendedLiteralNonDigitPrefix(f) && id.size() > 1)
 			{
 				// TODO: Support numeric literal evaluation passes.
-				if(id == "#t" || id == "#true")
-					term.Value = true;
-				else if(id == "#f" || id == "#false")
-					term.Value = false;
-				else if(id == "#n" || id == "#null")
-					term.Value = nullptr;
-				else if(id == "+inf.0")
+				if(id == "+inf.0")
 					term.Value = std::numeric_limits<double>::infinity();
 				else if(id == "-inf.0")
 					term.Value = -std::numeric_limits<double>::infinity();
@@ -85,32 +79,12 @@ FetchExtendedLiteralPass()
 					term.Value = std::numeric_limits<long double>::quiet_NaN();
 				else if(id == "-nan.t")
 					term.Value = -std::numeric_limits<long double>::quiet_NaN();
-				else if(f != '#')
+				else
 					return ReductionStatus::Retrying;
+				return ReductionStatus::Clean;
 			}
-			else if(std::isdigit(f))
-			{
-				errno = 0;
-
-				const auto ptr(id.data());
-				char* eptr;
-#if 0
-				const auto ans(std::strtod(ptr, &eptr));
-				const auto idx{size_t(eptr - ptr)};
-
-				if(idx == id.size() && errno != ERANGE)
-					term.Value = ans;
-#else
-				const long ans(std::strtol(ptr, &eptr, 10));
-
-				if(size_t(eptr - ptr) == id.size() && errno != ERANGE)
-					term.Value = int(ans);
-#endif
-			}
-			else
-				return ReductionStatus::Retrying;
 		}
-		return ReductionStatus::Clean;
+		return ReductionStatus::Retrying;
 	};
 }
 
