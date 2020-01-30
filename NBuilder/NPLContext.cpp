@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2316
+\version r2356
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2020-01-30 22:59 +0800
+	2020-01-31 01:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -42,50 +42,54 @@ namespace NPL
 namespace A1
 {
 
+ReductionStatus
+HandleExtendedLiteral(TermNode& term, ContextNode&, string_view id)
+{
+	YAssertNonnull(id.data());
+	if(!id.empty())
+	{
+		const char f(id.front());
+
+		// NOTE: Handling extended literals.
+		if(IsNPLAExtendedLiteralNonDigitPrefix(f) && id.size() > 1)
+		{
+			// TODO: Support numeric literal evaluation passes.
+			if(id == "+inf.0")
+				term.Value = std::numeric_limits<double>::infinity();
+			else if(id == "-inf.0")
+				term.Value = -std::numeric_limits<double>::infinity();
+			else if(id == "+inf.f")
+				term.Value = std::numeric_limits<float>::infinity();
+			else if(id == "-inf.f")
+				term.Value = -std::numeric_limits<float>::infinity();
+			else if(id == "+inf.t")
+				term.Value = std::numeric_limits<long double>::infinity();
+			else if(id == "-inf.t")
+				term.Value = -std::numeric_limits<long double>::infinity();
+			else if(id == "+nan.0")
+				term.Value = std::numeric_limits<double>::quiet_NaN();
+			else if(id == "-nan.0")
+				term.Value = -std::numeric_limits<double>::quiet_NaN();
+			else if(id == "+nan.f")
+				term.Value = std::numeric_limits<float>::quiet_NaN();
+			else if(id == "-nan.f")
+				term.Value = -std::numeric_limits<float>::quiet_NaN();
+			else if(id == "+nan.t")
+				term.Value = std::numeric_limits<long double>::quiet_NaN();
+			else if(id == "-nan.t")
+				term.Value = -std::numeric_limits<long double>::quiet_NaN();
+			else
+				return ReductionStatus::Retrying;
+			return ReductionStatus::Clean;
+		}
+	}
+	return ReductionStatus::Retrying;
+}
+
 LiteralPasses::HandlerType
 FetchExtendedLiteralPass()
 {
-	return [](TermNode& term, ContextNode&, string_view id) -> ReductionStatus{
-		YAssertNonnull(id.data());
-		if(!id.empty())
-		{
-			const char f(id.front());
-
-			// NOTE: Handling extended literals.
-			if(IsNPLAExtendedLiteralNonDigitPrefix(f) && id.size() > 1)
-			{
-				// TODO: Support numeric literal evaluation passes.
-				if(id == "+inf.0")
-					term.Value = std::numeric_limits<double>::infinity();
-				else if(id == "-inf.0")
-					term.Value = -std::numeric_limits<double>::infinity();
-				else if(id == "+inf.f")
-					term.Value = std::numeric_limits<float>::infinity();
-				else if(id == "-inf.f")
-					term.Value = -std::numeric_limits<float>::infinity();
-				else if(id == "+inf.t")
-					term.Value = std::numeric_limits<long double>::infinity();
-				else if(id == "-inf.t")
-					term.Value = -std::numeric_limits<long double>::infinity();
-				else if(id == "+nan.0")
-					term.Value = std::numeric_limits<double>::quiet_NaN();
-				else if(id == "-nan.0")
-					term.Value = -std::numeric_limits<double>::quiet_NaN();
-				else if(id == "+nan.f")
-					term.Value = std::numeric_limits<float>::quiet_NaN();
-				else if(id == "-nan.f")
-					term.Value = -std::numeric_limits<float>::quiet_NaN();
-				else if(id == "+nan.t")
-					term.Value = std::numeric_limits<long double>::quiet_NaN();
-				else if(id == "-nan.t")
-					term.Value = -std::numeric_limits<long double>::quiet_NaN();
-				else
-					return ReductionStatus::Retrying;
-				return ReductionStatus::Clean;
-			}
-		}
-		return ReductionStatus::Retrying;
-	};
+	return HandleExtendedLiteral;
 }
 
 } // namespace A1;
