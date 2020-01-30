@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7731
+\version r7745
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-01-20 01:00 +0800
+	2020-01-30 22:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -304,22 +304,7 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 		})));
 	});
 	// TODO: Extract literal configuration API.
-	{
-		// TODO: Blocked. Use C++14 lambda initializers to simplify
-		//	implementation.
-		auto lit_base(std::move(rctx.EvaluateLiteral.begin()->second));
-		auto lit_ext(FetchExtendedLiteralPass());
-
-		rctx.EvaluateLiteral = [lit_base, lit_ext](TermNode& term,
-			ContextNode& ctx, string_view id) -> ReductionStatus{
-			const auto res(lit_ext(term, ctx, id));
-
-			if(res == ReductionStatus::Clean
-				&& term.Value.type() == ystdex::type_id<TokenValue>())
-				return lit_base(term, ctx, id);
-			return res;
-		};
-	}
+	rctx.EvaluateLiteral += FetchExtendedLiteralPass();
 	// NOTE: Literal builtins.
 	RegisterLiteralSignal(rctx, "exit", SSignal::Exit);
 	RegisterLiteralSignal(rctx, "cls", SSignal::ClearScreen);
