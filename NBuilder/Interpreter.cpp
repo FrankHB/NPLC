@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 820
+\version 895
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-01-21 01:31 +0800
+	2020-01-31 19:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -401,6 +401,69 @@ GetMonotonicPoolRef()
 #	define NPLC_Impl_PoolName pool_rsrc
 #endif
 
+#if NPLC_Impl_FastAsyncReduce
+/// 881
+ReductionStatus
+ReduceOnceFast(TermNode& term, A1::ContextState& cs,
+	const A1::EvaluationPasses& preprocess)
+{
+	if(bool(term.Value))
+	{
+		// XXX: There are several administrative differences to the original
+		//	%ContextState::DefaultReduceOnce. For leaf values other than value
+		//	tokens, the next term is set up in the original implemenation but
+		//	omitted here, as it is not relied on in this implementation.
+		if(const auto p = TermToNamePtr(term))
+		{
+			using namespace A1::Forms;
+			string_view id(*p);
+
+			YAssertNonnull(id.data());
+			if(!id.empty()
+				&& CheckReducible(HandleExtendedLiteral(term, cs, id)))
+			{
+				if(!IsNPLAExtendedLiteral(id))
+					return EvaluateIdentifier(term, cs, id);
+				ThrowInvalidSyntaxError(ystdex::sfmt(id.front() != '#'
+					? "Unsupported literal prefix found in literal '%s'."
+					: "Invalid literal '%s' found.", id.data()));
+			}
+		}
+	}
+	else if(term.size() == 1)
+	{
+		auto term_ref(ystdex::ref(term));
+
+		ystdex::retry_on_cond([&]{
+			return term_ref.get().size() == 1;
+		}, [&]{
+			term_ref = AccessFirstSubterm(term_ref);
+		});
+		return A1::ReduceAgainLifted(term, cs, term_ref);
+	}
+	else if(IsBranch(term))
+	{
+		YAssert(term.size() > 1, "Invalid node found.");
+		// XXX: These passes are known safe to synchronize.
+		preprocess(term, cs);
+		ReduceHeadEmptyList(term);
+		YAssert(IsBranchedList(term), "Invalid node found.");
+		cs.SetNextTermRef(term);
+		cs.LastStatus = ReductionStatus::Neutral;
+		RelaySwitched(cs, [&](ContextNode& c){
+			A1::ContextState::Access(c).SetNextTermRef(term);
+			// TODO: Expose internal implementation of
+			//	%A1::ReduceCombined.
+			return A1::ReduceCombined(term, c);
+		});
+		return RelaySwitched(cs, [&]{
+			return ReduceOnceFast(AccessFirstSubterm(term), cs, preprocess);
+		});
+	}
+	return ReductionStatus::Retained;
+}
+#endif
+
 } // unnamed namespace;
 
 Interpreter::Interpreter(Application& app,
@@ -418,25 +481,12 @@ Interpreter::Interpreter(Application& app,
 #if NPLC_Impl_FastAsyncReduce
 	if(context.IsAsynchronous())
 		// XXX: Only safe and meaningful for asynchrnous implementations.
-		context.Root.EvaluateList
-			= [&](TermNode& term, ContextNode& ctx) -> ReductionStatus{
-			// XXX: These passes are known safe to synchronize.
-			context.ListTermPreprocess(term, ctx);
-			ReduceHeadEmptyList(term);
-			if(IsBranchedList(term))
-			{
-				RelaySwitched(ctx, [&](ContextNode& c){
-					A1::ContextState::Access(c).SetNextTermRef(term);
-					// TODO: Expose internal implementation of
-					//	%A1::ReduceCombined.
-					return A1::ReduceCombined(term, c);
-				});
-				return A1::ReduceOnce(AccessFirstSubterm(term), ctx);
-			}
-			return ReductionStatus::Clean;
+		context.Root.ReduceOnce.Handler = [&](TermNode& term, ContextNode& ctx){
+			return ReduceOnceFast(term, A1::ContextState::Access(ctx),
+				context.ListTermPreprocess);
 		};
 #elif NPLC_Impl_LogBeforeReduce
-	using namespace std::placeholders;
+	using namespace placeholders;
 	A1::EvaluationPasses
 		passes(std::bind(std::ref(context.ListTermPreprocess), _1, _2));
 
