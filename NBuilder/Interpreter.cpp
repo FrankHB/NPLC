@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 913
+\version 940
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-02 06:44 +0800
+	2020-02-02 06:46 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -40,6 +40,19 @@
 #define NPLC_Impl_TestMemoryResource false
 #define NPLC_Impl_LogBeforeReduce false
 #define NPLC_Impl_FastAsyncReduce true
+#if YCL_Linux
+//#	define NPLC_Impl_mimalloc true
+// XXX: Hard-coded for AUR package 'mimalloc-git'. Set environment variable
+//	'LDFLAGS' to '/usr/lib/mimalloc-1.4/mimalloc.o -pthreads' to link in with
+//	%SHBuild-BuildApp.sh, before the build system is ready to configure the
+//	paths. Alternatively, 'LD_PRELOAD=/usr/lib/mimalloc-1.4/libmimalloc.so'
+//	can be used without link the library.
+#	define NPLC_Impl_ExtInc_mimalloc </usr/lib/mimalloc-1.4/include/mimalloc.h>
+#endif
+
+#if NPLC_Impl_mimalloc
+#	include NPLC_Impl_ExtInc_mimalloc
+#endif
 
 using namespace YSLib;
 
@@ -303,12 +316,41 @@ namespace
 
 using namespace pmr;
 
+#if NPLC_Impl_mimalloc
+/// 881
+struct mimalloc_memory_resource : public memory_resource
+{
+	YB_ALLOCATOR void*
+	do_allocate(size_t bytes, size_t alignment) override
+	{
+		return ::mi_new_aligned(bytes, alignment);
+	}
+
+	void
+	do_deallocate(void* p, size_t, size_t) ynothrow override
+	{
+		::mi_free(p);
+	}
+
+	YB_STATELESS bool
+	do_is_equal(const memory_resource& other) const ynothrow override
+	{
+		return this == &other;
+	}
+};
+#endif
 
 /// 881
 YB_ATTR_nodiscard memory_resource&
 GetDefaultResourceRef() ynothrowv
 {
+#if NPLC_Impl_mimalloc
+	static mimalloc_memory_resource r;
+
+	return r;
+#else
 	return Deref(pmr::new_delete_resource());
+#endif
 }
 
 #if NPLC_Impl_TestMemoryResource
