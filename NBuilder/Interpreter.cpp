@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 898
+\version 903
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-02 06:34 +0800
+	2020-02-02 06:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -115,7 +115,7 @@ PrintTermNode(std::ostream& os, const TermNode& term,
 	}
 }
 
-string
+YB_ATTR_nodiscard YB_PURE string
 StringifyValueObject(const ValueObject& vo)
 {
 	if(vo != A1::ValueToken::Null)
@@ -143,7 +143,7 @@ StringifyValueObject(const ValueObject& vo)
 	throw ystdex::bad_any_cast();
 }
 
-string
+YB_ATTR_nodiscard YB_PURE string
 LogValueObject(const ValueObject& vo)
 {
 	return EscapeLiteral(StringifyValueObject(vo));
@@ -153,7 +153,7 @@ LogValueObject(const ValueObject& vo)
 struct NodeValueLogger
 {
 	template<class _tNode>
-	string
+	YB_ATTR_nodiscard YB_PURE string
 	operator()(const _tNode& node) const
 	{
 		return LogValueObject(node.Value);
@@ -363,7 +363,7 @@ struct test_memory_resource : public memory_resource,
 				" and alignment '%zu' in deallocation.\n", p, bytes, alignment);
 	}
 
-	bool
+	YB_STATELESS bool
 	do_is_equal(const memory_resource& other) const ynothrow override
 	{
 		return this == &other;
@@ -371,7 +371,7 @@ struct test_memory_resource : public memory_resource,
 };
 #endif
 
-memory_resource&
+YB_ATTR_nodiscard memory_resource&
 GetPoolResourceRef()
 {
 #if NPLC_Impl_TestMemoryResource

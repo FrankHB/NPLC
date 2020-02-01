@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2019 FrankHB.
+	© 2013-2020 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r224
+\version r226
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2019-09-23 08:02 +0800
+	2020-02-02 06:01 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -116,7 +116,7 @@ protected:
 	void
 	do_deallocate(void*, size_t, size_t) yimpl(ynothrowv) override;
 
-	YB_ATTR_nodiscard yimpl(YB_PURE) bool
+	YB_ATTR_nodiscard yimpl(YB_STATELESS) bool
 	do_is_equal(const memory_resource&) const ynothrow override;
 
 private:
