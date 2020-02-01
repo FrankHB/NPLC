@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 903
+\version 913
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-02 06:41 +0800
+	2020-02-02 06:44 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -33,8 +33,6 @@
 #include YFM_YSLib_Service_TextFile
 #include <cstdio> // for std::fprintf;
 
-using namespace YSLib;
-
 #define NPLC_Impl_TracePerform true
 #define NPLC_Impl_TracePerformDetails false
 #define NPLC_Impl_UseDebugMR false
@@ -42,6 +40,8 @@ using namespace YSLib;
 #define NPLC_Impl_TestMemoryResource false
 #define NPLC_Impl_LogBeforeReduce false
 #define NPLC_Impl_FastAsyncReduce true
+
+using namespace YSLib;
 
 namespace NPL
 {
@@ -303,6 +303,14 @@ namespace
 
 using namespace pmr;
 
+
+/// 881
+YB_ATTR_nodiscard memory_resource&
+GetDefaultResourceRef() ynothrowv
+{
+	return Deref(pmr::new_delete_resource());
+}
+
 #if NPLC_Impl_TestMemoryResource
 struct test_memory_resource : public memory_resource,
 	private ystdex::noncopyable, private ystdex::nonmovable
@@ -311,7 +319,7 @@ struct test_memory_resource : public memory_resource,
 	unordered_map<void*, pair<size_t, size_t>> ump{};
 
 	test_memory_resource()
-		: underlying(*new_delete_resource())
+		: underlying(GetDefaultResourceRef())
 	{}
 
 	YB_ALLOCATOR void*
@@ -371,15 +379,16 @@ struct test_memory_resource : public memory_resource,
 };
 #endif
 
+/// 881
 YB_ATTR_nodiscard memory_resource&
-GetPoolResourceRef()
+GetPoolResourceRef() ynothrowv
 {
 #if NPLC_Impl_TestMemoryResource
 	static test_memory_resource r;
 
 	return r;
 #else
-	return Deref(pmr::new_delete_resource());
+	return GetDefaultResourceRef();
 #endif
 }
 
