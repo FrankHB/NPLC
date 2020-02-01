@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 895
+\version 898
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-01-31 19:00 +0800
+	2020-02-02 06:34 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -69,10 +69,6 @@ PrintError(Terminal& terminal, const LoggedEvent& e, const char* name = "Error")
 		unsigned(e.GetLevel()), e.what());
 //	ExtractAndTrace(e, e.GetLevel());
 }
-
-/// 852
-inline PDefH(const TermNode&, MapToTermNode, const ValueNode& nd) ynothrowv
-	ImplRet(Deref(static_cast<const TermNode*>(static_cast<const void*>(&nd))))
 
 /// 852
 //@{
