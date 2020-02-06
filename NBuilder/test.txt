@@ -237,8 +237,7 @@ $defl! test (&i)
 		puts "testb";
 		$sequence (puts "a") (puts x) (puts "b") (puts x)
 	))
-	((eqv? i 2)
-	(
+	((eqv? i 2) (
 		info "combiner operations";
 		subinfo "combiner equals";
 		$check eqv? (idv idv) idv;
@@ -287,8 +286,7 @@ $defl! test (&i)
 				(string<- rx "ee") (puts rx)) env);
 		() $f1
 	))
-	((eqv? i 3)
-	(
+	((eqv? i 3) (
 		info "funtion calls";
 		subinfo "basic combiner calls";
 		$defl! gg fm apply - fm;
@@ -296,8 +294,7 @@ $defl! test (&i)
 		$expect (- 0 1) gg 2 3;
 		$expect (- 0 1) $gg 3 4;
 	))
-	((eqv? i 4)
-	(
+	((eqv? i 4) (
 		info "recursive functions";
 		subinfo "Fibonacci";
 		$defl! fib (&n) $if (<=? n 1) 1 (+ (fib (- n 1)) (fib (- n 2)));
@@ -308,8 +305,7 @@ $defl! test (&i)
 		$expect 5 F 7;
 		$expect 4 M 7;
 	))
-	((eqv? i 5)
-	(
+	((eqv? i 5) (
 		info "logical operations";
 		subinfo "non-strict logical operations";
 		$expect #t () $and?;
@@ -328,8 +324,7 @@ $defl! test (&i)
 		$expect 1 or? 1 #f;
 		$expect 3 or? #f 2 #f 3;
 	))
-	((eqv? i 6)
-	(
+	((eqv? i 6) (
 		info "list operations";
 		$def! a list 2 3;
 		subinfo "sanity test of list-forward-first";
@@ -394,8 +389,7 @@ $defl! test (&i)
 			display q-li4
 		);
 	))
-	((eqv? i 7)
-	(
+	((eqv? i 7) (
 		info "list and list utility tests";
 		$def! a list "2" "3";
 		subinfo "sublists eagar logical operations";
@@ -461,8 +455,7 @@ $defl! test (&i)
 			(kons head (apply fold* (cons kons tail)));
 		$defl! xlist* (.&xs) apply fold* (cons cons xs);
 	))
-	((eqv? i 8)
-	(
+	((eqv? i 8) (
 		info "environment basic operations";
 		subinfo "test case for freeze-environment!";
 		$def! e0 make-environment (() get-current-environment);
@@ -476,8 +469,7 @@ $defl! test (&i)
 			$rem $def! q2 2;
 		)) e1;
 	))
-	((eqv? i 9)
-	(
+	((eqv? i 9) (
 		info "local bindings";
 		subinfo "$let";
 		$expect 5 $let ((&x 2) (&y 3)) + x y;
@@ -488,8 +480,7 @@ $defl! test (&i)
 		subinfo "$letrec*";
 		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z;
 	))
-	((eqv? i 10)
-	(
+	((eqv? i 10) (
 		info "environment encapsulation";
 		subinfo "simple environment separation";
 		$let ()
@@ -558,8 +549,7 @@ $defl! test (&i)
 				map ($lambda (#ignore) (($set! env count add1 count); count))
 				(list 9 8 7)
 	))
-	((eqv? i 11)
-	(
+	((eqv? i 11) (
 		info "Y combinatior";
 		$defl! Y (f) ($lambda (&h) h h)
 			(wrap ($vau/e (() copy-environment) (x) #ignore f
@@ -573,8 +563,7 @@ $defl! test (&i)
 				$if (<? n 2) n (+ (f (- n 1)) (f (- n 2)))));
 		(list (fact 5) (fib 5))
 	))
-	((eqv? i 12)
-	(
+	((eqv? i 12) (
 		$def! $sequence
 		(
 			$lambda (&se) ($lambda #ignore $vau/e se body env
@@ -592,8 +581,7 @@ $defl! test (&i)
 		puts "testb";
 		$sequence (puts "a") (puts x) (puts "b") (puts x)
 	))
-	((eqv? i 13)
-	(
+	((eqv? i 13) (
 		info "make-encapsulation-type";
 		$let ()
 		(
@@ -606,8 +594,7 @@ $defl! test (&i)
 			$expect 2 d (e 2);
 		)
 	))
-	((eqv? i 14)
-	(
+	((eqv? i 14) (
 		info "eval-string and eval-unit";
 		$let ()
 		(
@@ -616,8 +603,7 @@ $defl! test (&i)
 			eval-unit "1;" (() get-current-repl)
 		)
 	))
-	((eqv? i 15)
-	(
+	((eqv? i 15) (
 		info "$provide!";
 		$let ()
 		(
@@ -628,8 +614,7 @@ $defl! test (&i)
 			$expect 42 b
 		)
 	))
-	((eqv? i 16)
-	(
+	((eqv? i 16) (
 		info "promises";
 		subinfo "test #1 (as RnRK)";
 		$let ()
@@ -682,8 +667,7 @@ $defl! test (&i)
 			force (stream-filter ($lambda (n) eqv? n maxn) (from 0));
 		)
 	))
-	((eqv? i 17)
-	(
+	((eqv? i 17) (
 		info "equal? + fwd?";
 		puts "expect result: #t";
 		$def! fwd? $vau% (&x) d
@@ -693,8 +677,7 @@ $defl! test (&i)
 			list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
 				(fwd? (idv fwd?));
 	))
-	((eqv? i 18)
-	(
+	((eqv? i 18) (
 		info "reference collapsing and reference assignment";
 		$def! (a b) list 1 2;
 		$def! li list% a 2;
@@ -766,8 +749,7 @@ $defl! test (&i)
 		assign@! b (first@ li);
 		$expect #f uncollapsed? (move! b);
 	))
-	((eqv? i 19)
-	(
+	((eqv? i 19) (
 		info "arithmetic tests";
 		$rem (
 			"The following Kernel code conforms to PTC.";
@@ -782,8 +764,7 @@ $defl! test (&i)
 			x (solve (+ n 1));
 		$expect 7744 (solve 80)
 	))
-	((eqv? i 20)
-	(
+	((eqv? i 20) (
 		info "test case for reduce";
 		$defl! |> (&f &g) $lambda/e% ($bindings/p->environment
 			((() make-standard-environment)) (&f (forward f)) (&g (forward g)))
