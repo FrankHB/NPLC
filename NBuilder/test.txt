@@ -629,6 +629,7 @@ $defl! test (&i)
 		)
 	))
 	((eqv? i 16)
+	(
 		info "promises";
 		subinfo "test #1 (as RnRK)";
 		$let ()
@@ -680,8 +681,9 @@ $defl! test (&i)
 				$lazy/e (() lock-current-environment) list n (from (+ n 1));
 			force (stream-filter ($lambda (n) eqv? n maxn) (from 0));
 		)
-	)
+	))
 	((eqv? i 17)
+	(
 		info "equal? + fwd?";
 		puts "expect result: #t";
 		$def! fwd? $vau% (&x) d
@@ -690,8 +692,9 @@ $defl! test (&i)
 		$expect (list% #f #f #t #t #f)
 			list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
 				(fwd? (idv fwd?));
-	)
+	))
 	((eqv? i 18)
+	(
 		info "reference collapsing and reference assignment";
 		$def! (a b) list 1 2;
 		$def! li list% a 2;
@@ -762,8 +765,9 @@ $defl! test (&i)
 		$def! li list% a 2;
 		assign@! b (first@ li);
 		$expect #f uncollapsed? (move! b);
-	)
+	))
 	((eqv? i 19)
+	(
 		info "arithmetic tests";
 		$rem (
 			"The following Kernel code conforms to PTC.";
@@ -777,8 +781,9 @@ $defl! test (&i)
 				(=? (/ (% x 100) 10) (% x 10)))
 			x (solve (+ n 1));
 		$expect 7744 (solve 80)
-	)
+	))
 	((eqv? i 20)
+	(
 		info "test case for reduce";
 		$defl! |> (&f &g) $lambda/e% ($bindings/p->environment
 			((() make-standard-environment)) (&f (forward f)) (&g (forward g)))
@@ -789,7 +794,7 @@ $defl! test (&i)
 		$expect 42 (|> (|> (|> double double) increment) double) 5;
 		$defl! pipes (fs x) (reduce fs |> idv) x;
 		$expect 42 pipes (list double double increment double) 5;
-	)
+	))
 	(#t "No case found.")
 );
 
