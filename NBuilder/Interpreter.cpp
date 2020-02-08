@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 940
+\version 948
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-02 06:46 +0800
+	2020-02-09 00:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -372,6 +372,7 @@ struct test_memory_resource : public memory_resource,
 		if(ump.find(p) == ump.cend())
 		{
 			ump.emplace(p, make_pair(bytes, alignment));
+			// XXX: All errors from %std::fprintf are ignored.
 #if NPLC_Impl_UseDebugMR
 			std::fprintf(stderr, "Info: Allocated '%p' with bytes"
 				" '%zu' and alignment '%zu'.\n", p, bytes, alignment);
@@ -449,10 +450,9 @@ GetMonotonicPoolRef()
 #endif
 
 #if NPLC_Impl_FastAsyncReduce
-/// 881
+/// 882
 ReductionStatus
-ReduceOnceFast(TermNode& term, A1::ContextState& cs,
-	const A1::EvaluationPasses& preprocess)
+ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 {
 	if(bool(term.Value))
 	{
@@ -492,7 +492,6 @@ ReduceOnceFast(TermNode& term, A1::ContextState& cs,
 	{
 		YAssert(term.size() > 1, "Invalid node found.");
 		// XXX: These passes are known safe to synchronize.
-		preprocess(term, cs);
 		ReduceHeadEmptyList(term);
 		YAssert(IsBranchedList(term), "Invalid node found.");
 		cs.SetNextTermRef(term);
@@ -504,7 +503,7 @@ ReduceOnceFast(TermNode& term, A1::ContextState& cs,
 			return A1::ReduceCombined(term, c);
 		});
 		return RelaySwitched(cs, [&]{
-			return ReduceOnceFast(AccessFirstSubterm(term), cs, preprocess);
+			return ReduceOnceFast(AccessFirstSubterm(term), cs);
 		});
 	}
 	return ReductionStatus::Retained;
@@ -529,8 +528,7 @@ Interpreter::Interpreter(Application& app,
 	if(context.IsAsynchronous())
 		// XXX: Only safe and meaningful for asynchrnous implementations.
 		context.Root.ReduceOnce.Handler = [&](TermNode& term, ContextNode& ctx){
-			return ReduceOnceFast(term, A1::ContextState::Access(ctx),
-				context.ListTermPreprocess);
+			return ReduceOnceFast(term, A1::ContextState::Access(ctx));
 		};
 #elif NPLC_Impl_LogBeforeReduce
 	using namespace placeholders;
