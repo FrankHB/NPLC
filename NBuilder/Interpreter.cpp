@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 948
+\version 949
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-09 00:57 +0800
+	2020-02-15 16:19 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -31,6 +31,7 @@
 #include YFM_YCLib_YCommon
 #include YFM_Helper_Environment
 #include YFM_YSLib_Service_TextFile
+#include YFM_NPL_NPLA1Forms
 #include <cstdio> // for std::fprintf;
 
 #define NPLC_Impl_TracePerform true
