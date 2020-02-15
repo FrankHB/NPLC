@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 949
+\version 952
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-15 16:19 +0800
+	2020-02-16 07:51 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -499,9 +499,7 @@ ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 		cs.LastStatus = ReductionStatus::Neutral;
 		RelaySwitched(cs, [&](ContextNode& c){
 			A1::ContextState::Access(c).SetNextTermRef(term);
-			// TODO: Expose internal implementation of
-			//	%A1::ReduceCombined.
-			return A1::ReduceCombined(term, c);
+			return A1::ReduceCombinedBranch(term, c);
 		});
 		return RelaySwitched(cs, [&]{
 			return ReduceOnceFast(AccessFirstSubterm(term), cs);
