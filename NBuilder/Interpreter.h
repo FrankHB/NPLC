@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r226
+\version r229
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-02 06:01 +0800
+	2020-02-15 18:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -168,6 +168,10 @@ private:
 public:
 	/// 740
 	Interpreter(YSLib::Application&, std::function<void(REPLContext&)>);
+
+	/// 883
+	void
+	EnableExtendedLiterals();
 
 	void
 	HandleSignal(SSignal);
