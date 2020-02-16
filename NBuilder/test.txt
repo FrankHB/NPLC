@@ -834,5 +834,14 @@ $defl! test-seq (i) test-in (iota i);
 $defl! test-all () test-seq 20;
 $defl! teste-all () for-each-ltr teste (list 1);
 
+$rem "Load libraries.";
 $def! ll ($lambda () load-at-root "0.txt");
+
+$rem "Performance test.";
+$defl! pt ()
+(
+	$defl! fib (&n) ($if (<=? n 1) n (+ (fib (- n 1)) (fib (- n 2))));
+	iput (fib 17);
+	exit
+);
 
