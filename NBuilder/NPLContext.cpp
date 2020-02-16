@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2356
+\version r2367
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2020-01-31 01:11 +0800
+	2020-02-16 18:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -42,8 +42,8 @@ namespace NPL
 namespace A1
 {
 
-ReductionStatus
-HandleExtendedLiteral(TermNode& term, ContextNode&, string_view id)
+bool
+HandleCheckedExtendedLiteral(TermNode& term, string_view id)
 {
 	YAssertNonnull(id.data());
 	if(!id.empty())
@@ -79,17 +79,22 @@ HandleExtendedLiteral(TermNode& term, ContextNode&, string_view id)
 			else if(id == "-nan.t")
 				term.Value = -std::numeric_limits<long double>::quiet_NaN();
 			else
-				return ReductionStatus::Retrying;
-			return ReductionStatus::Clean;
+				return true;
+			return {};
 		}
+		return true;
 	}
-	return ReductionStatus::Retrying;
+	return {};
 }
 
 LiteralPasses::HandlerType
 FetchExtendedLiteralPass()
 {
-	return HandleExtendedLiteral;
+	return [](TermNode& term, ContextNode&, string_view id){
+		YAssertNonnull(id.data());
+		return id.empty() || HandleCheckedExtendedLiteral(term, id)
+			? ReductionStatus::Retrying : ReductionStatus::Clean;
+	};
 }
 
 } // namespace A1;
