@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version 952
+\version r955
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-16 07:51 +0800
+	2020-02-16 18:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -466,9 +466,7 @@ ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 			using namespace A1::Forms;
 			string_view id(*p);
 
-			YAssertNonnull(id.data());
-			if(!id.empty()
-				&& CheckReducible(HandleExtendedLiteral(term, cs, id)))
+			if(A1::HandleCheckedExtendedLiteral(term, id))
 			{
 				if(!IsNPLAExtendedLiteral(id))
 					return EvaluateIdentifier(term, cs, id);
