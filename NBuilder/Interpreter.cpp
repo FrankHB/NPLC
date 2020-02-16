@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r955
+\version r961
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-16 18:03 +0800
+	2020-02-16 18:19 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -550,6 +550,12 @@ Interpreter::Interpreter(Application& app,
 	cout << "Type \"exit\" to exit,"
 		" \"cls\" to clear screen, \"help\", \"about\", or \"license\""
 		" for more information." << endl << endl;
+}
+
+void
+Interpreter::EnableExtendedLiterals()
+{
+	context.Root.EvaluateLiteral += A1::FetchExtendedLiteralPass();
 }
 
 void
