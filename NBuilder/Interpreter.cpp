@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r961
+\version r963
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-16 18:19 +0800
+	2020-02-17 08:42 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -491,7 +491,8 @@ ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 	{
 		YAssert(term.size() > 1, "Invalid node found.");
 		// XXX: These passes are known safe to synchronize.
-		ReduceHeadEmptyList(term);
+		if(IsEmpty(AccessFirstSubterm(term)))
+			RemoveHead(term);
 		YAssert(IsBranchedList(term), "Invalid node found.");
 		cs.SetNextTermRef(term);
 		cs.LastStatus = ReductionStatus::Neutral;
