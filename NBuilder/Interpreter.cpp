@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r963
+\version r1007
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-17 08:42 +0800
+	2020-02-18 18:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -451,32 +451,46 @@ GetMonotonicPoolRef()
 #endif
 
 #if NPLC_Impl_FastAsyncReduce
-/// 882
+/// 883
+//@{
 ReductionStatus
-ReduceOnceFast(TermNode& term, A1::ContextState& cs)
+ReduceOnceFast_B0(TermNode& term, ContextNode& ctx)
 {
-	if(bool(term.Value))
+	// XXX: There are several administrative differences to the original
+	//	%ContextState::DefaultReduceOnce. For leaf values other than value
+	//	tokens, the next term is set up in the original implemenation but
+	//	omitted here, as it is not relied on in this implementation.
+	if(const auto p = TermToNamePtr(term))
 	{
-		// XXX: There are several administrative differences to the original
-		//	%ContextState::DefaultReduceOnce. For leaf values other than value
-		//	tokens, the next term is set up in the original implemenation but
-		//	omitted here, as it is not relied on in this implementation.
-		if(const auto p = TermToNamePtr(term))
-		{
-			using namespace A1::Forms;
-			string_view id(*p);
+		using namespace A1;
+		using namespace Forms;
+		string_view id(*p);
 
-			if(A1::HandleCheckedExtendedLiteral(term, id))
-			{
-				if(!IsNPLAExtendedLiteral(id))
-					return EvaluateIdentifier(term, cs, id);
-				ThrowInvalidSyntaxError(ystdex::sfmt(id.front() != '#'
-					? "Unsupported literal prefix found in literal '%s'."
-					: "Invalid literal '%s' found.", id.data()));
-			}
+		YAssert(IsLeaf(term),
+			"Unexpected irregular representation of term found.");
+		if(A1::HandleCheckedExtendedLiteral(term, id))
+		{
+			if(!IsNPLAExtendedLiteral(id))
+				return EvaluateIdentifier(term, ctx, id);
+			ThrowInvalidSyntaxError(ystdex::sfmt(id.front() != '#'
+				? "Unsupported literal prefix found in literal '%s'."
+				: "Invalid literal '%s' found.", id.data()));
 		}
 	}
-	else if(term.size() == 1)
+	return ReductionStatus::Retained;
+}
+
+ReductionStatus
+ReduceOnceFast_B1(TermNode& term, ContextNode& ctx)
+{
+	A1::ContextState::Access(ctx).SetNextTermRef(term);
+	return A1::ReduceCombinedBranch(term, ctx);
+}
+
+ReductionStatus
+ReduceOnceFast_B2(TermNode& term, A1::ContextState& cs)
+{
+	if(term.size() == 1)
 	{
 		auto term_ref(ystdex::ref(term));
 
@@ -496,15 +510,31 @@ ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 		YAssert(IsBranchedList(term), "Invalid node found.");
 		cs.SetNextTermRef(term);
 		cs.LastStatus = ReductionStatus::Neutral;
+
+		auto& sub(AccessFirstSubterm(term));
+
+		if(bool(sub.Value))
+		{
+			ReduceOnceFast_B0(sub, cs);
+			return ReduceOnceFast_B1(term, cs);
+		}
 		RelaySwitched(cs, [&](ContextNode& c){
-			A1::ContextState::Access(c).SetNextTermRef(term);
-			return A1::ReduceCombinedBranch(term, c);
+			return ReduceOnceFast_B1(term, c);
 		});
 		return RelaySwitched(cs, [&]{
-			return ReduceOnceFast(AccessFirstSubterm(term), cs);
+			return ReduceOnceFast_B2(sub, cs);
 		});
 	}
 	return ReductionStatus::Retained;
+}
+//@}
+
+/// 882
+ReductionStatus
+ReduceOnceFast(TermNode& term, A1::ContextState& cs)
+{
+	return bool(term.Value) ? ReduceOnceFast_B0(term, cs)
+		: ReduceOnceFast_B2(term, cs);
 }
 #endif
 
