@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1007
+\version r1092
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-18 18:20 +0800
+	2020-02-22 17:47 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -451,44 +451,86 @@ GetMonotonicPoolRef()
 #endif
 
 #if NPLC_Impl_FastAsyncReduce
+// XXX: There are several fast asynchrnous reduction assumptions from NPLA1.
+//	1. For the leaf values other than value tokens, the next term is not relied
+//		on.
+//	2. No literal handlers rely on the value of the reduced term.
 /// 883
 //@{
+template<typename _func>
 ReductionStatus
-ReduceOnceFast_B0(TermNode& term, ContextNode& ctx)
+HandleLiteralOrCall(string_view id, _func f)
+{
+	if(!IsNPLAExtendedLiteral(id))
+		return f();
+	A1::Forms::ThrowInvalidSyntaxError(ystdex::sfmt(
+		id.front() != '#' ? "Unsupported literal prefix found in literal '%s'."
+		: "Invalid literal '%s' found.", id.data()));
+}
+
+template<typename _func, typename _func2>
+YB_FLATTEN inline ReductionStatus
+ReduceFastIdOr(TermNode& term, _func f, _func2 f2)
 {
 	// XXX: There are several administrative differences to the original
 	//	%ContextState::DefaultReduceOnce. For leaf values other than value
 	//	tokens, the next term is set up in the original implemenation but
-	//	omitted here, as it is not relied on in this implementation.
-	if(const auto p = TermToNamePtr(term))
-	{
-		using namespace A1;
-		using namespace Forms;
-		string_view id(*p);
-
-		YAssert(IsLeaf(term),
-			"Unexpected irregular representation of term found.");
-		if(A1::HandleCheckedExtendedLiteral(term, id))
+	//	omitted here, cf. assumption 1.
+	return [&]() YB_ATTR(always_inline){
+		if(const auto p = TermToNamePtr(term))
 		{
-			if(!IsNPLAExtendedLiteral(id))
-				return EvaluateIdentifier(term, ctx, id);
-			ThrowInvalidSyntaxError(ystdex::sfmt(id.front() != '#'
-				? "Unsupported literal prefix found in literal '%s'."
-				: "Invalid literal '%s' found.", id.data()));
+			string_view id(*p);
+
+			YAssert(IsLeaf(term),
+				"Unexpected irregular representation of term found.");
+			if(A1::HandleCheckedExtendedLiteral(term, id))
+				return f(id);
 		}
-	}
-	return ReductionStatus::Retained;
+		return f2();
+	}();
 }
 
-ReductionStatus
-ReduceOnceFast_B1(TermNode& term, ContextNode& ctx)
+YB_FLATTEN ReductionStatus
+ReduceFastCombined(TermNode& term, A1::ContextState& cs)
 {
-	A1::ContextState::Access(ctx).SetNextTermRef(term);
-	return A1::ReduceCombinedBranch(term, ctx);
+	cs.SetNextTermRef(term);
+	return A1::ReduceCombinedBranch(term, cs);
 }
 
 ReductionStatus
-ReduceOnceFast_B2(TermNode& term, A1::ContextState& cs)
+ReduceFastHNF(TermNode& term, A1::ContextState& cs, TermNode& sub,
+	string_view id)
+{
+	using namespace A1;
+	const auto p_fm(ResolveName(cs, id).first);
+
+	if(p_fm)
+	{
+		const auto reduce([&](TermNode& fm){
+			// XXX: This is safe, cf. assumption 2.
+			EvaluateLiteralHandler(yimpl(sub), cs, fm);
+			cs.SetNextTermRef(term);
+			return ReduceCombinedReferent(term, cs, fm);
+		});
+
+#if true
+		if(const auto p_ref_fm = NPL::TryAccessLeaf<
+			const TermReference>(*p_fm))
+			return reduce(p_ref_fm->get());
+		else
+			return reduce(*p_fm);
+#else
+		// XXX: This is a bit inefficient.
+		return reduce([&]() YB_FLATTEN{
+			return std::ref(ReferenceTerm(*p_fm));
+		}();
+#endif
+	}
+	throw BadIdentifier(id);
+}
+
+ReductionStatus
+ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 {
 	if(term.size() == 1)
 	{
@@ -514,15 +556,20 @@ ReduceOnceFast_B2(TermNode& term, A1::ContextState& cs)
 		auto& sub(AccessFirstSubterm(term));
 
 		if(bool(sub.Value))
-		{
-			ReduceOnceFast_B0(sub, cs);
-			return ReduceOnceFast_B1(term, cs);
-		}
+			return [&]() YB_ATTR(always_inline){
+				return ReduceFastIdOr(sub, [&](string_view id){
+					return HandleLiteralOrCall(id, [&]() YB_FLATTEN{
+						return ReduceFastHNF(term, cs, sub, id);
+					});
+				}, [&]{
+					return ReduceFastCombined(term, cs);
+				});
+			}();
 		RelaySwitched(cs, [&](ContextNode& c){
-			return ReduceOnceFast_B1(term, c);
+			return ReduceFastCombined(term, A1::ContextState::Access(c));
 		});
 		return RelaySwitched(cs, [&]{
-			return ReduceOnceFast_B2(sub, cs);
+			return ReduceFastBranch(sub, cs);
 		});
 	}
 	return ReductionStatus::Retained;
@@ -533,8 +580,14 @@ ReduceOnceFast_B2(TermNode& term, A1::ContextState& cs)
 ReductionStatus
 ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 {
-	return bool(term.Value) ? ReduceOnceFast_B0(term, cs)
-		: ReduceOnceFast_B2(term, cs);
+	return bool(term.Value)
+		? ReduceFastIdOr(term, [&](string_view id) YB_FLATTEN{
+		return HandleLiteralOrCall(id, [&]{
+			return A1::EvaluateIdentifier(term, cs, id);
+		});
+	}, []() YB_ATTR_LAMBDA_QUAL(ynothrow, YB_STATELESS){
+		return ReductionStatus::Retained;
+	}) : ReduceFastBranch(term, cs);
 }
 #endif
 
