@@ -69,6 +69,8 @@
 			<Add option="-ffunction-sections" />
 			<Add option="-mthreads" />
 			<Add option="-pipe" />
+			<Add option="-U__GXX_MERGED_TYPEINFO_NAMES" />
+			<Add option="-D__GXX_MERGED_TYPEINFO_NAMES=1" />
 		</Compiler>
 		<Unit filename="Interpreter.cpp" />
 		<Unit filename="Interpreter.h" />
@@ -82,7 +84,7 @@
 			<debugger />
 			<lib_finder disable_auto="1" />
 			<DoxyBlocks>
-				<comment_style block="0" line="0" />
+				<comment_style block="1" line="1" />
 				<doxyfile_project />
 				<doxyfile_build />
 				<doxyfile_warnings />
