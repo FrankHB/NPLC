@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1108
+\version r1174
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-27 18:42 +0800
+	2020-02-27 22:21 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -454,7 +454,9 @@ GetMonotonicPoolRef()
 // XXX: There are several fast asynchrnous reduction assumptions from NPLA1.
 //	1. For the leaf values other than value tokens, the next term is not relied
 //		on.
-//	2. No literal handlers rely on the value of the reduced term.
+//	2. There are no changes on passes and handlers like %ContextNode::Resolve
+//		after the initialization.
+//	3. No literal handlers rely on the value of the reduced term.
 /// 883
 //@{
 template<typename _func>
@@ -497,40 +499,52 @@ ReduceFastCombined(TermNode& term, A1::ContextState& cs)
 	return A1::ReduceCombinedBranch(term, cs);
 }
 
+/// 884
+//@{
+template<typename _func>
+YB_FLATTEN ReductionStatus
+ReduceResolved(_func f, const ContextNode& ctx, string_view id)
+{
+	// XXX: See assumption 2.
+	auto pr(ResolveName(ctx, id));
+
+	if(pr.first)
+		return f(*pr.first, pr.second);
+	throw BadIdentifier(id);
+}
+
+void
+SetupTermEvaluatedTermOrRef(TermNode& term, Environment& env, TermNode& bound,
+	TermNode& nd, ResolvedTermReferencePtr p_ref)
+{
+	if(p_ref)
+		[&]() YB_FLATTEN{
+			term.SetContent(bound.GetContainer(),
+				TermReference(p_ref->GetTags() & ~TermTags::Unique, *p_ref));
+		}();
+	else
+		term.Value = TermReference(env.MakeTermTags(nd) & ~TermTags::Unique,
+			nd, env.shared_from_this());
+}
+//@}
+
 ReductionStatus
 ReduceFastHNF(TermNode& term, A1::ContextState& cs, TermNode& sub,
 	string_view id)
 {
-	using namespace A1;
-	auto pr(ResolveName(cs, id));
-
-	if(pr.first)
-	{
-		auto& bound(*pr.first);
-		const auto reduce([&](TermNode& fm){
-			// XXX: This is safe, cf. assumption 2.
-			EvaluateLiteralHandler(yimpl(sub), cs, fm);
+	return ReduceResolved([&](TermNode& bound, Environment& env){
+		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref)
+			-> ReductionStatus{
+			[&](TermNode& tm, Environment& e, ResolvedTermReferencePtr p)
+				YB_ATTR(noinline){
+				SetupTermEvaluatedTermOrRef(tm, e, bound, nd, p);
+			}(sub, env, p_ref);
+			// XXX: This is safe, cf. assumption 3.
+			EvaluateLiteralHandler(yimpl(sub), cs, nd);
 			cs.SetNextTermRef(term);
-			return ReduceCombinedReferent(term, cs, fm);
-		});
-
-		if(const auto p_ref_fm = NPL::TryAccessLeaf<
-			const TermReference>(bound))
-		{
-			sub.SetContent(bound.GetContainer(), TermReference(
-				p_ref_fm->GetTags() & ~TermTags::Unique, *p_ref_fm));
-			return reduce(p_ref_fm->get());
-		}
-		else
-		{
-			[&]() YB_FLATTEN{
-				sub.Value = TermReference(env.MakeTermTags(bound)
-					& ~TermTags::Unique, bound, env.shared_from_this());
-			}();
-			return reduce(bound);
-		}
-	}
-	throw BadIdentifier(id);
+			return ReduceCombinedReferent(term, cs, nd);
+		}, bound);
+	}, cs, id);
 }
 
 ReductionStatus
@@ -586,8 +600,14 @@ ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 {
 	return bool(term.Value)
 		? ReduceFastIdOr(term, [&](string_view id) YB_FLATTEN{
-		return HandleLiteralOrCall(id, [&]{
-			return A1::EvaluateIdentifier(term, cs, id);
+		return HandleLiteralOrCall(id, [&]() YB_FLATTEN{
+			return ReduceResolved([&](TermNode& bound, Environment& env){
+				ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+					SetupTermEvaluatedTermOrRef(term, env, bound, nd, p_ref);
+					A1::EvaluateLiteralHandler(term, cs, nd);
+				}, bound);
+				return ReductionStatus::Neutral;
+			}, cs, id);
 		});
 	}, []() YB_ATTR_LAMBDA_QUAL(ynothrow, YB_STATELESS){
 		return ReductionStatus::Retained;
