@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1092
+\version r1108
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-22 17:47 +0800
+	2020-02-27 18:42 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -502,10 +502,11 @@ ReduceFastHNF(TermNode& term, A1::ContextState& cs, TermNode& sub,
 	string_view id)
 {
 	using namespace A1;
-	const auto p_fm(ResolveName(cs, id).first);
+	auto pr(ResolveName(cs, id));
 
-	if(p_fm)
+	if(pr.first)
 	{
+		auto& bound(*pr.first);
 		const auto reduce([&](TermNode& fm){
 			// XXX: This is safe, cf. assumption 2.
 			EvaluateLiteralHandler(yimpl(sub), cs, fm);
@@ -513,18 +514,21 @@ ReduceFastHNF(TermNode& term, A1::ContextState& cs, TermNode& sub,
 			return ReduceCombinedReferent(term, cs, fm);
 		});
 
-#if true
 		if(const auto p_ref_fm = NPL::TryAccessLeaf<
-			const TermReference>(*p_fm))
+			const TermReference>(bound))
+		{
+			sub.SetContent(bound.GetContainer(), TermReference(
+				p_ref_fm->GetTags() & ~TermTags::Unique, *p_ref_fm));
 			return reduce(p_ref_fm->get());
+		}
 		else
-			return reduce(*p_fm);
-#else
-		// XXX: This is a bit inefficient.
-		return reduce([&]() YB_FLATTEN{
-			return std::ref(ReferenceTerm(*p_fm));
-		}();
-#endif
+		{
+			[&]() YB_FLATTEN{
+				sub.Value = TermReference(env.MakeTermTags(bound)
+					& ~TermTags::Unique, bound, env.shared_from_this());
+			}();
+			return reduce(bound);
+		}
 	}
 	throw BadIdentifier(id);
 }
