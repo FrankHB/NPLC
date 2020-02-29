@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1174
+\version r1179
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-27 22:21 +0800
+	2020-02-29 20:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -506,7 +506,7 @@ YB_FLATTEN ReductionStatus
 ReduceResolved(_func f, const ContextNode& ctx, string_view id)
 {
 	// XXX: See assumption 2.
-	auto pr(ResolveName(ctx, id));
+	auto pr(ContextNode::DefaultResolve(ctx.GetRecordRef(), id));
 
 	if(pr.first)
 		return f(*pr.first, pr.second);
@@ -533,10 +533,8 @@ ReduceFastHNF(TermNode& term, A1::ContextState& cs, TermNode& sub,
 	string_view id)
 {
 	return ReduceResolved([&](TermNode& bound, Environment& env){
-		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref)
-			-> ReductionStatus{
-			[&](TermNode& tm, Environment& e, ResolvedTermReferencePtr p)
-				YB_ATTR(noinline){
+		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+			[&](TermNode& tm, Environment& e, ResolvedTermReferencePtr p){
 				SetupTermEvaluatedTermOrRef(tm, e, bound, nd, p);
 			}(sub, env, p_ref);
 			// XXX: This is safe, cf. assumption 3.
