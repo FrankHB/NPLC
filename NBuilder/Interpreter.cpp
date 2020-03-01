@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1179
+\version r1180
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-29 20:59 +0800
+	2020-03-01 20:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -44,7 +44,7 @@
 #if YCL_Linux
 //#	define NPLC_Impl_mimalloc true
 // XXX: Hard-coded for AUR package 'mimalloc-git'. Set environment variable
-//	'LDFLAGS' to '/usr/lib/mimalloc-1.4/mimalloc.o -pthreads' to link in with
+//	'LDFLAGS' to '/usr/lib/mimalloc-1.4/mimalloc.o -pthread' to link in with
 //	%SHBuild-BuildApp.sh, before the build system is ready to configure the
 //	paths. Alternatively, 'LD_PRELOAD=/usr/lib/mimalloc-1.4/libmimalloc.so'
 //	can be used without link the library.
