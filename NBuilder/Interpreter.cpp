@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1180
+\version r1207
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-01 20:26 +0800
+	2020-03-01 20:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -317,14 +317,39 @@ namespace
 
 using namespace pmr;
 
+/// 884
+//@{
 #if NPLC_Impl_mimalloc
-/// 881
-struct mimalloc_memory_resource : public memory_resource
+class default_memory_resource : public memory_resource
 {
+	//! \invariant \c p_heap 。
+	::mi_heap_t* p_heap;
+
+public:
+	default_memory_resource()
+		: p_heap(::mi_heap_get_default())
+	{}
+
 	YB_ALLOCATOR void*
 	do_allocate(size_t bytes, size_t alignment) override
 	{
+#	if true
+		return ystdex::retry_on_cond([](void* p) -> bool{
+			if(p)
+				return {};
+			if(const auto h = std::get_new_handler())
+			{
+				h();
+				return true;
+			}
+			throw std::bad_alloc();
+		}, [&]() ynothrow{
+			return ::mi_heap_malloc_aligned_at(p_heap, bytes, alignment, 0);
+		});
+#	else
+		// NOTE: This is equivalent, but slightly inefficient.
 		return ::mi_new_aligned(bytes, alignment);
+#	endif
 	}
 
 	void
@@ -340,13 +365,14 @@ struct mimalloc_memory_resource : public memory_resource
 	}
 };
 #endif
+//@}
 
 /// 881
 YB_ATTR_nodiscard memory_resource&
 GetDefaultResourceRef() ynothrowv
 {
 #if NPLC_Impl_mimalloc
-	static mimalloc_memory_resource r;
+	static default_memory_resource r;
 
 	return r;
 #else
