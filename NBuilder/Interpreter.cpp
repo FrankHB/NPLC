@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1207
+\version r1215
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-01 20:30 +0800
+	2020-03-03 19:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -518,13 +518,6 @@ ReduceFastIdOr(TermNode& term, _func f, _func2 f2)
 	}();
 }
 
-YB_FLATTEN ReductionStatus
-ReduceFastCombined(TermNode& term, A1::ContextState& cs)
-{
-	cs.SetNextTermRef(term);
-	return A1::ReduceCombinedBranch(term, cs);
-}
-
 /// 884
 //@{
 template<typename _func>
@@ -604,11 +597,11 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 						return ReduceFastHNF(term, cs, sub, id);
 					});
 				}, [&]{
-					return ReduceFastCombined(term, cs);
+					return ReduceNextCombinedBranch(term, cs);
 				});
 			}();
 		RelaySwitched(cs, [&](ContextNode& c){
-			return ReduceFastCombined(term, A1::ContextState::Access(c));
+			return ReduceNextCombinedBranch(term, A1::ContextState::Access(c));
 		});
 		return RelaySwitched(cs, [&]{
 			return ReduceFastBranch(sub, cs);
