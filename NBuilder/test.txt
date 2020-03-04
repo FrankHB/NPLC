@@ -1,4 +1,4 @@
-﻿"#", "(C) 2017-2019 FrankHB.",
+﻿"#", "(C) 2017-2020 FrankHB.",
 "NPLC basic derivation extension and test module.";
 
 "NOTE", "For the test purpose, this file is deliberatedly kept as UTF-8+BOM",
@@ -315,6 +315,8 @@ $defl! test (&i)
 		$expect 2 $and? 1 2;
 		$expect 1 $or? 1 #f;
 		$expect 2 $or? #f 2 #f 3;
+		"regression for $or?; fixed since b884";
+		$or? #f #f (string->symbol "evaluate-once") #f;
 		subinfo "strict logical operations";
 		$expect #t () and?;
 		$expect #f () or?;
