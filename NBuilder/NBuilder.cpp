@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7768
+\version r7770
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-03-07 22:44 +0800
+	2020-03-07 22:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -629,13 +629,10 @@ main(int argc, char* argv[])
 	ystdex::setnbuf(stdout);
 	Deref(LockCommandArguments()).Reset(argc, argv);
 	return FilterExceptions([]{
-		Application app{};
 		Interpreter intp{};
 
 		intp.UpdateTextColor(TitleColor);
 		cout << title << endl << "Initializing...";
-
-		unique_ptr<YSLib::Environment> p_env(new YSLib::Environment(app));
 
 		{
 			using namespace chrono;
