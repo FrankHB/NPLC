@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r229
+\version r236
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-02-15 18:17 +0800
+	2020-03-07 21:46 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -162,10 +162,11 @@ private:
 	string line;
 	/// 834
 	shared_ptr<Environment> p_ground{};
-	/// 740
-	REPLContext context;
 
 public:
+	/// 885
+	REPLContext Context;
+
 	/// 740
 	Interpreter(YSLib::Application&, std::function<void(REPLContext&)>);
 
@@ -188,6 +189,10 @@ public:
 	/// 696
 	std::istream&
 	WaitForLine(std::istream&, std::ostream&);
+
+	/// 885
+	PDefH(void, UpdateTextColor, Color c)
+		ImplExpr(terminal.UpdateForeColor(c))
 };
 
 } // namespace NPL;

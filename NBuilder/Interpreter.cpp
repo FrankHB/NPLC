@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1218
+\version r1236
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-07 21:38 +0800
+	2020-03-07 21:47 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -637,25 +637,25 @@ ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 Interpreter::Interpreter(Application& app,
 	std::function<void(REPLContext&)> loader)
 	: terminal(), err_threshold(RecordLevel(0x10)),
-	pool_rsrc(&GetPoolResourceRef()), line(), context(NPLC_Impl_PoolName)
+	pool_rsrc(&GetPoolResourceRef()), line(), Context(NPLC_Impl_PoolName)
 {
 	using namespace std;
 	using namespace platform_ex;
 
 #if NPLC_Impl_TracePerformDetails
-	SetupTraceDepth(context.Root);
+	SetupTraceDepth(Context.Root);
 #endif
 	// TODO: Avoid reassignment of default passes?
 #if NPLC_Impl_FastAsyncReduce
-	if(context.IsAsynchronous())
+	if(Context.IsAsynchronous())
 		// XXX: Only safe and meaningful for asynchrnous implementations.
-		context.Root.ReduceOnce.Handler = [&](TermNode& term, ContextNode& ctx){
+		Context.Root.ReduceOnce.Handler = [&](TermNode& term, ContextNode& ctx){
 			return ReduceOnceFast(term, A1::ContextState::Access(ctx));
 		};
 #elif NPLC_Impl_LogBeforeReduce
 	using namespace placeholders;
 	A1::EvaluationPasses
-		passes(std::bind(std::ref(context.ListTermPreprocess), _1, _2));
+		passes(std::bind(std::ref(Context.ListTermPreprocess), _1, _2));
 
 	passes += [](TermNode& term){
 		YTraceDe(Notice, "Before ReduceCombined:");
@@ -665,19 +665,19 @@ Interpreter::Interpreter(Application& app,
 	passes += ReduceHeadEmptyList;
 	passes += A1::ReduceFirst;
 	passes += A1::ReduceCombined;
-	context.Root.EvaluateList = std::move(passes);
+	Context.Root.EvaluateList = std::move(passes);
 #endif
-	terminal.UpdateForeColor(TitleColor);
+	UpdateTextColor(TitleColor);
 	cout << title << endl << "Initializing...";
 	p_env.reset(new YSLib::Environment(app));
-	loader(context);
-	terminal.UpdateForeColor(InfoColor);
+	loader(Context);
+	UpdateTextColor(InfoColor);
 }
 
 void
 Interpreter::EnableExtendedLiterals()
 {
-	context.Root.EvaluateLiteral += A1::FetchExtendedLiteralPass();
+	Context.Root.EvaluateLiteral += A1::FetchExtendedLiteralPass();
 }
 
 void
@@ -713,17 +713,17 @@ Interpreter::Process()
 
 	if(!line.empty())
 	{
-		terminal.UpdateForeColor(SideEffectColor);
+		UpdateTextColor(SideEffectColor);
 		try
 		{
 			line = DecodeArg(line);
 
-			auto res(context.Perform(line));
+			auto res(Context.Perform(line));
 
 #if NPLC_Impl_TracePerform
-		//	terminal.UpdateForeColor(InfoColor);
+		//	UpdateTextColor(InfoColor);
 		//	cout << "Unrecognized reduced token list:" << endl;
-			terminal.UpdateForeColor(ReducedColor);
+			UpdateTextColor(ReducedColor);
 			LogTermValue(res);
 #endif
 		}
@@ -731,7 +731,7 @@ Interpreter::Process()
 		{
 			if(e == SSignal::Exit)
 				return {};
-			terminal.UpdateForeColor(SignalColor);
+			UpdateTextColor(SignalColor);
 			HandleSignal(e);
 		}
 		CatchExpr(NPLException& e, PrintError(terminal, e, "NPLException"))
@@ -750,7 +750,7 @@ Interpreter::SaveGround()
 {
 	if(!p_ground)
 	{
-		auto& ctx(context.Root);
+		auto& ctx(Context.Root);
 
 		p_ground = NPL::SwitchToFreshEnvironment(ctx,
 			ValueObject(ctx.WeakenRecord()));
@@ -767,9 +767,9 @@ Interpreter::WaitForLine()
 std::istream&
 Interpreter::WaitForLine(std::istream& is, std::ostream& os)
 {
-	terminal.UpdateForeColor(PromptColor);
+	UpdateTextColor(PromptColor);
 	os << prompt;
-	terminal.UpdateForeColor(DefaultColor);
+	UpdateTextColor(DefaultColor);
 	return std::getline(is, line);
 }
 
