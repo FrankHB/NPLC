@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7748
+\version r7751
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-02-16 18:23 +0800
+	2020-03-07 21:38 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -633,6 +633,9 @@ main(int argc, char* argv[])
 				<< " second(s)." << endl;
 		});
 
+		cout << "Type \"exit\" to exit,"
+			" \"cls\" to clear screen, \"help\", \"about\", or \"license\""
+			" for more information." << endl << endl;
 		while(intp.WaitForLine() && intp.Process())
 			;
 	}, yfsig, Alert, TraceForOutermost) ? EXIT_FAILURE : EXIT_SUCCESS;
