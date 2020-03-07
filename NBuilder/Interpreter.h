@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r236
+\version r240
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-07 21:46 +0800
+	2020-03-07 22:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -156,8 +156,6 @@ private:
 	YSLib::RecordLevel err_threshold;
 	/// 867
 	shared_pool_resource pool_rsrc;
-	/// 689
-	YSLib::unique_ptr<YSLib::Environment> p_env;
 	/// 674
 	string line;
 	/// 834
@@ -167,8 +165,8 @@ public:
 	/// 885
 	REPLContext Context;
 
-	/// 740
-	Interpreter(YSLib::Application&, std::function<void(REPLContext&)>);
+	/// 885
+	Interpreter();
 
 	/// 883
 	void

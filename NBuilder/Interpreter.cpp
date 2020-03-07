@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1236
+\version r1248
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-07 21:47 +0800
+	2020-03-07 22:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -60,13 +60,7 @@ using namespace YSLib;
 namespace NPL
 {
 
-#define NPLC_NAME "NPL console"
-#define NPLC_VER "b30xx"
-#define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto prompt("> ");
-yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
-	NPLC_PLATFORM);
-
 /// 519
 namespace
 {
@@ -634,8 +628,7 @@ ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 
 } // unnamed namespace;
 
-Interpreter::Interpreter(Application& app,
-	std::function<void(REPLContext&)> loader)
+Interpreter::Interpreter()
 	: terminal(), err_threshold(RecordLevel(0x10)),
 	pool_rsrc(&GetPoolResourceRef()), line(), Context(NPLC_Impl_PoolName)
 {
@@ -667,11 +660,6 @@ Interpreter::Interpreter(Application& app,
 	passes += A1::ReduceCombined;
 	Context.Root.EvaluateList = std::move(passes);
 #endif
-	UpdateTextColor(TitleColor);
-	cout << title << endl << "Initializing...";
-	p_env.reset(new YSLib::Environment(app));
-	loader(Context);
-	UpdateTextColor(InfoColor);
 }
 
 void

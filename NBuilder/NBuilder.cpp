@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7751
+\version r7768
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-03-07 21:38 +0800
+	2020-03-07 22:44 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -264,12 +264,13 @@ struct MarkGuard
 };
 #endif
 
-/// 834
+/// 885
 void
-LoadFunctions(Interpreter& intp, REPLContext& context)
+LoadFunctions(Interpreter& intp)
 {
 	using namespace std::placeholders;
 	using namespace Forms;
+	auto& context(intp.Context);
 	auto& rctx(context.Root);
 	auto& renv(rctx.GetRecordRef());
 	const auto load_std_module([&](string_view module_name,
@@ -604,6 +605,12 @@ LoadFunctions(Interpreter& intp, REPLContext& context)
 #endif
 }
 
+#define NPLC_NAME "NPL console"
+#define NPLC_VER "b855_xx"
+#define NPLC_PLATFORM "[MinGW32]"
+yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
+	NPLC_PLATFORM);
+
 } // unnamed namespace;
 
 
@@ -622,17 +629,24 @@ main(int argc, char* argv[])
 	ystdex::setnbuf(stdout);
 	Deref(LockCommandArguments()).Reset(argc, argv);
 	return FilterExceptions([]{
-		Application app;
-		Interpreter intp(app, [&](REPLContext& context){
+		Application app{};
+		Interpreter intp{};
+
+		intp.UpdateTextColor(TitleColor);
+		cout << title << endl << "Initializing...";
+
+		unique_ptr<YSLib::Environment> p_env(new YSLib::Environment(app));
+
+		{
 			using namespace chrono;
 			const auto d(ytest::timing::once(
 				YSLib::Timers::HighResolutionClock::now,
-				LoadFunctions, std::ref(intp), context));
+				LoadFunctions, std::ref(intp)));
 
 			cout << "NPLC initialization finished in " << d.count() / 1e9
 				<< " second(s)." << endl;
-		});
-
+		}
+		intp.UpdateTextColor(InfoColor);
 		cout << "Type \"exit\" to exit,"
 			" \"cls\" to clear screen, \"help\", \"about\", or \"license\""
 			" for more information." << endl << endl;
