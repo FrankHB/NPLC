@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7770
+\version r7813
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-03-07 22:45 +0800
+	2020-03-07 23:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -627,28 +627,49 @@ main(int argc, char* argv[])
 	//	'ios_base::sync_with_stdio({})' would also fix this problem but it would
 	//	disturb prompt color setting.
 	ystdex::setnbuf(stdout);
-	Deref(LockCommandArguments()).Reset(argc, argv);
-	return FilterExceptions([]{
-		Interpreter intp{};
-
-		intp.UpdateTextColor(TitleColor);
-		cout << title << endl << "Initializing...";
-
+	return FilterExceptions([&]{
+		if(argc > 1)
 		{
-			using namespace chrono;
-			const auto d(ytest::timing::once(
-				YSLib::Timers::HighResolutionClock::now,
-				LoadFunctions, std::ref(intp)));
+			if(std::strcmp(argv[1], "-e") == 0)
+			{
+				if(argc == 3)
+				{
+					Interpreter intp{};
 
-			cout << "NPLC initialization finished in " << d.count() / 1e9
-				<< " second(s)." << endl;
+					intp.UpdateTextColor(TitleColor);
+					LoadFunctions(intp);
+					intp.ProcessLine(argv[2]);
+				}
+				else
+					throw LoggedEvent("Option '-e' expect exact one argument.");
+			}
+			else
+				throw LoggedEvent("Too many arguments.");
 		}
-		intp.UpdateTextColor(InfoColor);
-		cout << "Type \"exit\" to exit,"
-			" \"cls\" to clear screen, \"help\", \"about\", or \"license\""
-			" for more information." << endl << endl;
-		while(intp.WaitForLine() && intp.Process())
-			;
+		else if(argc == 1)
+		{
+			Deref(LockCommandArguments()).Reset(argc, argv);
+
+			Interpreter intp{};
+
+			intp.UpdateTextColor(TitleColor);
+			cout << title << endl << "Initializing...";
+			{
+				using namespace chrono;
+				const auto d(ytest::timing::once(
+					YSLib::Timers::HighResolutionClock::now,
+					LoadFunctions, std::ref(intp)));
+
+				cout << "NPLC initialization finished in " << d.count() / 1e9
+					<< " second(s)." << endl;
+			}
+			intp.UpdateTextColor(InfoColor);
+			cout << "Type \"exit\" to exit,"
+				" \"cls\" to clear screen, \"help\", \"about\", or \"license\""
+				" for more information." << endl << endl;
+			while(intp.WaitForLine() && intp.Process())
+				;
+		}
 	}, yfsig, Alert, TraceForOutermost) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
