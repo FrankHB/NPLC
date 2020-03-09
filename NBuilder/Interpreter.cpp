@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1254
+\version r1256
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-07 22:53 +0800
+	2020-03-09 15:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -347,9 +347,9 @@ public:
 	}
 
 	void
-	do_deallocate(void* p, size_t, size_t) ynothrow override
+	do_deallocate(void* p, size_t bytes, size_t alignment) ynothrow override
 	{
-		::mi_free(p);
+		::mi_free_size_aligned(p, bytes, alignment);
 	}
 
 	YB_STATELESS bool
