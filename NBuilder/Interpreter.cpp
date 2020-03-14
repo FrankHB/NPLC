@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1256
+\version r1264
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-09 15:22 +0800
+	2020-03-11 15:47 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -174,14 +174,20 @@ struct NodeValueLogger
 using ystdex::ceiling_lb;
 yconstexpr const auto min_block_size(resource_pool::adjust_for_block(1, 1));
 yconstexpr const size_t init_pool_num(yimpl(12));
+/// 885
+static_assert(init_pool_num > 1, "Invalid pool configuration found.");
 #if YB_IMPL_GNUCPP >= 30400 || __has_builtin(__builtin_clz)
 yconstexpr const auto min_lb_size(sizeof(unsigned) * CHAR_BIT
 	- __builtin_clz(unsigned(min_block_size - 1)));
+/// 885
+yconstexpr const size_t max_fast_block_shift(min_lb_size + init_pool_num - 1);
 yconstexpr const size_t
-	max_fast_block_size(1U << (min_lb_size + init_pool_num));
+	max_fast_block_size(1U << max_fast_block_shift);
 #else
 const auto min_lb_size(ceiling_lb(min_block_size));
-const size_t max_fast_block_size(1U << (min_lb_size + init_pool_num));
+/// 885
+const size_t max_fast_block_shift(min_lb_size + init_pool_num - 1);
+const size_t max_fast_block_size(1U << max_fast_block_shift);
 #endif
 //@}
 
