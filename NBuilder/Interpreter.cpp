@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1264
+\version r1270
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-11 15:47 +0800
+	2020-03-25 17:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -539,11 +539,14 @@ SetupTermEvaluatedTermOrRef(TermNode& term, Environment& env, TermNode& bound,
 	if(p_ref)
 		[&]() YB_FLATTEN{
 			term.SetContent(bound.GetContainer(),
-				TermReference(p_ref->GetTags() & ~TermTags::Unique, *p_ref));
+				ValueObject(std::allocator_arg, term.get_allocator(),
+				in_place_type<TermReference>,
+				p_ref->GetTags() & ~TermTags::Unique, *p_ref));
 		}();
 	else
-		term.Value = TermReference(env.MakeTermTags(nd) & ~TermTags::Unique,
-			nd, env.shared_from_this());
+		term.Value = ValueObject(std::allocator_arg, term.get_allocator(),
+			in_place_type<TermReference>, env.MakeTermTags(nd)
+			& ~TermTags::Unique, nd, env.shared_from_this());
 }
 //@}
 
