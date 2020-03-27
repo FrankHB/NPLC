@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1270
+\version r1272
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-25 17:36 +0800
+	2020-03-28 04:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -296,7 +296,7 @@ shared_pool_resource::find_pool(size_t lb_size) ynothrow
 void
 LogTree(const ValueNode& node, Logger::Level lv)
 {
-	std::ostringstream oss;
+	ostringstream oss(string(node.get_allocator()));
 
 	PrintNode(oss, node, NodeValueLogger());
 	YTraceDe(lv, "%s", oss.str().c_str());
@@ -305,7 +305,7 @@ LogTree(const ValueNode& node, Logger::Level lv)
 void
 LogTermValue(const TermNode& term, Logger::Level lv)
 {
-	std::ostringstream oss;
+	ostringstream oss(string(term.get_allocator()));
 
 	PrintTermNode(oss, term, NodeValueLogger());
 	YTraceDe(lv, "%s", oss.str().c_str());
