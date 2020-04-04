@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1272
+\version r1278
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-28 04:43 +0800
+	2020-04-04 19:04 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -276,9 +276,12 @@ shared_pool_resource::do_is_equal(const memory_resource& other) const ynothrow
 shared_pool_resource::pools_t::iterator
 shared_pool_resource::emplace(pools_t::const_iterator i, size_t lb_size)
 {
-	return pools.emplace(i, *upstream_resource(),
-		std::min(size_t(PTRDIFF_MAX >> lb_size),
-		saved_options.max_blocks_per_chunk), size_t(1) << lb_size, lb_size);
+	return pools.emplace(i, *upstream_resource(), std::min(
+		size_t(PTRDIFF_MAX >> lb_size), saved_options.max_blocks_per_chunk),
+		size_t(1) << lb_size, lb_size, (1U << lb_size)
+		< (1U << init_pool_num) / resource_pool::default_capacity
+		? size_t(1 << size_t(init_pool_num - lb_size))
+		: resource_pool::default_capacity);
 }
 
 std::pair<shared_pool_resource::pools_t::iterator, size_t>
