@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1278
+\version r1312
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-04-04 19:04 +0800
+	2020-04-05 00:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -217,18 +217,17 @@ shared_pool_resource::release() yimpl(ynothrow)
 void*
 shared_pool_resource::do_allocate(size_t bytes, size_t alignment)
 {
+	const auto ms(resource_pool::adjust_for_block(bytes, alignment));
+	const auto lb_size(ceiling_lb(ms));
+
+	if(ms <= max_fast_block_size)
+	{
+		yverify(lb_size >= min_lb_size);
+		return (pools.begin()
+			+ pools_t::difference_type(lb_size - min_lb_size))->allocate();
+	}
 	if(bytes <= saved_options.largest_required_pool_block)
 	{
-		const auto ms(resource_pool::adjust_for_block(bytes, alignment));
-		const auto lb_size(ceiling_lb(ms));
-
-		if(ms <= max_fast_block_size)
-		{
-			yassume(lb_size >= min_lb_size);
-			return (pools.begin()
-				+ pools_t::difference_type(lb_size - min_lb_size))->allocate();
-		}
-
 		auto pr(find_pool(lb_size));
 
 		if(!([&]() YB_PURE{
@@ -244,18 +243,17 @@ void
 shared_pool_resource::do_deallocate(void* p, size_t bytes, size_t alignment)
 	yimpl(ynothrowv)
 {
+	const auto ms(resource_pool::adjust_for_block(bytes, alignment));
+	const auto lb_size(ceiling_lb(ms));
+
+	if(ms <= max_fast_block_size)
+	{
+		yverify(lb_size >= min_lb_size);
+		return (pools.begin() + pools_t::difference_type(
+			lb_size - min_lb_size))->deallocate(p);
+	}
 	if(bytes <= saved_options.largest_required_pool_block)
 	{
-		const auto ms(resource_pool::adjust_for_block(bytes, alignment));
-		const auto lb_size(ceiling_lb(ms));
-
-		if(ms <= max_fast_block_size)
-		{
-			yassume(lb_size >= min_lb_size);
-			return (pools.begin() + pools_t::difference_type(
-				lb_size - min_lb_size))->deallocate(p);
-		}
-
 		auto pr(find_pool(lb_size));
 
 		yverify([&]() YB_PURE{

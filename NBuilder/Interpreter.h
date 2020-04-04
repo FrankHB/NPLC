@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r243
+\version r258
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-03-07 22:52 +0800
+	2020-04-05 00:39 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -60,6 +60,22 @@ enum class SSignal
 //@{
 using namespace ystdex::pmr;
 
+/*!
+\brief 共享池资源。
+
+类似 ystdex::pool_resource 的池资源，但内置预分配策略和不同的初始区块容量。
+预分配策略决定对小于内部阈值的分配和去配，忽略池选项，总是使用初始化时预分配的池；
+	这种池中的区块称为快速区块。
+设快速区块的大小上限 max_fast_block_size ，若不忽略池选项，这相当于假定：
+<tt>ystdex::resource_pool::adjust_for_block(bytes, alignment)
+	<= max_fast_block_size
+</tt>
+总是蕴含：
+<tt>bytes <= options.largest_required_pool_block</tt> 。
+其中 \c bytes 和 \c alignment 是分配参数，\c options 是指定的池选项。
+初始区块容量在每个池的分配时决定，使小于快速区块的块的起始分配具有较
+	\c ystdex::resource_pool::default_capacity 大的值而减小分配。
+*/
 class shared_pool_resource : public memory_resource
 {
 private:
