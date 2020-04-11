@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7813
+\version r7827
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-03-07 23:20 +0800
+	2020-04-11 12:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -76,7 +76,7 @@ using namespace platform_ex;
 namespace
 {
 
-/// 327
+//! \since YSLib build 327
 void
 ParseOutput(LexicalAnalyzer& lex)
 {
@@ -93,7 +93,7 @@ ParseOutput(LexicalAnalyzer& lex)
 	cout << rlst.size() << " token(s) parsed." <<endl;
 }
 
-/// 737
+//! \since YSLib build 737
 void
 ParseStream(std::istream& is)
 {
@@ -111,11 +111,11 @@ ParseStream(std::istream& is)
 }
 
 
-/// 799
+//! \since YSLib build 799
 observer_ptr<REPLContext> p_context;
 
 #if NPLC_Impl_DebugAction
-/// 785
+//! \since YSLib build 785
 //@{
 bool use_debug = {};
 
@@ -144,7 +144,7 @@ begin:
 	return ReductionStatus::Partial;
 }
 
-/// 858
+//! \since YSLib build 858
 ReductionStatus
 DefaultDebugAction(TermNode& term, ContextNode& ctx)
 {
@@ -159,7 +159,7 @@ DefaultDebugAction(TermNode& term, ContextNode& ctx)
 	return ReductionStatus::Partial;
 }
 
-/// 858
+//! \since YSLib build 858
 ReductionStatus
 DefaultLeafDebugAction(TermNode& term, ContextNode& ctx)
 {
@@ -177,7 +177,7 @@ DefaultLeafDebugAction(TermNode& term, ContextNode& ctx)
 #endif
 
 
-/// 801
+//! \since YSLib build 801
 template<typename _tNode, typename _fCallable>
 ReductionStatus
 ListCopyOrMove(TermNode& term, _fCallable f)
@@ -190,7 +190,7 @@ ListCopyOrMove(TermNode& term, _fCallable f)
 	return ReductionStatus::Retained;
 }
 
-/// 801
+//! \since YSLib build 801
 template<typename _tNode, typename _fCallable>
 ReductionStatus
 TermCopyOrMove(TermNode& term, _fCallable f)
@@ -201,14 +201,14 @@ TermCopyOrMove(TermNode& term, _fCallable f)
 	return ReductionStatus::Retained;
 }
 
-/// 805
+//! \since YSLib build 805
 int
 FetchListLength(TermNode& term) ynothrow
 {
 	return int(term.size());
 }
 
-/// 802
+//! \since YSLib build 802
 void
 LoadExternal(REPLContext& context, const string& name, ContextNode& ctx)
 {
@@ -225,7 +225,7 @@ LoadExternal(REPLContext& context, const string& name, ContextNode& ctx)
 		YTraceDe(Notice, "Test unit '%s' not found.", name.c_str());
 }
 
-/// 839
+//! \since YSLib build 839
 ValueToken
 LoadExternalRoot(REPLContext& context, const string& name)
 {
@@ -234,7 +234,7 @@ LoadExternalRoot(REPLContext& context, const string& name)
 }
 
 #if NPLC_Impl_TestTemporaryOrder
-/// 860
+//! \since YSLib build 860
 struct MarkGuard
 {
 	string String;
@@ -264,7 +264,7 @@ struct MarkGuard
 };
 #endif
 
-/// 885
+//! \since YSLib build 885
 void
 LoadFunctions(Interpreter& intp)
 {
@@ -614,7 +614,7 @@ yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 } // unnamed namespace;
 
 
-/// 304
+//! \since YSLib build 304
 int
 main(int argc, char* argv[])
 {

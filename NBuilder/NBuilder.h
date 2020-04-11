@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2017 FrankHB.
+	© 2012-2017, 2020 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r2060
+\version r2063
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2017-01-03 15:27 +0800
+	2020-04-12 12:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -33,13 +33,13 @@
 namespace NPL
 {
 
-/// 674
+//! \since YSLib build 674
 using namespace YSLib;
 
 namespace A1
 {
 
-/// 674
+//! \since YSLib build 674
 void
 RegisterLiteralSignal(ContextNode&, const string&, SSignal);
 
