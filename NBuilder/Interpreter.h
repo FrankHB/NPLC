@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r258
+\version r278
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-04-05 00:39 +0800
+	2020-04-11 12:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -38,14 +38,14 @@
 namespace NPL
 {
 
-/// 592
+//! \since YSLib build 592
 using namespace YSLib::Consoles;
-/// 674
+//! \since YSLib build 674
 using YSLib::Logger;
-/// 740
+//! \since YSLib build 740
 using A1::REPLContext;
 
-/// 304
+//! \since YSLib build 304
 enum class SSignal
 {
 	Exit,
@@ -56,7 +56,7 @@ enum class SSignal
 };
 
 
-/// 867
+//! \since YSLib build 867
 //@{
 using namespace ystdex::pmr;
 
@@ -145,11 +145,11 @@ private:
 //@}
 
 
-/// 673
+//! \since YSLib build 673
 void
 LogTree(const ValueNode&, Logger::Level = YSLib::Debug);
 
-/// 803
+//! \since YSLib build 803
 void
 LogTermValue(const TermNode&, Logger::Level = YSLib::Debug);
 
@@ -162,29 +162,29 @@ yconstexpr const Color DefaultColor(Gray), TitleColor(Cyan),
 	SignalColor(DarkRed), SideEffectColor(Yellow), ReducedColor(Magenta);
 
 
-/// 304
+//! \since YSLib build 304
 class Interpreter
 {
 private:
-	/// 755
+	//! \since YSLib build 755
 	platform_ex::Terminal terminal;
-	/// 674
+	//! \since YSLib build 674
 	YSLib::RecordLevel err_threshold;
-	/// 867
+	//! \since YSLib build 867
 	shared_pool_resource pool_rsrc;
-	/// 674
+	//! \since YSLib build 674
 	string line;
-	/// 834
+	//! \since YSLib build 834
 	shared_ptr<Environment> p_ground{};
 
 public:
-	/// 885
+	//! \since YSLib build 885
 	REPLContext Context;
 
-	/// 885
+	//! \since YSLib build 885
 	Interpreter();
 
-	/// 883
+	//! \since YSLib build 883
 	void
 	EnableExtendedLiterals();
 
@@ -194,21 +194,21 @@ public:
 	bool
 	Process();
 
-	/// 855
+	//! \since YSLib build 855
 	bool
 	ProcessLine(string);
 
-	/// 834
+	//! \since YSLib build 834
 	bool
 	SaveGround();
 
 	std::istream&
 	WaitForLine();
-	/// 696
+	//! \since YSLib build 696
 	std::istream&
 	WaitForLine(std::istream&, std::ostream&);
 
-	/// 885
+	//! \since YSLib build 885
 	PDefH(void, UpdateTextColor, Color c)
 		ImplExpr(terminal.UpdateForeColor(c))
 };

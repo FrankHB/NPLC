@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2367
+\version r2369
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2020-02-16 18:02 +0800
+	2020-04-11 12:21 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -31,9 +31,9 @@
 #include <iostream>
 #include YFM_NPL_NPLA1
 
-/// 674
+//! \since YSLib build 674
 using namespace YSLib;
-/// 676
+//! \since YSLib build 676
 using namespace std::placeholders;
 
 namespace NPL

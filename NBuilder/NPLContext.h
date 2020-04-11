@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1517
+\version r1519
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2020-02-16 18:01 +0800
+	2020-04-11 12:21 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -38,11 +38,11 @@ namespace NPL
 namespace A1
 {
 
-/// 883
+//! \since YSLib build 883
 bool
 HandleCheckedExtendedLiteral(TermNode&, string_view);
 
-/// 805
+//! \since YSLib build 805
 LiteralPasses::HandlerType
 FetchExtendedLiteralPass();
 
