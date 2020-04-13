@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1312
+\version r1345
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-04-05 00:50 +0800
+	2020-04-13 22:19 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,7 +29,7 @@
 #include <Helper/YModules.h>
 #include <iostream>
 #include YFM_YCLib_YCommon
-#include YFM_Helper_Environment
+#include YFM_YSLib_Core_YException // for ExtractAndTrace;
 #include YFM_YSLib_Service_TextFile
 #include YFM_NPL_NPLA1Forms
 #include <cstdio> // for std::fprintf;
@@ -67,16 +67,6 @@ namespace
 
 /// 520
 using namespace platform_ex;
-
-/// 755
-YB_NONNULL(3) void
-PrintError(Terminal& terminal, const LoggedEvent& e, const char* name = "Error")
-{
-	terminal.UpdateForeColor(ErrorColor);
-	YF_TraceRaw(e.GetLevel(), "%s[%s]<%u>: %s", name, typeid(e).name(),
-		unsigned(e.GetLevel()), e.what());
-//	ExtractAndTrace(e, e.GetLevel());
-}
 
 /// 852
 //@{
@@ -732,12 +722,31 @@ Interpreter::Process()
 			UpdateTextColor(SignalColor);
 			HandleSignal(e);
 		}
-		CatchExpr(NPLException& e, PrintError(terminal, e, "NPLException"))
-		catch(LoggedEvent& e)
+		catch(std::exception& e)
 		{
-			if(e.GetLevel() < err_threshold)
-				throw;
-			PrintError(terminal, e);
+			terminal.UpdateForeColor(ErrorColor);
+			ExtractException([&](const char* str, size_t level) YB_NONNULL(2){
+				const auto print(
+					[&](RecordLevel lv, const char* name) YB_NONNULL(3){
+					// XXX: Format '%*c' may not work in some implementations of
+					//	%ystdex::sfmt in %YF_TraceRaw.
+					YF_TraceRaw(lv, "%*s%s<%u>: %s", int(level), "", name,
+						unsigned(lv), str);
+				});
+
+				TryExpr(throw)
+				CatchExpr(NPLException& ex, print(ex.GetLevel(),
+					"NPLException"))
+				catch(LoggedEvent& ex)
+				{
+					const auto lv(ex.GetLevel());
+
+					if(lv < err_threshold)
+						throw;
+					print(lv, "Error");
+				}
+				CatchExpr(..., throw)
+			}, e);
 		}
 	}
 	return true;
