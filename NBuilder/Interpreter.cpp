@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1359
+\version r1394
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-04-22 01:23 +0800
+	2020-04-22 02:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -113,6 +113,37 @@ PrintTermNode(std::ostream& os, const TermNode& term,
 	}
 }
 
+//! \since YSLib build 889
+YB_ATTR_nodiscard YB_PURE string
+StringifyEnvironment(const shared_ptr<Environment>& p_env, bool weak)
+{
+	return (weak ? "[Environment] " : "[WeakEnvironment] ")
+		+ (p_env ? sfmt<string>("%p", ystdex::pvoid(p_env.get())) : "Invalid");
+}
+
+//! \since YSLib build 889
+template<class _tHandler>
+YB_ATTR_nodiscard YB_PURE string
+StringifyContextHandler(const _tHandler& h)
+{
+	if(const auto p = h.template target<A1::FormContextHandler>())
+		switch(p->Wrapping)
+		{
+		case 0:
+			return "Operative[" + StringifyContextHandler(p->Handler) + "]";
+		case 1:
+			return sfmt<string>("Applicative[%s]",
+				StringifyContextHandler(p->Handler).c_str());
+		default:
+			return sfmt<string>("Applicative[%s, Wrapping = %zu]",
+				StringifyContextHandler(p->Handler).c_str(), p->Wrapping);
+		}
+	if(const auto p = h.template target<A1::WrappedContextHandler<
+		YSLib::GHEvent<void(NPL::TermNode&, NPL::ContextNode&)>>>())
+		return "Wrapped: " + StringifyContextHandler(p->Handler);
+	return string("ContextHandler[") + h.target_type().name() + "]";
+}
+
 YB_ATTR_nodiscard YB_PURE string
 StringifyValueObject(const ValueObject& vo)
 {
@@ -124,6 +155,12 @@ StringifyValueObject(const ValueObject& vo)
 			return sfmt<string>("[TokenValue] %s", p->c_str());
 		if(const auto p = vo.AccessPtr<A1::ValueToken>())
 			return sfmt<string>("[ValueToken] %s", to_string(*p).c_str());
+		if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
+			return StringifyEnvironment(*p, {});
+		if(const auto p = vo.AccessPtr<EnvironmentReference>())
+			return StringifyEnvironment(p->GetPtr().lock(), true);
+		if(const auto p = vo.AccessPtr<A1::ContextHandler>())
+			return "[" + StringifyContextHandler(*p) + "]";
 		if(const auto p = vo.AccessPtr<bool>())
 			return *p ? "[bool] #t" : "[bool] #f";
 		if(const auto p = vo.AccessPtr<int>())
