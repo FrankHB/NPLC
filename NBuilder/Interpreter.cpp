@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1345
+\version r1359
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-04-13 22:19 +0800
+	2020-04-22 01:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -61,14 +61,14 @@ namespace NPL
 {
 
 yconstexpr auto prompt("> ");
-/// 519
+//! \since YSLib build 519
 namespace
 {
 
-/// 520
+//! \since YSLib build 520
 using namespace platform_ex;
 
-/// 852
+//! \since YSLib build 852
 //@{
 void
 PrintTermNode(std::ostream& os, const TermNode& term,
@@ -159,23 +159,23 @@ struct NodeValueLogger
 };
 //@}
 
-/// 867
+//! \since YSLib build 867
 //@{
 using ystdex::ceiling_lb;
 yconstexpr const auto min_block_size(resource_pool::adjust_for_block(1, 1));
 yconstexpr const size_t init_pool_num(yimpl(12));
-/// 885
+//! \since YSLib build 885
 static_assert(init_pool_num > 1, "Invalid pool configuration found.");
 #if YB_IMPL_GNUCPP >= 30400 || __has_builtin(__builtin_clz)
 yconstexpr const auto min_lb_size(sizeof(unsigned) * CHAR_BIT
 	- __builtin_clz(unsigned(min_block_size - 1)));
-/// 885
+//! \since YSLib build 885
 yconstexpr const size_t max_fast_block_shift(min_lb_size + init_pool_num - 1);
 yconstexpr const size_t
 	max_fast_block_size(1U << max_fast_block_shift);
 #else
 const auto min_lb_size(ceiling_lb(min_block_size));
-/// 885
+//! \since YSLib build 885
 const size_t max_fast_block_shift(min_lb_size + init_pool_num - 1);
 const size_t max_fast_block_size(1U << max_fast_block_shift);
 #endif
@@ -302,13 +302,13 @@ LogTermValue(const TermNode& term, Logger::Level lv)
 	YTraceDe(lv, "%s", oss.str().c_str());
 }
 
-/// 845
+//! \since YSLib build 845
 namespace
 {
 
 using namespace pmr;
 
-/// 884
+//! \since YSLib build 884
 //@{
 #if NPLC_Impl_mimalloc
 class default_memory_resource : public memory_resource
@@ -358,7 +358,7 @@ public:
 #endif
 //@}
 
-/// 881
+//! \since YSLib build 881
 YB_ATTR_nodiscard memory_resource&
 GetDefaultResourceRef() ynothrowv
 {
@@ -440,7 +440,7 @@ struct test_memory_resource : public memory_resource,
 };
 #endif
 
-/// 881
+//! \since YSLib build 881
 YB_ATTR_nodiscard memory_resource&
 GetPoolResourceRef() ynothrowv
 {
@@ -474,7 +474,7 @@ GetMonotonicPoolRef()
 //	2. There are no changes on passes and handlers like %ContextNode::Resolve
 //		after the initialization.
 //	3. No literal handlers rely on the value of the reduced term.
-/// 883
+//! \since YSLib build 883
 //@{
 template<typename _func>
 ReductionStatus
@@ -509,7 +509,7 @@ ReduceFastIdOr(TermNode& term, _func f, _func2 f2)
 	}();
 }
 
-/// 884
+//! \since YSLib build 884
 //@{
 template<typename _func>
 YB_FLATTEN ReductionStatus
@@ -605,7 +605,7 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 }
 //@}
 
-/// 882
+//! \since YSLib build 882
 ReductionStatus
 ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 {
