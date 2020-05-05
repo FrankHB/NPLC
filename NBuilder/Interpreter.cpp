@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1394
+\version r1400
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-04-22 02:09 +0800
+	2020-04-24 17:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -178,12 +178,6 @@ StringifyValueObject(const ValueObject& vo)
 	throw ystdex::bad_any_cast();
 }
 
-YB_ATTR_nodiscard YB_PURE string
-LogValueObject(const ValueObject& vo)
-{
-	return EscapeLiteral(StringifyValueObject(vo));
-}
-
 
 struct NodeValueLogger
 {
@@ -191,7 +185,7 @@ struct NodeValueLogger
 	YB_ATTR_nodiscard YB_PURE string
 	operator()(const _tNode& node) const
 	{
-		return LogValueObject(node.Value);
+		return EscapeLiteral(StringifyValueObject(node.Value));
 	}
 };
 //@}
