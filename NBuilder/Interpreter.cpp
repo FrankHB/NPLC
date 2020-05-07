@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1431
+\version r1442
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-05-07 22:08 +0800
+	2020-05-07 23:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -148,7 +148,7 @@ DecodeTypeName(const ystdex::type_info& ti)
 YB_ATTR_nodiscard YB_PURE string
 StringifyEnvironment(const shared_ptr<Environment>& p_env, bool weak)
 {
-	return (weak ? "[Environment] " : "[WeakEnvironment] ")
+	return (weak ? "[environment] " : "[weak environment] ")
 		+ (p_env ? sfmt<string>("%p", ystdex::pvoid(p_env.get())) : "Invalid");
 }
 
@@ -160,17 +160,17 @@ StringifyContextHandler(const _tHandler& h)
 		switch(p->Wrapping)
 		{
 		case 0:
-			return "Operative[" + StringifyContextHandler(p->Handler) + "]";
+			return "operative[" + StringifyContextHandler(p->Handler) + "]";
 		case 1:
-			return sfmt<string>("Applicative[%s]",
+			return sfmt<string>("applicative[%s]",
 				StringifyContextHandler(p->Handler).c_str());
 		default:
-			return sfmt<string>("Applicative[%s, Wrapping = %zu]",
+			return sfmt<string>("applicative[%s, wrapping = %zu]",
 				StringifyContextHandler(p->Handler).c_str(), p->Wrapping);
 		}
 	if(const auto p = h.template target<A1::WrappedContextHandler<
 		YSLib::GHEvent<void(NPL::TermNode&, NPL::ContextNode&)>>>())
-		return "Wrapped: " + StringifyContextHandler(p->Handler);
+		return "wrapped " + StringifyContextHandler(p->Handler);
 	return string("ContextHandler: ") + DecodeTypeName(h.target_type());
 }
 //@}
@@ -181,9 +181,9 @@ StringifyValueObject(const ValueObject& vo)
 	if(vo != A1::ValueToken::Null)
 	{
 		if(const auto p = vo.AccessPtr<string>())
-			return *p;
+			return EscapeLiteral(*p);
 		if(const auto p = vo.AccessPtr<TokenValue>())
-			return sfmt<string>("[TokenValue] %s", p->c_str());
+			return sfmt<string>("[TokenValue] %s", EscapeLiteral(*p).c_str());
 		if(const auto p = vo.AccessPtr<A1::ValueToken>())
 			return sfmt<string>("[ValueToken] %s", to_string(*p).c_str());
 		if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
@@ -191,9 +191,9 @@ StringifyValueObject(const ValueObject& vo)
 		if(const auto p = vo.AccessPtr<EnvironmentReference>())
 			return StringifyEnvironment(p->GetPtr().lock(), true);
 		if(const auto p = vo.AccessPtr<A1::ContextHandler>())
-			return "[" + StringifyContextHandler(*p) + "]";
+			return "#[" + StringifyContextHandler(*p) + "]";
 		if(const auto p = vo.AccessPtr<bool>())
-			return *p ? "[bool] #t" : "[bool] #f";
+			return *p ? "[bool] true" : "[bool] false";
 		if(const auto p = vo.AccessPtr<int>())
 			return sfmt<string>("[int] %d", *p);
 		if(const auto p = vo.AccessPtr<unsigned>())
@@ -204,7 +204,7 @@ StringifyValueObject(const ValueObject& vo)
 		const auto& t(vo.type());
 
 		if(t != ystdex::type_id<void>())
-			return ystdex::quote(string(DecodeTypeName(t)), '[', ']');
+			return ystdex::quote(string(DecodeTypeName(t)), "#[", ']');
 	}
 	throw ystdex::bad_any_cast();
 }
@@ -216,7 +216,7 @@ struct NodeValueLogger
 	YB_ATTR_nodiscard YB_PURE string
 	operator()(const _tNode& node) const
 	{
-		return EscapeLiteral(StringifyValueObject(node.Value));
+		return StringifyValueObject(node.Value);
 	}
 };
 //@}
