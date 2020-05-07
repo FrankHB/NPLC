@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1400
+\version r1431
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-04-24 17:24 +0800
+	2020-05-07 22:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -32,6 +32,7 @@
 #include YFM_YSLib_Core_YException // for ExtractAndTrace;
 #include YFM_YSLib_Service_TextFile
 #include YFM_NPL_NPLA1Forms
+#include <cstring> // for std::strcmp, std::strstr;
 #include <cstdio> // for std::fprintf;
 
 #define NPLC_Impl_TracePerform true
@@ -114,6 +115,36 @@ PrintTermNode(std::ostream& os, const TermNode& term,
 }
 
 //! \since YSLib build 889
+//@{
+YB_ATTR_nodiscard YB_ATTR_returns_nonnull YB_PURE const char*
+DecodeTypeName(const ystdex::type_info& ti)
+{
+	// NOTE: Some well-known types for unreadable objects are simplified.
+	using namespace A1;
+
+	if(ti == ystdex::type_id<ContextHandler>())
+		return "ContextHandler";
+	if(ti == ystdex::type_id<LiteralHandler>())
+		return "LiteralHandler";
+	if(ti == ystdex::type_id<ContextHandler::FuncType*>())
+		return "native function pointer";
+	if(ti == ystdex::type_id<ystdex::expanded_caller<ContextHandler::FuncType,
+		ReductionStatus(*)(NPL::TermNode&)>>())
+		return "expanded native function pointer";
+
+	const auto name(ti.name());
+
+	// XXX: The following cases are dependent on mangled names.
+	// TODO: Use libcxxabi interface conditionally?
+	if(std::strcmp(name, "N3NPL2A112_GLOBAL__N_110VauHandlerE") == 0)
+		return "vau";
+	if(std::strstr(name, "GroundedDerived"))
+		return "ground derived native handler";
+	if(std::strstr(name, "_GLOBAL__"))
+		return "native handler";
+	return name;
+}
+
 YB_ATTR_nodiscard YB_PURE string
 StringifyEnvironment(const shared_ptr<Environment>& p_env, bool weak)
 {
@@ -121,7 +152,6 @@ StringifyEnvironment(const shared_ptr<Environment>& p_env, bool weak)
 		+ (p_env ? sfmt<string>("%p", ystdex::pvoid(p_env.get())) : "Invalid");
 }
 
-//! \since YSLib build 889
 template<class _tHandler>
 YB_ATTR_nodiscard YB_PURE string
 StringifyContextHandler(const _tHandler& h)
@@ -141,8 +171,9 @@ StringifyContextHandler(const _tHandler& h)
 	if(const auto p = h.template target<A1::WrappedContextHandler<
 		YSLib::GHEvent<void(NPL::TermNode&, NPL::ContextNode&)>>>())
 		return "Wrapped: " + StringifyContextHandler(p->Handler);
-	return string("ContextHandler[") + h.target_type().name() + "]";
+	return string("ContextHandler: ") + DecodeTypeName(h.target_type());
 }
+//@}
 
 YB_ATTR_nodiscard YB_PURE string
 StringifyValueObject(const ValueObject& vo)
@@ -173,7 +204,7 @@ StringifyValueObject(const ValueObject& vo)
 		const auto& t(vo.type());
 
 		if(t != ystdex::type_id<void>())
-			return ystdex::quote(string(t.name()), '[', ']');
+			return ystdex::quote(string(DecodeTypeName(t)), '[', ']');
 	}
 	throw ystdex::bad_any_cast();
 }
