@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7830
+\version r7863
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-04-12 00:23 +0800
+	2020-05-13 18:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -76,23 +76,6 @@ using namespace platform_ex;
 namespace
 {
 
-//! \since YSLib build 327
-void
-ParseOutput(LexicalAnalyzer& lex)
-{
-	const auto& cbuf(lex.GetBuffer());
-	const auto xlst(lex.Literalize());
-	using namespace std;
-	const auto rlst(Tokenize(xlst));
-
-	cout << "cbuf size:" << cbuf.size() << endl
-		<< "xlst size:" << cbuf.size() << endl;
-	for(const auto& str : rlst)
-		cout << EncodeArg(str) << endl
-			<< "* u8 length: " << str.size() << endl;
-	cout << rlst.size() << " token(s) parsed." <<endl;
-}
-
 //! \since YSLib build 737
 void
 ParseStream(std::istream& is)
@@ -101,11 +84,22 @@ ParseStream(std::istream& is)
 	{
 		Session sess;
 		auto& lex(sess.Lexer);
+		ByteParser parse(lex);
 		char c;
 
 		while((c = is.get()), is)
-			lex.ParseByte(c);
-		ParseOutput(lex);
+			parse(c);
+
+		const auto& cbuf(lex.GetBuffer());
+		const auto rlst(sess.GetTokenList(parse));
+		using namespace std;
+
+		cout << "cbuf size:" << cbuf.size() << endl
+			<< "token list size:" << rlst.size() << endl;
+		for(const auto& str : rlst)
+			cout << EncodeArg(str) << endl
+				<< "* u8 length: " << str.size() << endl;
+		cout << rlst.size() << " token(s) parsed." <<endl;
 		is.clear();
 		is.seekg(0);
 	}
@@ -573,14 +567,6 @@ LoadFunctions(Interpreter& intp)
 		return istringstream(str);
 	});
 	RegisterUnary<Strict, ifstream>(rctx, "parse-f", ParseStream);
-	RegisterUnary<Strict, const string>(rctx, "lex", [&](const string& unit){
-		LexicalAnalyzer lex;
-
-		for(const auto& c : unit)
-			lex.ParseByte(c);
-		return lex;
-	});
-	RegisterUnary<Strict, LexicalAnalyzer>(rctx, "parse-lex", ParseOutput);
 	RegisterUnary<Strict, std::istringstream>(rctx, "parse-s", ParseStream);
 	RegisterUnary<Strict, const string>(rctx, "put", [&](const string& str){
 		std::cout << EncodeArg(str);
