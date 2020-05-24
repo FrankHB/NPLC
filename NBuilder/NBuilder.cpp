@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7863
+\version r7864
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-05-13 18:06 +0800
+	2020-05-24 12:54 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -90,7 +90,7 @@ ParseStream(std::istream& is)
 		while((c = is.get()), is)
 			parse(c);
 
-		const auto& cbuf(lex.GetBuffer());
+		const auto& cbuf(parse.GetBuffer());
 		const auto rlst(sess.GetTokenList(parse));
 		using namespace std;
 
