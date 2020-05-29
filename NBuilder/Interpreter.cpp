@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1442
+\version r1449
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-05-07 23:22 +0800
+	2020-05-30 03:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -35,13 +35,6 @@
 #include <cstring> // for std::strcmp, std::strstr;
 #include <cstdio> // for std::fprintf;
 
-#define NPLC_Impl_TracePerform true
-#define NPLC_Impl_TracePerformDetails false
-#define NPLC_Impl_UseDebugMR false
-#define NPLC_Impl_UseMonotonic false
-#define NPLC_Impl_TestMemoryResource false
-#define NPLC_Impl_LogBeforeReduce false
-#define NPLC_Impl_FastAsyncReduce true
 #if YCL_Linux
 //#	define NPLC_Impl_mimalloc true
 // XXX: Hard-coded for AUR package 'mimalloc-git'. Set environment variable
@@ -51,6 +44,13 @@
 //	can be used without link the library.
 #	define NPLC_Impl_ExtInc_mimalloc </usr/lib/mimalloc-1.4/include/mimalloc.h>
 #endif
+#define NPLC_Impl_FastAsyncReduce true
+#define NPLC_Impl_LogBeforeReduce false
+#define NPLC_Impl_TestMemoryResource false
+#define NPLC_Impl_TracePerform true
+#define NPLC_Impl_TracePerformDetails false
+#define NPLC_Impl_UseDebugMR false
+#define NPLC_Impl_UseMonotonic false
 
 #if NPLC_Impl_mimalloc
 #	include NPLC_Impl_ExtInc_mimalloc
