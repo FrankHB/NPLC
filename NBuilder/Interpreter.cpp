@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1469
+\version r1474
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-09 11:15 +0800
+	2020-06-09 11:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -65,9 +65,6 @@ yconstexpr auto prompt("> ");
 //! \since YSLib build 519
 namespace
 {
-
-//! \since YSLib build 520
-using namespace platform_ex;
 
 //! \since YSLib build 852
 //@{
@@ -695,7 +692,6 @@ Interpreter::Interpreter()
 	pool_rsrc(&GetPoolResourceRef()), line(), Context(NPLC_Impl_PoolName)
 {
 	using namespace std;
-	using namespace platform_ex;
 
 #if NPLC_Impl_TracePerformDetails
 	SetupTraceDepth(Context.Root);
@@ -734,7 +730,6 @@ void
 Interpreter::HandleSignal(SSignal e)
 {
 	using namespace std;
-
 	static yconstexpr auto not_impl("Sorry, not implemented: ");
 
 	switch(e)
@@ -759,14 +754,12 @@ Interpreter::HandleSignal(SSignal e)
 bool
 Interpreter::Process()
 {
-	using namespace platform_ex;
-
 	if(!line.empty())
 	{
 		UpdateTextColor(SideEffectColor);
 		try
 		{
-			line = DecodeArg(line);
+			line = platform_ex::DecodeArg(line);
 
 			auto res(Context.Perform(line));
 
