@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1449
+\version r1455
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-05-30 03:56 +0800
+	2020-06-09 05:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -819,6 +819,13 @@ Interpreter::ProcessLine(string unit)
 {
 	line = std::move(unit);
 	return Process();
+}
+
+void
+Interpreter::Run()
+{
+	while(WaitForLine() && Process())
+		;
 }
 
 bool
