@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1455
+\version r1469
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-09 05:00 +0800
+	2020-06-09 11:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -824,8 +824,21 @@ Interpreter::ProcessLine(string unit)
 void
 Interpreter::Run()
 {
-	while(WaitForLine() && Process())
-		;
+	Context.Root.Rewrite(NPL::ToReducer(Context.Root.get_allocator(),
+		std::bind(&Interpreter::RunLoop, std::ref(*this),
+			std::placeholders::_1)));
+}
+
+ReductionStatus
+Interpreter::RunLoop(ContextNode& ctx)
+{
+	A1::ContextState::Access(ctx).SetNextTermRef(Term);
+	// TODO: Set error continuation to filter exceptions.
+	if(WaitForLine() && Process())
+		return RelaySwitched(ctx, std::bind(&Interpreter::RunLoop,
+			std::ref(*this), std::placeholders::_1));
+	return ReductionStatus::Retained;
+	// TODO: Add root continuation?
 }
 
 bool
