@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1474
+\version r1550
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-09 11:35 +0800
+	2020-06-10 00:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -751,67 +751,63 @@ Interpreter::HandleSignal(SSignal e)
 	}
 }
 
-bool
-Interpreter::Process()
+void
+Interpreter::Process(string_view unit)
 {
-	if(!line.empty())
+	try
 	{
-		UpdateTextColor(SideEffectColor);
-		try
-		{
-			line = platform_ex::DecodeArg(line);
-
-			auto res(Context.Perform(line));
-
+		Term = Context.ReadFrom(platform_ex::DecodeArg(unit));
+		REPLContext::ReduceAndFilter(Term, Context.Root);
 #if NPLC_Impl_TracePerform
-		//	UpdateTextColor(InfoColor);
-		//	cout << "Unrecognized reduced token list:" << endl;
-			UpdateTextColor(ReducedColor);
-			LogTermValue(res);
+	//	UpdateTextColor(InfoColor);
+	//	cout << "Unrecognized reduced token list:" << endl;
+		UpdateTextColor(ReducedColor);
+		LogTermValue(Term);
 #endif
-		}
-		catch(SSignal e)
-		{
-			if(e == SSignal::Exit)
-				return {};
-			UpdateTextColor(SignalColor);
-			HandleSignal(e);
-		}
-		catch(std::exception& e)
-		{
-			terminal.UpdateForeColor(ErrorColor);
-			ExtractException([&](const char* str, size_t level) YB_NONNULL(2){
-				const auto print(
-					[&](RecordLevel lv, const char* name) YB_NONNULL(3){
-					// XXX: Format '%*c' may not work in some implementations of
-					//	%ystdex::sfmt in %YF_TraceRaw.
-					YF_TraceRaw(lv, "%*s%s<%u>: %s", int(level), "", name,
-						unsigned(lv), str);
-				});
-
-				TryExpr(throw)
-				CatchExpr(NPLException& ex, print(ex.GetLevel(),
-					"NPLException"))
-				catch(LoggedEvent& ex)
-				{
-					const auto lv(ex.GetLevel());
-
-					if(lv < err_threshold)
-						throw;
-					print(lv, "Error");
-				}
-				CatchExpr(..., throw)
-			}, e);
-		}
 	}
-	return true;
+	catch(std::exception& e)
+	{
+		terminal.UpdateForeColor(ErrorColor);
+		ExtractException([&](const char* str, size_t level) YB_NONNULL(2){
+			const auto print(
+				[&](RecordLevel lv, const char* name) YB_NONNULL(3){
+				// XXX: Format '%*c' may not work in some implementations of
+				//	%ystdex::sfmt in %YF_TraceRaw.
+				YF_TraceRaw(lv, "%*s%s<%u>: %s", int(level), "", name,
+					unsigned(lv), str);
+			});
+
+			TryExpr(throw)
+			CatchExpr(NPLException& ex, print(ex.GetLevel(), "NPLException"))
+			catch(LoggedEvent& ex)
+			{
+				const auto lv(ex.GetLevel());
+
+				if(lv < err_threshold)
+					throw;
+				print(lv, "Error");
+			}
+			CatchExpr(..., throw)
+		}, e);
+	}
 }
 
-bool
-Interpreter::ProcessLine(string unit)
+void
+Interpreter::ProcessLine(string_view unit)
 {
-	line = std::move(unit);
-	return Process();
+	if(!unit.empty())
+	{
+		UpdateTextColor(SideEffectColor);
+		TryExpr(Process(unit))
+		catch(SSignal e)
+		{
+			if(e != SSignal::Exit)
+			{
+				UpdateTextColor(SignalColor);
+				HandleSignal(e);
+			}
+		}
+	}
 }
 
 void
@@ -825,11 +821,25 @@ Interpreter::Run()
 ReductionStatus
 Interpreter::RunLoop(ContextNode& ctx)
 {
-	A1::ContextState::Access(ctx).SetNextTermRef(Term);
 	// TODO: Set error continuation to filter exceptions.
-	if(WaitForLine() && Process())
+	if(WaitForLine())
+	{
+		if(!line.empty())
+		{
+			UpdateTextColor(SideEffectColor);
+			A1::ContextState::Access(ctx).SetNextTermRef(Term);
+			TryExpr(Process(line))
+			catch(SSignal e)
+			{
+				if(e == SSignal::Exit)
+					return ReductionStatus::Retained;
+				UpdateTextColor(SignalColor);
+				HandleSignal(e);
+			}
+		}
 		return RelaySwitched(ctx, std::bind(&Interpreter::RunLoop,
 			std::ref(*this), std::placeholders::_1));
+	}
 	return ReductionStatus::Retained;
 	// TODO: Add root continuation?
 }

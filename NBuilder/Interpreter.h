@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r289
+\version r300
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-09 10:40 +0800
+	2020-06-09 12:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -193,15 +193,16 @@ public:
 	void
 	HandleSignal(SSignal);
 
-	bool
-	Process();
-
-	//! \since YSLib build 855
-	bool
-	ProcessLine(string);
-
 	//! \since YSLib build 892
 	//@{
+private:
+	void
+	Process(string_view);
+
+public:
+	void
+	ProcessLine(string_view);
+
 	void
 	Run();
 
