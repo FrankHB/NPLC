@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1550
+\version r1559
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-10 00:06 +0800
+	2020-06-10 21:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -769,23 +769,27 @@ Interpreter::Process(string_view unit)
 	{
 		terminal.UpdateForeColor(ErrorColor);
 		ExtractException([&](const char* str, size_t level) YB_NONNULL(2){
-			const auto print(
-				[&](RecordLevel lv, const char* name) YB_NONNULL(3){
+			const auto print([&](RecordLevel lv, const char* name,
+				const char* msg) YB_NONNULL(3){
 				// XXX: Format '%*c' may not work in some implementations of
 				//	%ystdex::sfmt in %YF_TraceRaw.
 				YF_TraceRaw(lv, "%*s%s<%u>: %s", int(level), "", name,
-					unsigned(lv), str);
+					unsigned(lv), msg);
 			});
 
 			TryExpr(throw)
-			CatchExpr(NPLException& ex, print(ex.GetLevel(), "NPLException"))
+			CatchExpr(NPLException& ex,
+				print(ex.GetLevel(), "NPLException", str))
+			CatchExpr(bad_any_cast& ex,
+				print(Warning, "Error", ystdex::sfmt("Mismatched types ('%s',"
+					" '%s') found.", ex.from(), ex.to()).c_str()))
 			catch(LoggedEvent& ex)
 			{
 				const auto lv(ex.GetLevel());
 
 				if(lv < err_threshold)
 					throw;
-				print(lv, "Error");
+				print(lv, "Error", str);
 			}
 			CatchExpr(..., throw)
 		}, e);
