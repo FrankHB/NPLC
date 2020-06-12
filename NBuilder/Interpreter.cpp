@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1559
+\version r1576
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-10 21:24 +0800
+	2020-06-12 21:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -51,6 +51,7 @@
 #define NPLC_Impl_TracePerformDetails false
 #define NPLC_Impl_UseDebugMR false
 #define NPLC_Impl_UseMonotonic false
+#define NPLC_Impl_UseSourceInfo true
 
 #if NPLC_Impl_mimalloc
 #	include NPLC_Impl_ExtInc_mimalloc
@@ -562,7 +563,23 @@ ReduceFastIdOr(TermNode& term, _func f, _func2 f2)
 			YAssert(IsLeaf(term),
 				"Unexpected irregular representation of term found.");
 			if(A1::HandleCheckedExtendedLiteral(term, id))
+#if NPLC_Impl_UseSourceInfo
+				try
+				{
+					// XXX: Assume the call does not change %term on throwing.
+					return f(id);
+				}
+				catch(BadIdentifier&)
+				{
+					if(const auto p_si = A1::QuerySourceInformation(term.Value))
+						YTraceDe(Err, "Identifier '%s' is at line %zu,"
+							" column %zu.", id.data(), p_si->second.Line + 1,
+							p_si->second.Column + 1);
+					throw;
+				}
+#else
 				return f(id);
+#endif
 		}
 		return f2();
 	}();
