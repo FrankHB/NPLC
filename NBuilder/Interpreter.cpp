@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1576
+\version r1640
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-12 21:45 +0800
+	2020-06-24 17:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -49,6 +49,7 @@
 #define NPLC_Impl_TestMemoryResource false
 #define NPLC_Impl_TracePerform true
 #define NPLC_Impl_TracePerformDetails false
+#define NPLC_Impl_UseBacktrace true
 #define NPLC_Impl_UseDebugMR false
 #define NPLC_Impl_UseMonotonic false
 #define NPLC_Impl_UseSourceInfo true
@@ -646,7 +647,7 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 		}, [&]{
 			term_ref = AccessFirstSubterm(term_ref);
 		});
-		return A1::ReduceAgainLifted(term, cs, term_ref);
+		return A1::ReduceOnceLifted(term, cs, term_ref);
 	}
 	else if(IsBranch(term))
 	{
@@ -771,16 +772,43 @@ Interpreter::HandleSignal(SSignal e)
 void
 Interpreter::Process(string_view unit)
 {
+	auto& cs(Context.Root);
+	ContextNode::ReducerSequence rs(cs.get_allocator());
+
 	try
 	{
-		Term = Context.ReadFrom(platform_ex::DecodeArg(unit));
-		REPLContext::ReduceAndFilter(Term, Context.Root);
+#if NPLC_Impl_UseSourceInfo
+		using tag_t
+			= REPLContext::LoadOptionTag<REPLContext::WithSourceLocation>;
+#else
+		using tag_t
+			= REPLContext::LoadOptionTag<REPLContext::NoSourceInformation>;
+#endif
+		const auto gd(cs.Guard(Term, cs));
+		const auto unwind(ystdex::make_guard([&]() ynothrow{
+			rs = cs.Switch(std::move(rs));
+		}));
+
+		UpdateTextColor(SideEffectColor);
+		Term = Context.ReadFrom(tag_t(), platform_ex::DecodeArg(unit));
+		cs.SetNextTermRef(Term);
+		cs.RewriteTerm(Term);
 #if NPLC_Impl_TracePerform
 	//	UpdateTextColor(InfoColor);
 	//	cout << "Unrecognized reduced token list:" << endl;
 		UpdateTextColor(ReducedColor);
 		LogTermValue(Term);
 #endif
+	}
+	catch(SSignal e)
+	{
+		if(e == SSignal::Exit)
+			cs.UnwindCurrent();
+		else
+		{
+			UpdateTextColor(SignalColor);
+			HandleSignal(e);
+		}
 	}
 	catch(std::exception& e)
 	{
@@ -810,6 +838,19 @@ Interpreter::Process(string_view unit)
 			}
 			CatchExpr(..., throw)
 		}, e);
+#if NPLC_Impl_UseBacktrace
+		if(!rs.empty())
+			YF_TraceRaw(Notice, "Backtrace:");
+		FilterExceptions([&]{
+			for(const auto& act : rs)
+			{
+				const auto name(A1::QueryContinuationName(act));
+				const auto p(name.data());
+
+				YF_TraceRaw(Notice, "#[continuation: (%s)]", p ? p : "?");
+			}
+		}, "guard unwinding");
+#endif
 	}
 }
 
@@ -817,18 +858,7 @@ void
 Interpreter::ProcessLine(string_view unit)
 {
 	if(!unit.empty())
-	{
-		UpdateTextColor(SideEffectColor);
-		TryExpr(Process(unit))
-		catch(SSignal e)
-		{
-			if(e != SSignal::Exit)
-			{
-				UpdateTextColor(SignalColor);
-				HandleSignal(e);
-			}
-		}
-	}
+		Process(unit);
 }
 
 void
@@ -845,21 +875,11 @@ Interpreter::RunLoop(ContextNode& ctx)
 	// TODO: Set error continuation to filter exceptions.
 	if(WaitForLine())
 	{
-		if(!line.empty())
-		{
-			UpdateTextColor(SideEffectColor);
-			A1::ContextState::Access(ctx).SetNextTermRef(Term);
-			TryExpr(Process(line))
-			catch(SSignal e)
-			{
-				if(e == SSignal::Exit)
-					return ReductionStatus::Retained;
-				UpdateTextColor(SignalColor);
-				HandleSignal(e);
-			}
-		}
-		return RelaySwitched(ctx, std::bind(&Interpreter::RunLoop,
+		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop,
 			std::ref(*this), std::placeholders::_1));
+		if(!line.empty())
+			Process(line);
+		return ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;
 	// TODO: Add root continuation?
