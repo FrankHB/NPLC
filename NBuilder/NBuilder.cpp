@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7869
+\version r7872
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-06-09 05:00 +0800
+	2020-06-26 00:54 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -33,9 +33,6 @@
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
 #include YFM_NPL_Dependency // for NPL, NPL::A1, LoadNPLContextGround;
 #include YFM_NPL_NPLA1Forms // for NPL::A1::Forms;
-#include YFM_YSLib_Service_TextFile // for
-//	YSLib::IO::SharedInputMappedFileStream, YSLib::Text::OpenSkippedBOMtream,
-//	YSLib::Text::BOM_UTF_8;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
 //	std::chrono::duration_cast;
 #include <ytest/timing.hpp> // for ytest::timing::once;
