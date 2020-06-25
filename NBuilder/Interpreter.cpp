@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1640
+\version r1664
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-24 17:15 +0800
+	2020-06-26 00:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -564,23 +564,21 @@ ReduceFastIdOr(TermNode& term, _func f, _func2 f2)
 			YAssert(IsLeaf(term),
 				"Unexpected irregular representation of term found.");
 			if(A1::HandleCheckedExtendedLiteral(term, id))
-#if NPLC_Impl_UseSourceInfo
+#	if NPLC_Impl_UseSourceInfo
 				try
 				{
 					// XXX: Assume the call does not change %term on throwing.
 					return f(id);
 				}
-				catch(BadIdentifier&)
+				catch(BadIdentifier& e)
 				{
 					if(const auto p_si = A1::QuerySourceInformation(term.Value))
-						YTraceDe(Err, "Identifier '%s' is at line %zu,"
-							" column %zu.", id.data(), p_si->second.Line + 1,
-							p_si->second.Column + 1);
+						e.Source = *p_si;
 					throw;
 				}
-#else
+#	else
 				return f(id);
-#endif
+#	endif
 		}
 		return f2();
 	}();
@@ -823,6 +821,20 @@ Interpreter::Process(string_view unit)
 			});
 
 			TryExpr(throw)
+#if NPLC_Impl_UseSourceInfo
+			catch(BadIdentifier& ex)
+			{
+				print(ex.GetLevel(), "BadIdentifier", str);
+
+				const auto& si(ex.Source);
+
+				if(ex.Source.first)
+					YTraceDe(ex.GetLevel(), "%*sIdentifier '%s' is at line %zu,"
+						" column %zu in %s.", int(level + 1), "",
+						ex.GetIdentifier().c_str(), si.second.Line + 1,
+						si.second.Column + 1, si.first->c_str());
+			}
+#endif
 			CatchExpr(NPLException& ex,
 				print(ex.GetLevel(), "NPLException", str))
 			CatchExpr(bad_any_cast& ex,
@@ -857,6 +869,8 @@ Interpreter::Process(string_view unit)
 void
 Interpreter::ProcessLine(string_view unit)
 {
+	Context.CurrentSource = YSLib::allocate_shared<string>(Context.Allocator,
+		"*STDIN*");
 	if(!unit.empty())
 		Process(unit);
 }
@@ -864,9 +878,11 @@ Interpreter::ProcessLine(string_view unit)
 void
 Interpreter::Run()
 {
-	Context.Root.Rewrite(NPL::ToReducer(Context.Root.get_allocator(),
-		std::bind(&Interpreter::RunLoop, std::ref(*this),
-			std::placeholders::_1)));
+	const auto a(Context.Allocator);
+
+	Context.CurrentSource = YSLib::allocate_shared<string>(a, "*STDIN*");
+	Context.Root.Rewrite(NPL::ToReducer(a, std::bind(&Interpreter::RunLoop,
+		std::ref(*this), std::placeholders::_1)));
 }
 
 ReductionStatus
