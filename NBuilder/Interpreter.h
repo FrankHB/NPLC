@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r303
+\version r315
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-26 10:16 +0800
+	2020-06-28 02:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -197,23 +197,24 @@ public:
 	YB_NONNULL(2) void
 	Load(const char*, std::istream&);
 
-	//! \since YSLib build 892
-	//@{
 private:
+	//! \since YSLib build 894
 	void
-	Process(string_view);
+	Perform(string_view);
 
 public:
-	void
-	ProcessLine(string_view);
-
+	//! \since YSLib build 892
 	void
 	Run();
 
+	//! \since YSLib build 894
+	void
+	RunLine(string_view);
+
 private:
+	//! \since YSLib build 892
 	ReductionStatus
 	RunLoop(ContextNode&);
-	//@}
 
 public:
 	//! \since YSLib build 834
