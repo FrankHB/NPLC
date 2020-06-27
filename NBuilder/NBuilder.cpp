@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7872
+\version r7928
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-06-26 00:54 +0800
+	2020-06-27 22:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -31,8 +31,9 @@
 #include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
-#include YFM_NPL_Dependency // for NPL, NPL::A1, LoadNPLContextGround;
 #include YFM_NPL_NPLA1Forms // for NPL::A1::Forms;
+#include <ystdex/scope_guard.hpp> // for ystdex::guard;
+#include YFM_NPL_Dependency // for NPL, NPL::A1, LoadGroundContext;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
 //	std::chrono::duration_cast;
 #include <ytest/timing.hpp> // for ytest::timing::once;
@@ -200,30 +201,38 @@ FetchListLength(TermNode& term) ynothrow
 	return int(term.size());
 }
 
-//! \since YSLib build 802
-void
-LoadExternal(REPLContext& context, const string& name, ContextNode& ctx)
+//! \since YSLib build 894
+//@{
+ValueToken
+LoadExternalRoot(Interpreter& intp, const string& name)
 {
 	const auto p_is(A1::OpenFile(name.c_str()));
 
 	if(std::istream& is{*p_is})
 	{
 		YTraceDe(Notice, "Test unit '%s' found.", name.c_str());
-		FilterExceptions([&]{
-			TryLoadSource(context, name.c_str(), is, ctx);
-		});
+		intp.Load(name.c_str(), is);
 	}
 	else
 		YTraceDe(Notice, "Test unit '%s' not found.", name.c_str());
-}
-
-//! \since YSLib build 839
-ValueToken
-LoadExternalRoot(REPLContext& context, const string& name)
-{
-	LoadExternal(context, name, context.Root);
 	return ValueToken::Unspecified;
 }
+
+ReductionStatus
+ReduceToLoadExternalRoot(TermNode& term, Interpreter& intp)
+{
+	term.Value = LoadExternalRoot(intp, NPL::ResolveRegular<const string>(
+		NPL::Deref(std::next(term.begin()))));
+	return ReductionStatus::Clean;
+}
+
+ReductionStatus
+RelayToLoadExternalRoot(ContextNode& ctx, TermNode& term, Interpreter& intp)
+{
+	return RelaySwitched(ctx, std::bind(ReduceToLoadExternalRoot,
+		std::ref(term), std::ref(intp)));
+}
+//@}
 
 #if NPLC_Impl_TestTemporaryOrder
 //! \since YSLib build 860
@@ -545,15 +554,40 @@ LoadFunctions(Interpreter& intp)
 	});
 	RegisterStrict(rctx, "display", ystdex::bind1(LogTermValue, Notice));
 	RegisterUnary<Strict, const string>(rctx, "echo", Echo);
-	RegisterUnary<Strict, const string>(rctx, "load",
-		std::bind(LoadExternalRoot, std::ref(context), _1));
-	RegisterUnary<Strict, const string>(rctx, "load-at-root",
-		[&](const string& name){
-		const ystdex::guard<EnvironmentSwitcher>
-			gd(rctx, rctx.SwitchEnvironment(root_env.shared_from_this()));
+	if(intp.Context.IsAsynchronous())
+	{
+		RegisterStrict(rctx, "load", [&](TermNode& term, ContextNode& ctx){
+			RetainN(term);
+			return RelayToLoadExternalRoot(ctx, term, intp);
+		});
+		RegisterStrict(rctx, "load-at-root",
+			[&](TermNode& term, ContextNode& ctx){
+			RetainN(term);
+			// NOTE: This does not support PTC.
+			RelaySwitched(ctx, std::bind(
+				[](ystdex::guard<EnvironmentSwitcher>&){
+				return ReductionStatus::Neutral;
+			}, ystdex::guard<EnvironmentSwitcher>(rctx,
+				rctx.SwitchEnvironment(root_env.shared_from_this()))));
+			return RelayToLoadExternalRoot(ctx, term, intp);
+		});
+	}
+	else
+	{
+		RegisterStrict(rctx, "load", [&](TermNode& term){
+			RetainN(term);
+			return ReduceToLoadExternalRoot(term, intp);
+		});
+		RegisterStrict(rctx, "load-at-root",
+			[&](TermNode& term, ContextNode& ctx){
+			RetainN(term);
 
-		return LoadExternalRoot(context, name);
-	});
+			const ystdex::guard<EnvironmentSwitcher> gd(ctx,
+				ctx.SwitchEnvironment(root_env.shared_from_this()));
+
+			return ReduceToLoadExternalRoot(term, intp);
+		});
+	}
 	RegisterUnary<Strict, const string>(rctx, "ofs", [&](const string& path){
 		if(ifstream ifs{path})
 			return ifs;
@@ -582,7 +616,7 @@ LoadFunctions(Interpreter& intp)
 		MarkGuard("A"), MarkGuard("B"), MarkGuard("C");
 	});
 #endif
-	LoadExternalRoot(context, "test.txt");
+	LoadExternalRoot(intp, "test.txt");
 #if NPLC_Impl_DebugAction
 	rctx.EvaluateList.Add(DefaultDebugAction, 255);
 	rctx.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
@@ -590,7 +624,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "b855_xx"
+#define NPLC_VER "b893+"
 #define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);

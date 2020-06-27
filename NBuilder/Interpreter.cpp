@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1664
+\version r1673
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-26 00:43 +0800
+	2020-06-27 21:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -768,6 +768,14 @@ Interpreter::HandleSignal(SSignal e)
 }
 
 void
+Interpreter::Load(const char* name, std::istream& is)
+{
+	FilterExceptions([&]{
+		TryLoadSource(Context, name, is, Context.Root);
+	});
+}
+
+void
 Interpreter::Process(string_view unit)
 {
 	auto& cs(Context.Root);
@@ -891,8 +899,8 @@ Interpreter::RunLoop(ContextNode& ctx)
 	// TODO: Set error continuation to filter exceptions.
 	if(WaitForLine())
 	{
-		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop,
-			std::ref(*this), std::placeholders::_1));
+		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
+			std::placeholders::_1));
 		if(!line.empty())
 			Process(line);
 		return ReductionStatus::Partial;
