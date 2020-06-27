@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r300
+\version r303
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-09 12:53 +0800
+	2020-06-26 10:16 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -192,6 +192,10 @@ public:
 
 	void
 	HandleSignal(SSignal);
+
+	//! \since YSLib build 894
+	YB_NONNULL(2) void
+	Load(const char*, std::istream&);
 
 	//! \since YSLib build 892
 	//@{
