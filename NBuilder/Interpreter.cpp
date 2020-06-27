@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1673
+\version r1685
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-27 21:50 +0800
+	2020-06-28 02:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -776,7 +776,7 @@ Interpreter::Load(const char* name, std::istream& is)
 }
 
 void
-Interpreter::Process(string_view unit)
+Interpreter::Perform(string_view unit)
 {
 	auto& cs(Context.Root);
 	ContextNode::ReducerSequence rs(cs.get_allocator());
@@ -875,15 +875,6 @@ Interpreter::Process(string_view unit)
 }
 
 void
-Interpreter::ProcessLine(string_view unit)
-{
-	Context.CurrentSource = YSLib::allocate_shared<string>(Context.Allocator,
-		"*STDIN*");
-	if(!unit.empty())
-		Process(unit);
-}
-
-void
 Interpreter::Run()
 {
 	const auto a(Context.Allocator);
@@ -891,6 +882,15 @@ Interpreter::Run()
 	Context.CurrentSource = YSLib::allocate_shared<string>(a, "*STDIN*");
 	Context.Root.Rewrite(NPL::ToReducer(a, std::bind(&Interpreter::RunLoop,
 		std::ref(*this), std::placeholders::_1)));
+}
+
+void
+Interpreter::RunLine(string_view unit)
+{
+	Context.CurrentSource = YSLib::allocate_shared<string>(Context.Allocator,
+		"*STDIN*");
+	if(!unit.empty())
+		Perform(unit);
 }
 
 ReductionStatus
@@ -902,7 +902,7 @@ Interpreter::RunLoop(ContextNode& ctx)
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
 		if(!line.empty())
-			Process(line);
+			Perform(line);
 		return ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;
