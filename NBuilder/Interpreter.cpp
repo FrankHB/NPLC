@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1708
+\version r1755
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-28 20:06 +0800
+	2020-06-29 00:39 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -778,45 +778,35 @@ Interpreter::HandleSignal(SSignal e)
 	}
 }
 
-void
-Interpreter::Load(TermNode& term, ContextNode& ctx, const string& name,
+ReductionStatus
+Interpreter::Load(TermNode& term, ContextNode& ctx, string&& name,
 	std::istream& is)
 {
-	FilterExceptions([&]{
-		TryLoadSource(Context, name.c_str(), SourceLoadTagType(), is, ctx);
-	});
-	term.Value = A1::ValueToken::Unspecified;
+	// NOTE: Swap guard for %Context.CurrentSource is not used to support PTC.
+	Context.CurrentSource
+		= YSLib::allocate_shared<string>(Context.Allocator, std::move(name));
+	term = Context.ReadFrom(SourceLoadTagType(), is, ctx);
+	// NOTE: This is explicitly not same to klisp. This is also friendly to PTC.
+	return A1::ReduceOnce(term, ctx);
 }
 
 void
-Interpreter::Perform(string_view unit)
+Interpreter::Perform(string_view unit, ContextNode::ReducerSequence& rs)
 {
-	auto& cs(Context.Root);
-	ContextNode::ReducerSequence rs(cs.get_allocator());
+	Term = Context.ReadFrom(SourceLoadTagType(), platform_ex::DecodeArg(unit));
+	ProcessTerm(Term, rs);
+}
 
-	try
-	{
-		const auto gd(cs.Guard(Term, cs));
-		const auto unwind(ystdex::make_guard([&]() ynothrow{
-			rs = cs.Switch(std::move(rs));
-		}));
+void
+Interpreter::PerformAndFilter(string_view unit)
+{
+	ContextNode::ReducerSequence rs(Context.Allocator);
 
-		UpdateTextColor(SideEffectColor);
-		Term = Context.ReadFrom(SourceLoadTagType(),
-			platform_ex::DecodeArg(unit));
-		cs.SetNextTermRef(Term);
-		cs.RewriteTerm(Term);
-#if NPLC_Impl_TracePerform
-	//	UpdateTextColor(InfoColor);
-	//	cout << "Unrecognized reduced token list:" << endl;
-		UpdateTextColor(ReducedColor);
-		LogTermValue(Term);
-#endif
-	}
+	TryExpr(Perform(unit, rs))
 	catch(SSignal e)
 	{
 		if(e == SSignal::Exit)
-			cs.UnwindCurrent();
+			Context.Root.UnwindCurrent();
 		else
 		{
 			UpdateTextColor(SignalColor);
@@ -882,6 +872,26 @@ Interpreter::Perform(string_view unit)
 }
 
 void
+Interpreter::ProcessTerm(TermNode& term, ContextNode::ReducerSequence& rs)
+{
+	auto& cs(Context.Root);
+	const auto gd(cs.Guard(term, cs));
+	const auto unwind(ystdex::make_guard([&]() ynothrow{
+		rs = cs.Switch(std::move(rs));
+	}));
+
+	UpdateTextColor(SideEffectColor);
+	cs.SetNextTermRef(term);
+	cs.RewriteTerm(term);
+#if NPLC_Impl_TracePerform
+//	UpdateTextColor(InfoColor);
+//	cout << "Unrecognized reduced token list:" << endl;
+	UpdateTextColor(ReducedColor);
+	LogTermValue(term);
+#endif
+}
+
+void
 Interpreter::Run()
 {
 	const auto a(Context.Allocator);
@@ -897,7 +907,7 @@ Interpreter::RunLine(string_view unit)
 	Context.CurrentSource = YSLib::allocate_shared<string>(Context.Allocator,
 		"*STDIN*");
 	if(!unit.empty())
-		Perform(unit);
+		PerformAndFilter(unit);
 }
 
 ReductionStatus
@@ -909,7 +919,7 @@ Interpreter::RunLoop(ContextNode& ctx)
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
 		if(!line.empty())
-			Perform(line);
+			PerformAndFilter(line);
 		return ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;

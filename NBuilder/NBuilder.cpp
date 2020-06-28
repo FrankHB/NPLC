@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7944
+\version r7991
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-06-28 19:56 +0800
+	2020-06-29 00:40 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -203,33 +203,60 @@ FetchListLength(TermNode& term) ynothrow
 
 //! \since YSLib build 894
 //@{
-void
-LoadExternalRoot(TermNode& term, ContextNode& ctx, Interpreter& intp,
-	const string& name)
+template<typename _func, typename _func2>
+YB_NONNULL(3) auto
+LoadWithFilename(_func f, _func2 f2, const char* name) -> decltype(f2())
 {
-	const auto p_is(A1::OpenFile(name.c_str()));
+	const auto p_is(A1::OpenFile(name));
 
 	if(std::istream& is{*p_is})
 	{
-		YTraceDe(Notice, "Test unit '%s' found.", name.c_str());
-		intp.Load(term, ctx, name, is);
+		YTraceDe(Notice, "Test unit '%s' found.", name);
+		return f(is);
 	}
 	else
-		YTraceDe(Notice, "Test unit '%s' not found.", name.c_str());
+		YTraceDe(Notice, "Test unit '%s' not found.", name);
+	return f2();
 }
 
 ReductionStatus
-ReduceToLoadExternalRoot(TermNode& term, ContextNode& ctx, Interpreter& intp)
+LoadExternal(TermNode& term, ContextNode& ctx, Interpreter& intp,
+	string&& name)
 {
-	LoadExternalRoot(term, ctx, intp, NPL::ResolveRegular<const string>(
-		NPL::Deref(std::next(term.begin()))));
-	return ReductionStatus::Clean;
+	return LoadWithFilename([&](std::istream& is){
+		return intp.Load(term, ctx, std::move(name), is);
+	}, [&]{
+		// XXX: Return the error?
+		term.Value = ValueToken::Unspecified;
+		return ReductionStatus::Clean;
+	}, name.c_str());
+}
+
+// NOTE: Preloading does not change the continuation of the context becasue it
+//	is essentially synchronized. It also does not use the backtrace handling in
+//	the normal interactive interpreter run (the REPL loop and the single line
+//	evaluation).
+YB_NONNULL(2) void
+PreloadExternalRoot(REPLContext& context, const char* name)
+{
+	return LoadWithFilename([&](std::istream& is){
+		FilterExceptions([&]{
+			TryLoadSource(context, name, is, context.Root);
+		});
+	}, []{}, name);
 }
 
 ReductionStatus
-RelayToLoadExternalRoot(ContextNode& ctx, TermNode& term, Interpreter& intp)
+ReduceToLoadExternal(TermNode& term, ContextNode& ctx, Interpreter& intp)
 {
-	return RelaySwitched(ctx, std::bind(ReduceToLoadExternalRoot,
+	return LoadExternal(term, ctx, intp, std::move(NPL::ResolveRegular<string>(
+		NPL::Deref(std::next(term.begin())))));
+}
+
+ReductionStatus
+RelayToLoadExternal(ContextNode& ctx, TermNode& term, Interpreter& intp)
+{
+	return RelaySwitched(ctx, std::bind(ReduceToLoadExternal,
 		std::ref(term), std::ref(ctx), std::ref(intp)));
 }
 //@}
@@ -558,7 +585,7 @@ LoadFunctions(Interpreter& intp)
 	{
 		RegisterStrict(rctx, "load", [&](TermNode& term, ContextNode& ctx){
 			RetainN(term);
-			return RelayToLoadExternalRoot(ctx, term, intp);
+			return RelayToLoadExternal(ctx, term, intp);
 		});
 		RegisterStrict(rctx, "load-at-root",
 			[&](TermNode& term, ContextNode& ctx){
@@ -569,14 +596,14 @@ LoadFunctions(Interpreter& intp)
 				return ReductionStatus::Neutral;
 			}, ystdex::guard<EnvironmentSwitcher>(rctx,
 				rctx.SwitchEnvironment(root_env.shared_from_this()))));
-			return RelayToLoadExternalRoot(ctx, term, intp);
+			return RelayToLoadExternal(ctx, term, intp);
 		});
 	}
 	else
 	{
 		RegisterStrict(rctx, "load", [&](TermNode& term, ContextNode& ctx){
 			RetainN(term);
-			return ReduceToLoadExternalRoot(term, ctx, intp);
+			return ReduceToLoadExternal(term, ctx, intp);
 		});
 		RegisterStrict(rctx, "load-at-root",
 			[&](TermNode& term, ContextNode& ctx){
@@ -585,7 +612,7 @@ LoadFunctions(Interpreter& intp)
 			const ystdex::guard<EnvironmentSwitcher> gd(ctx,
 				ctx.SwitchEnvironment(root_env.shared_from_this()));
 
-			return ReduceToLoadExternalRoot(term, ctx, intp);
+			return ReduceToLoadExternal(term, ctx, intp);
 		});
 	}
 	RegisterUnary<Strict, const string>(rctx, "ofs", [&](const string& path){
@@ -616,11 +643,7 @@ LoadFunctions(Interpreter& intp)
 		MarkGuard("A"), MarkGuard("B"), MarkGuard("C");
 	});
 #endif
-	{
-		TermNode term(intp.Context.Allocator);
-
-		LoadExternalRoot(term, intp.Context.Root, intp, "test.txt");
-	}
+	PreloadExternalRoot(intp.Context, "test.txt");
 #if NPLC_Impl_DebugAction
 	rctx.EvaluateList.Add(DefaultDebugAction, 255);
 	rctx.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
