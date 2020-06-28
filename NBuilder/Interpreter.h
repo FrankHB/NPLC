@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r315
+\version r322
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-28 02:02 +0800
+	2020-06-28 19:55 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -162,7 +162,10 @@ yconstexpr const Color DefaultColor(Gray), TitleColor(Cyan),
 	SignalColor(DarkRed), SideEffectColor(Yellow), ReducedColor(Magenta);
 
 
-//! \since YSLib build 304
+/*!
+\since YSLib build 304
+\warning 非虚析构。
+*/
 class Interpreter
 {
 private:
@@ -194,8 +197,9 @@ public:
 	HandleSignal(SSignal);
 
 	//! \since YSLib build 894
-	YB_NONNULL(2) void
-	Load(const char*, std::istream&);
+	//@{
+	void
+	Load(TermNode&, ContextNode&, const string&, std::istream&);
 
 private:
 	//! \since YSLib build 894

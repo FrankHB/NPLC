@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1685
+\version r1708
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-28 02:02 +0800
+	2020-06-28 20:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -25,11 +25,11 @@
 */
 
 
-#include "Interpreter.h"
+#include "Interpreter.h" // for YAssertNonnull;
 #include <Helper/YModules.h>
 #include <iostream>
 #include YFM_YCLib_YCommon
-#include YFM_YSLib_Core_YException // for ExtractAndTrace;
+#include YFM_YSLib_Core_YException // for FilterExceptions;
 #include YFM_YSLib_Service_TextFile
 #include YFM_NPL_NPLA1Forms
 #include <cstring> // for std::strcmp, std::strstr;
@@ -239,6 +239,17 @@ const auto min_lb_size(ceiling_lb(min_block_size));
 //! \since YSLib build 885
 const size_t max_fast_block_shift(min_lb_size + init_pool_num - 1);
 const size_t max_fast_block_size(1U << max_fast_block_shift);
+#endif
+//@}
+
+//! \since YSLib build 894
+//@{
+#if NPLC_Impl_UseSourceInfo
+using SourceLoadTagType
+	= REPLContext::LoadOptionTag<REPLContext::WithSourceLocation>;
+#else
+using SourceLoadTagType
+	= REPLContext::LoadOptionTag<REPLContext::NoSourceInformation>;
 #endif
 //@}
 
@@ -768,11 +779,13 @@ Interpreter::HandleSignal(SSignal e)
 }
 
 void
-Interpreter::Load(const char* name, std::istream& is)
+Interpreter::Load(TermNode& term, ContextNode& ctx, const string& name,
+	std::istream& is)
 {
 	FilterExceptions([&]{
-		TryLoadSource(Context, name, is, Context.Root);
+		TryLoadSource(Context, name.c_str(), SourceLoadTagType(), is, ctx);
 	});
+	term.Value = A1::ValueToken::Unspecified;
 }
 
 void
@@ -783,20 +796,14 @@ Interpreter::Perform(string_view unit)
 
 	try
 	{
-#if NPLC_Impl_UseSourceInfo
-		using tag_t
-			= REPLContext::LoadOptionTag<REPLContext::WithSourceLocation>;
-#else
-		using tag_t
-			= REPLContext::LoadOptionTag<REPLContext::NoSourceInformation>;
-#endif
 		const auto gd(cs.Guard(Term, cs));
 		const auto unwind(ystdex::make_guard([&]() ynothrow{
 			rs = cs.Switch(std::move(rs));
 		}));
 
 		UpdateTextColor(SideEffectColor);
-		Term = Context.ReadFrom(tag_t(), platform_ex::DecodeArg(unit));
+		Term = Context.ReadFrom(SourceLoadTagType(),
+			platform_ex::DecodeArg(unit));
 		cs.SetNextTermRef(Term);
 		cs.RewriteTerm(Term);
 #if NPLC_Impl_TracePerform

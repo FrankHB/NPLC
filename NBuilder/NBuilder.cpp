@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7929
+\version r7944
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-06-28 02:00 +0800
+	2020-06-28 19:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -203,25 +203,25 @@ FetchListLength(TermNode& term) ynothrow
 
 //! \since YSLib build 894
 //@{
-ValueToken
-LoadExternalRoot(Interpreter& intp, const string& name)
+void
+LoadExternalRoot(TermNode& term, ContextNode& ctx, Interpreter& intp,
+	const string& name)
 {
 	const auto p_is(A1::OpenFile(name.c_str()));
 
 	if(std::istream& is{*p_is})
 	{
 		YTraceDe(Notice, "Test unit '%s' found.", name.c_str());
-		intp.Load(name.c_str(), is);
+		intp.Load(term, ctx, name, is);
 	}
 	else
 		YTraceDe(Notice, "Test unit '%s' not found.", name.c_str());
-	return ValueToken::Unspecified;
 }
 
 ReductionStatus
-ReduceToLoadExternalRoot(TermNode& term, Interpreter& intp)
+ReduceToLoadExternalRoot(TermNode& term, ContextNode& ctx, Interpreter& intp)
 {
-	term.Value = LoadExternalRoot(intp, NPL::ResolveRegular<const string>(
+	LoadExternalRoot(term, ctx, intp, NPL::ResolveRegular<const string>(
 		NPL::Deref(std::next(term.begin()))));
 	return ReductionStatus::Clean;
 }
@@ -230,7 +230,7 @@ ReductionStatus
 RelayToLoadExternalRoot(ContextNode& ctx, TermNode& term, Interpreter& intp)
 {
 	return RelaySwitched(ctx, std::bind(ReduceToLoadExternalRoot,
-		std::ref(term), std::ref(intp)));
+		std::ref(term), std::ref(ctx), std::ref(intp)));
 }
 //@}
 
@@ -574,9 +574,9 @@ LoadFunctions(Interpreter& intp)
 	}
 	else
 	{
-		RegisterStrict(rctx, "load", [&](TermNode& term){
+		RegisterStrict(rctx, "load", [&](TermNode& term, ContextNode& ctx){
 			RetainN(term);
-			return ReduceToLoadExternalRoot(term, intp);
+			return ReduceToLoadExternalRoot(term, ctx, intp);
 		});
 		RegisterStrict(rctx, "load-at-root",
 			[&](TermNode& term, ContextNode& ctx){
@@ -585,7 +585,7 @@ LoadFunctions(Interpreter& intp)
 			const ystdex::guard<EnvironmentSwitcher> gd(ctx,
 				ctx.SwitchEnvironment(root_env.shared_from_this()));
 
-			return ReduceToLoadExternalRoot(term, intp);
+			return ReduceToLoadExternalRoot(term, ctx, intp);
 		});
 	}
 	RegisterUnary<Strict, const string>(rctx, "ofs", [&](const string& path){
@@ -616,7 +616,11 @@ LoadFunctions(Interpreter& intp)
 		MarkGuard("A"), MarkGuard("B"), MarkGuard("C");
 	});
 #endif
-	LoadExternalRoot(intp, "test.txt");
+	{
+		TermNode term(intp.Context.Allocator);
+
+		LoadExternalRoot(term, intp.Context.Root, intp, "test.txt");
+	}
 #if NPLC_Impl_DebugAction
 	rctx.EvaluateList.Add(DefaultDebugAction, 255);
 	rctx.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
