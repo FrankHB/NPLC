@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1755
+\version r1757
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-29 00:39 +0800
+	2020-06-29 21:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -855,6 +855,8 @@ Interpreter::PerformAndFilter(string_view unit)
 			}
 			CatchExpr(..., throw)
 		}, e);
+		YF_TraceRaw(Notice, "Location: %s.", Context.CurrentSource
+			? Context.CurrentSource->c_str() : "<unknown>");
 #if NPLC_Impl_UseBacktrace
 		if(!rs.empty())
 			YF_TraceRaw(Notice, "Backtrace:");
