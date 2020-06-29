@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r332
+\version r333
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-29 00:37 +0800
+	2020-06-29 22:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -206,7 +206,7 @@ private:
 	Perform(string_view, ContextNode::ReducerSequence&);
 
 	void
-	PerformAndFilter(string_view);
+	PerformAndFilter(string_view, Logger&);
 
 	void
 	ProcessTerm(TermNode&, ContextNode::ReducerSequence&);

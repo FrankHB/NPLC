@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1757
+\version r1766
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-06-29 21:17 +0800
+	2020-06-29 22:32 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -798,7 +798,7 @@ Interpreter::Perform(string_view unit, ContextNode::ReducerSequence& rs)
 }
 
 void
-Interpreter::PerformAndFilter(string_view unit)
+Interpreter::PerformAndFilter(string_view unit, Logger& trace)
 {
 	ContextNode::ReducerSequence rs(Context.Allocator);
 
@@ -818,10 +818,10 @@ Interpreter::PerformAndFilter(string_view unit)
 		terminal.UpdateForeColor(ErrorColor);
 		ExtractException([&](const char* str, size_t level) YB_NONNULL(2){
 			const auto print([&](RecordLevel lv, const char* name,
-				const char* msg) YB_NONNULL(3){
+				const char* msg) YB_ATTR_LAMBDA_QUAL(ynothrow, YB_NONNULL(3)){
 				// XXX: Format '%*c' may not work in some implementations of
-				//	%ystdex::sfmt in %YF_TraceRaw.
-				YF_TraceRaw(lv, "%*s%s<%u>: %s", int(level), "", name,
+				//	%ystdex::sfmt used as the default by %trace.TraceFormat.
+				trace.TraceFormat(lv, "%*s%s<%u>: %s", int(level), "", name,
 					unsigned(lv), msg);
 			});
 
@@ -834,8 +834,8 @@ Interpreter::PerformAndFilter(string_view unit)
 				const auto& si(ex.Source);
 
 				if(ex.Source.first)
-					YTraceDe(ex.GetLevel(), "%*sIdentifier '%s' is at line %zu,"
-						" column %zu in %s.", int(level + 1), "",
+					trace.TraceFormat(ex.GetLevel(), "%*sIdentifier '%s' is at"
+						" line %zu, column %zu in %s.", int(level + 1), "",
 						ex.GetIdentifier().c_str(), si.second.Line + 1,
 						si.second.Column + 1, si.first->c_str());
 			}
@@ -855,18 +855,18 @@ Interpreter::PerformAndFilter(string_view unit)
 			}
 			CatchExpr(..., throw)
 		}, e);
-		YF_TraceRaw(Notice, "Location: %s.", Context.CurrentSource
+		trace.TraceFormat(Notice, "Location: %s.", Context.CurrentSource
 			? Context.CurrentSource->c_str() : "<unknown>");
 #if NPLC_Impl_UseBacktrace
 		if(!rs.empty())
-			YF_TraceRaw(Notice, "Backtrace:");
+			trace.TraceFormat(Notice, "Backtrace:");
 		FilterExceptions([&]{
 			for(const auto& act : rs)
 			{
 				const auto name(A1::QueryContinuationName(act));
 				const auto p(name.data());
 
-				YF_TraceRaw(Notice, "#[continuation: (%s)]", p ? p : "?");
+				trace.TraceFormat(Notice, "#[continuation: (%s)]", p ? p : "?");
 			}
 		}, "guard unwinding");
 #endif
@@ -909,7 +909,7 @@ Interpreter::RunLine(string_view unit)
 	Context.CurrentSource = YSLib::allocate_shared<string>(Context.Allocator,
 		"*STDIN*");
 	if(!unit.empty())
-		PerformAndFilter(unit);
+		PerformAndFilter(unit, Context.Root.Trace);
 }
 
 ReductionStatus
@@ -921,7 +921,7 @@ Interpreter::RunLoop(ContextNode& ctx)
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
 		if(!line.empty())
-			PerformAndFilter(line);
+			PerformAndFilter(line, ctx.Trace);
 		return ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;
