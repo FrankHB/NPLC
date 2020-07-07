@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7991
+\version r7996
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-06-29 00:40 +0800
+	2020-07-07 15:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -346,7 +346,7 @@ LoadFunctions(Interpreter& intp)
 	renv.DefineChecked("root-context", ValueObject(rctx, OwnershipTag<>()));
 	intp.SaveGround();
 
-	auto& root_env(rctx.GetRecordRef());
+	const auto p_root_env(rctx.ShareRecord());
 
 	// NOTE: Literal expression forms.
 	RegisterForm(rctx, "$retain", Retain);
@@ -588,14 +588,14 @@ LoadFunctions(Interpreter& intp)
 			return RelayToLoadExternal(ctx, term, intp);
 		});
 		RegisterStrict(rctx, "load-at-root",
-			[&](TermNode& term, ContextNode& ctx){
+			[&, p_root_env](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 			// NOTE: This does not support PTC.
 			RelaySwitched(ctx, std::bind(
 				[](ystdex::guard<EnvironmentSwitcher>&){
 				return ReductionStatus::Neutral;
 			}, ystdex::guard<EnvironmentSwitcher>(rctx,
-				rctx.SwitchEnvironment(root_env.shared_from_this()))));
+				rctx.SwitchEnvironment(p_root_env))));
 			return RelayToLoadExternal(ctx, term, intp);
 		});
 	}
@@ -606,11 +606,11 @@ LoadFunctions(Interpreter& intp)
 			return ReduceToLoadExternal(term, ctx, intp);
 		});
 		RegisterStrict(rctx, "load-at-root",
-			[&](TermNode& term, ContextNode& ctx){
+			[&, p_root_env](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 
 			const ystdex::guard<EnvironmentSwitcher> gd(ctx,
-				ctx.SwitchEnvironment(root_env.shared_from_this()));
+				ctx.SwitchEnvironment(p_root_env));
 
 			return ReduceToLoadExternal(term, ctx, intp);
 		});
