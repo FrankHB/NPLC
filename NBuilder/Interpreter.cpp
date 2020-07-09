@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1785
+\version r1786
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-09 13:13 +0800
+	2020-07-09 18:38 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -887,7 +887,6 @@ Interpreter::ProcessTerm(TermNode& term, ContextNode::ReducerSequence& rs)
 	}));
 
 	UpdateTextColor(SideEffectColor);
-	cs.SetNextTermRef(term);
 	cs.RewriteTerm(term);
 #if NPLC_Impl_TracePerform
 //	UpdateTextColor(InfoColor);
