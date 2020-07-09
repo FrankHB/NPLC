@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1784
+\version r1785
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-05 17:38 +0800
+	2020-07-09 13:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -882,6 +882,7 @@ Interpreter::ProcessTerm(TermNode& term, ContextNode::ReducerSequence& rs)
 	auto& cs(Context.Root);
 	const auto gd(cs.Guard(term, cs));
 	const auto unwind(ystdex::make_guard([&]() ynothrow{
+		cs.TailAction = nullptr;
 		rs = cs.Switch(std::move(rs));
 	}));
 
