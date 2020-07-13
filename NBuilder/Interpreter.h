@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r339
+\version r346
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-13 17:22 +0800
+	2020-07-13 22:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -185,6 +185,8 @@ public:
 	REPLContext Context;
 	//! \since YSLib build 892
 	TermNode Term{Context.Allocator};
+	//! \since YSLib build 895
+	ContextNode::ReducerSequence Backtrace{Context.Allocator};
 
 	//! \since YSLib build 885
 	Interpreter();
@@ -196,6 +198,10 @@ public:
 	void
 	HandleSignal(SSignal);
 
+	//! \since YSLib build 895
+	void
+	HandleREPLException(std::exception_ptr, Logger&);
+
 	//! \since YSLib build 894
 	//@{
 	ReductionStatus
@@ -203,8 +209,8 @@ public:
 
 private:
 	//! \since YSLib build 895
-	void
-	PerformAndFilter(string_view, A1::ContextState&);
+	ReductionStatus
+	Perform(string_view, ContextNode&);
 
 public:
 	//! \since YSLib build 892
