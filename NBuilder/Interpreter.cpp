@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1786
+\version r1832
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-09 18:38 +0800
+	2020-07-13 17:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -794,18 +794,30 @@ Interpreter::Load(TermNode& term, ContextNode& ctx, string&& name,
 }
 
 void
-Interpreter::Perform(string_view unit, ContextNode::ReducerSequence& rs)
-{
-	Term = Context.ReadFrom(SourceLoadTagType(), platform_ex::DecodeArg(unit));
-	ProcessTerm(Term, rs);
-}
-
-void
-Interpreter::PerformAndFilter(string_view unit, Logger& trace)
+Interpreter::PerformAndFilter(string_view unit, A1::ContextState& cs)
 {
 	ContextNode::ReducerSequence rs(Context.Allocator);
+	auto& trace(cs.Trace);
 
-	TryExpr(Perform(unit, rs))
+	try
+	{
+		const auto gd(cs.Guard(Term, cs));
+		const auto unwind(ystdex::make_guard([&]() ynothrow{
+			cs.TailAction = nullptr;
+			rs = cs.Switch(std::move(rs));
+		}));
+
+		Term = Context.ReadFrom(SourceLoadTagType(),
+			platform_ex::DecodeArg(unit));
+		UpdateTextColor(SideEffectColor);
+		cs.RewriteTerm(Term);
+#if NPLC_Impl_TracePerform
+	//	UpdateTextColor(InfoColor);
+	//	cout << "Unrecognized reduced token list:" << endl;
+		UpdateTextColor(ReducedColor);
+		LogTermValue(Term);
+#endif
+	}
 	catch(SSignal e)
 	{
 		if(e == SSignal::Exit)
@@ -877,26 +889,6 @@ Interpreter::PerformAndFilter(string_view unit, Logger& trace)
 }
 
 void
-Interpreter::ProcessTerm(TermNode& term, ContextNode::ReducerSequence& rs)
-{
-	auto& cs(Context.Root);
-	const auto gd(cs.Guard(term, cs));
-	const auto unwind(ystdex::make_guard([&]() ynothrow{
-		cs.TailAction = nullptr;
-		rs = cs.Switch(std::move(rs));
-	}));
-
-	UpdateTextColor(SideEffectColor);
-	cs.RewriteTerm(term);
-#if NPLC_Impl_TracePerform
-//	UpdateTextColor(InfoColor);
-//	cout << "Unrecognized reduced token list:" << endl;
-	UpdateTextColor(ReducedColor);
-	LogTermValue(term);
-#endif
-}
-
-void
 Interpreter::Run()
 {
 	const auto a(Context.Allocator);
@@ -912,7 +904,7 @@ Interpreter::RunLine(string_view unit)
 	Context.CurrentSource = YSLib::allocate_shared<string>(Context.Allocator,
 		"*STDIN*");
 	if(!unit.empty())
-		PerformAndFilter(unit, Context.Root.Trace);
+		PerformAndFilter(unit, Context.Root);
 }
 
 ReductionStatus
@@ -924,7 +916,7 @@ Interpreter::RunLoop(ContextNode& ctx)
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
 		if(!line.empty())
-			PerformAndFilter(line, ctx.Trace);
+			PerformAndFilter(line, A1::ContextState::Access(ctx));
 		return ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;
@@ -936,10 +928,10 @@ Interpreter::SaveGround()
 {
 	if(!p_ground)
 	{
-		auto& ctx(Context.Root);
+		auto& cs(Context.Root);
 
-		p_ground = NPL::SwitchToFreshEnvironment(ctx,
-			ValueObject(ctx.WeakenRecord()));
+		p_ground
+			= NPL::SwitchToFreshEnvironment(cs, ValueObject(cs.WeakenRecord()));
 		return true;
 	}
 	return {};
