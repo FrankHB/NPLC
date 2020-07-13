@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1832
+\version r1894
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-13 17:24 +0800
+	2020-07-14 00:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -781,43 +781,11 @@ Interpreter::HandleSignal(SSignal e)
 	}
 }
 
-ReductionStatus
-Interpreter::Load(TermNode& term, ContextNode& ctx, string&& name,
-	std::istream& is)
-{
-	// NOTE: Swap guard for %Context.CurrentSource is not used to support PTC.
-	Context.CurrentSource
-		= YSLib::allocate_shared<string>(Context.Allocator, std::move(name));
-	term = Context.ReadFrom(SourceLoadTagType(), is, ctx);
-	// NOTE: This is explicitly not same to klisp. This is also friendly to PTC.
-	return A1::ReduceOnce(term, ctx);
-}
-
 void
-Interpreter::PerformAndFilter(string_view unit, A1::ContextState& cs)
+Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 {
-	ContextNode::ReducerSequence rs(Context.Allocator);
-	auto& trace(cs.Trace);
-
-	try
-	{
-		const auto gd(cs.Guard(Term, cs));
-		const auto unwind(ystdex::make_guard([&]() ynothrow{
-			cs.TailAction = nullptr;
-			rs = cs.Switch(std::move(rs));
-		}));
-
-		Term = Context.ReadFrom(SourceLoadTagType(),
-			platform_ex::DecodeArg(unit));
-		UpdateTextColor(SideEffectColor);
-		cs.RewriteTerm(Term);
-#if NPLC_Impl_TracePerform
-	//	UpdateTextColor(InfoColor);
-	//	cout << "Unrecognized reduced token list:" << endl;
-		UpdateTextColor(ReducedColor);
-		LogTermValue(Term);
-#endif
-	}
+	YAssertNonnull(p_exc);
+	TryExpr(std::rethrow_exception(std::move(p_exc)))
 	catch(SSignal e)
 	{
 		if(e == SSignal::Exit)
@@ -873,10 +841,10 @@ Interpreter::PerformAndFilter(string_view unit, A1::ContextState& cs)
 		trace.TraceFormat(Notice, "Location: %s.", Context.CurrentSource
 			? Context.CurrentSource->c_str() : "<unknown>");
 #if NPLC_Impl_UseBacktrace
-		if(!rs.empty())
+		if(!Backtrace.empty())
 			trace.TraceFormat(Notice, "Backtrace:");
 		FilterExceptions([&]{
-			for(const auto& act : rs)
+			for(const auto& act : Backtrace)
 			{
 				const auto name(A1::QueryContinuationName(act));
 				const auto p(name.data());
@@ -885,7 +853,44 @@ Interpreter::PerformAndFilter(string_view unit, A1::ContextState& cs)
 			}
 		}, "guard unwinding");
 #endif
+		Backtrace.clear();
 	}
+}
+
+ReductionStatus
+Interpreter::Load(TermNode& term, ContextNode& ctx, string&& name,
+	std::istream& is)
+{
+	// NOTE: Swap guard for %Context.CurrentSource is not used to support PTC.
+	Context.CurrentSource
+		= YSLib::allocate_shared<string>(Context.Allocator, std::move(name));
+	term = Context.ReadFrom(SourceLoadTagType(), is, ctx);
+	// NOTE: This is explicitly not same to klisp. This is also friendly to PTC.
+	return A1::ReduceOnce(term, ctx);
+}
+
+ReductionStatus
+Interpreter::Perform(string_view unit, ContextNode& ctx)
+{
+	ctx.SaveExceptionHandler();
+	// TODO: Blocked. Use C++14 lambda initializers to simplify the
+	//	implementation.
+	ctx.HandleException = std::bind([&](std::exception_ptr p,
+		const ContextNode::ReducerSequence::const_iterator& i) ynothrow{
+		ctx.TailAction = nullptr;
+		ctx.Shift(Backtrace, i);
+		HandleREPLException(std::move(p), ctx.Trace);
+	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
+	RelaySwitched(ctx, [&]{
+	//	UpdateTextColor(InfoColor);
+	//	cout << "Unrecognized reduced token list:" << endl;
+		UpdateTextColor(ReducedColor);
+		LogTermValue(Term);
+		return ReductionStatus::Neutral;
+	});
+	Term = Context.ReadFrom(SourceLoadTagType(), platform_ex::DecodeArg(unit));
+	UpdateTextColor(SideEffectColor);
+	return A1::ReduceOnce(Term, ctx);
 }
 
 void
@@ -901,10 +906,15 @@ Interpreter::Run()
 void
 Interpreter::RunLine(string_view unit)
 {
-	Context.CurrentSource = YSLib::allocate_shared<string>(Context.Allocator,
-		"*STDIN*");
 	if(!unit.empty())
-		PerformAndFilter(unit, Context.Root);
+	{
+		const auto a(Context.Allocator);
+
+		Context.CurrentSource = YSLib::allocate_shared<string>(a, "*STDIN*");
+		Context.Root.Rewrite(NPL::ToReducer(a, [&](ContextNode& ctx){
+			return Perform(unit, A1::ContextState::Access(ctx));
+		}));
+	}
 }
 
 ReductionStatus
@@ -915,9 +925,8 @@ Interpreter::RunLoop(ContextNode& ctx)
 	{
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
-		if(!line.empty())
-			PerformAndFilter(line, A1::ContextState::Access(ctx));
-		return ReductionStatus::Partial;
+		return !line.empty() ? Perform(line, A1::ContextState::Access(ctx))
+			: ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;
 	// TODO: Add root continuation?
