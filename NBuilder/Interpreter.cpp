@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1894
+\version r1912
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-14 00:59 +0800
+	2020-07-15 06:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -559,16 +559,17 @@ HandleLiteralOrCall(string_view id, _func f)
 		: "Invalid literal '%s' found.", id.data()));
 }
 
+//! \since YSLib build 895
 template<typename _func, typename _func2>
 YB_FLATTEN inline ReductionStatus
-ReduceFastIdOr(TermNode& term, _func f, _func2 f2)
+ReduceFastIdOr(TermNode& term, ContextNode& ctx, _func f, _func2 f2)
 {
 	// XXX: There are several administrative differences to the original
 	//	%ContextState::DefaultReduceOnce. For leaf values other than value
 	//	tokens, the next term is set up in the original implemenation but
 	//	omitted here, cf. assumption 1.
 	return [&]() YB_ATTR(always_inline){
-		if(const auto p = TermToNamePtr(term))
+		if(const auto p = A1::SetupTailOperatorName(term, ctx))
 		{
 			string_view id(*p);
 
@@ -576,11 +577,9 @@ ReduceFastIdOr(TermNode& term, _func f, _func2 f2)
 				"Unexpected irregular representation of term found.");
 			if(A1::HandleCheckedExtendedLiteral(term, id))
 #	if NPLC_Impl_UseSourceInfo
-				try
-				{
-					// XXX: Assume the call does not change %term on throwing.
-					return f(id);
-				}
+				// XXX: Assume the call does not rely on %term and it does not
+				//	change the stored name on throwing.
+				TryRet(f(id))
 				catch(BadIdentifier& e)
 				{
 					if(const auto p_si = A1::QuerySourceInformation(term.Value))
@@ -674,7 +673,8 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 
 		if(bool(sub.Value))
 			return [&]() YB_ATTR(always_inline){
-				return ReduceFastIdOr(sub, [&](string_view id){
+				cs.SetCombiningTermRef(term);
+				return ReduceFastIdOr(sub, cs, [&](string_view id){
 					return HandleLiteralOrCall(id, [&]() YB_FLATTEN{
 						return ReduceFastHNF(term, cs, sub, id);
 					});
@@ -698,7 +698,7 @@ ReductionStatus
 ReduceOnceFast(TermNode& term, A1::ContextState& cs)
 {
 	return bool(term.Value)
-		? ReduceFastIdOr(term, [&](string_view id) YB_FLATTEN{
+		? ReduceFastIdOr(term, cs, [&](string_view id) YB_FLATTEN{
 		return HandleLiteralOrCall(id, [&]() YB_FLATTEN{
 			return ReduceResolved(
 				[&](TermNode& bound, const shared_ptr<Environment>& p_env){
@@ -847,9 +847,14 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 			for(const auto& act : Backtrace)
 			{
 				const auto name(A1::QueryContinuationName(act));
-				const auto p(name.data());
+				const auto opname(A1::QueryTailOperatorName(act));
+				const auto p(name.data() ? name.data() : "?");
 
-				trace.TraceFormat(Notice, "#[continuation: (%s)]", p ? p : "?");
+				if(const auto p_o = opname.data())
+					trace.TraceFormat(Notice, "#[continuation: %s (%s)]", p_o,
+						p);
+				else
+					trace.TraceFormat(Notice, "#[continuation (%s)]", p);
 			}
 		}, "guard unwinding");
 #endif
