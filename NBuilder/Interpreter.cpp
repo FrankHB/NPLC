@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2068
+\version r2077
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-19 19:05 +0800
+	2020-07-20 00:27 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -809,8 +809,15 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 			{
 				const auto name(A1::QueryContinuationName(act));
 				const auto opname(A1::QueryTailOperatorName(act));
-				const auto p(name.data() ? name.data() : "?");
-
+				const auto p(name.data() ? name.data() :
+#	if NDEBUG
+					"?"
+#	else
+				// XXX: This is enabled for debugging only because the name is
+				//	not guaranteed steady.
+					act.target_type().name()
+#	endif
+				);
 				if(const auto p_o = opname.data())
 					trace.TraceFormat(Notice, "#[continuation: %s (%s)]", p_o,
 						p);
