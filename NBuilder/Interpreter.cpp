@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r1912
+\version r2068
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-15 06:00 +0800
+	2020-07-19 19:05 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -546,105 +546,81 @@ GetMonotonicPoolRef()
 //	2. There are no changes on passes and handlers like %ContextNode::Resolve
 //		after the initialization.
 //	3. No literal handlers rely on the value of the reduced term.
-//! \since YSLib build 883
-//@{
-template<typename _func>
-ReductionStatus
-HandleLiteralOrCall(string_view id, _func f)
-{
-	if(!IsNPLAExtendedLiteral(id))
-		return f();
-	A1::Forms::ThrowInvalidSyntaxError(ystdex::sfmt(
-		id.front() != '#' ? "Unsupported literal prefix found in literal '%s'."
-		: "Invalid literal '%s' found.", id.data()));
-}
-
-//! \since YSLib build 895
-template<typename _func, typename _func2>
+//! \since YSLib build 896
+template<typename _func, typename _func2, typename _fTermToNamePtr,
+	typename _fReduceBranch>
 YB_FLATTEN inline ReductionStatus
-ReduceFastIdOr(TermNode& term, ContextNode& ctx, _func f, _func2 f2)
+ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
+	_fTermToNamePtr term_to_name_ptr, _fReduceBranch reduce_branch)
 {
-	// XXX: There are several administrative differences to the original
-	//	%ContextState::DefaultReduceOnce. For leaf values other than value
-	//	tokens, the next term is set up in the original implemenation but
-	//	omitted here, cf. assumption 1.
-	return [&]() YB_ATTR(always_inline){
-		if(const auto p = A1::SetupTailOperatorName(term, ctx))
+	if(term.Value)
+	{
+		// XXX: There are several administrative differences to the original
+		//	%ContextState::DefaultReduceOnce. For leaf values other than value
+		//	tokens, the next term is set up in the original implemenation but
+		//	omitted here, cf. assumption 1.
+		if(const auto p = term_to_name_ptr(term))
 		{
 			string_view id(*p);
 
 			YAssert(IsLeaf(term),
 				"Unexpected irregular representation of term found.");
 			if(A1::HandleCheckedExtendedLiteral(term, id))
-#	if NPLC_Impl_UseSourceInfo
 				// XXX: Assume the call does not rely on %term and it does not
 				//	change the stored name on throwing.
-				TryRet(f(id))
+#	if NPLC_Impl_UseSourceInfo
+				try
+				{
+#	endif
+					if(!IsNPLAExtendedLiteral(id))
+					{
+						// XXX: See assumption 2.
+						auto pr(ContextNode::DefaultResolve(cs.GetRecordPtr(),
+							id));
+
+						if(pr.first)
+						{
+							auto& bound(*pr.first);
+							const auto& p_env(pr.second);
+
+							return ResolveTerm([&](TermNode& nd,
+								ResolvedTermReferencePtr p_ref){
+								if(p_ref)
+									term.SetContent(bound.GetContainer(),
+										ValueObject(std::allocator_arg,
+										term.get_allocator(), in_place_type<
+										TermReference>, p_ref->GetTags()
+										& ~TermTags::Unique, *p_ref));
+								else
+									term.Value = ValueObject(std::allocator_arg,
+										term.get_allocator(), in_place_type<
+										TermReference>, NPL::Deref(
+										p_env).MakeTermTags(nd)
+										& ~TermTags::Unique, nd, p_env);
+								// XXX: This is safe, cf. assumption 3.
+								A1::EvaluateLiteralHandler(term, cs, nd);
+								return f(nd);
+							}, bound);
+						}
+						throw BadIdentifier(id);
+					}
+					A1::ThrowUnsupportedLiteralError(id);
+#	if NPLC_Impl_UseSourceInfo
+				}
 				catch(BadIdentifier& e)
 				{
 					if(const auto p_si = A1::QuerySourceInformation(term.Value))
 						e.Source = *p_si;
 					throw;
 				}
-#	else
-				return f(id);
 #	endif
 		}
 		return f2();
-	}();
+	}
+	return reduce_branch(term, cs);
 }
 
-//! \since YSLib build 884
-//@{
-template<typename _func>
-YB_FLATTEN ReductionStatus
-ReduceResolved(_func f, const ContextNode& ctx, string_view id)
-{
-	// XXX: See assumption 2.
-	auto pr(ContextNode::DefaultResolve(ctx.GetRecordPtr(), id));
-
-	if(pr.first)
-		return f(*pr.first, pr.second);
-	throw BadIdentifier(id);
-}
-
-//! \since YSLib build 894
-void
-SetupTermEvaluatedTermOrRef(TermNode& term,
-	const shared_ptr<Environment>& p_env, TermNode& bound,
-	TermNode& nd, ResolvedTermReferencePtr p_ref)
-{
-	if(p_ref)
-		[&]() YB_FLATTEN{
-			term.SetContent(bound.GetContainer(), ValueObject(
-				std::allocator_arg, term.get_allocator(), in_place_type<
-				TermReference>, p_ref->GetTags() & ~TermTags::Unique, *p_ref));
-		}();
-	else
-		term.Value = ValueObject(std::allocator_arg, term.get_allocator(),
-			in_place_type<TermReference>, NPL::Deref(p_env).MakeTermTags(nd)
-			& ~TermTags::Unique, nd, p_env);
-}
-//@}
-
-ReductionStatus
-ReduceFastHNF(TermNode& term, A1::ContextState& cs, TermNode& sub,
-	string_view id)
-{
-	return ReduceResolved(
-		[&](TermNode& bound, const shared_ptr<Environment>& p_env){
-		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-			[&](TermNode& tm, ResolvedTermReferencePtr p){
-				SetupTermEvaluatedTermOrRef(tm, p_env, bound, nd, p);
-			}(sub, p_ref);
-			// XXX: This is safe, cf. assumption 3.
-			EvaluateLiteralHandler(yimpl(sub), cs, nd);
-			cs.SetNextTermRef(term);
-			return ReduceCombinedReferent(term, cs, nd);
-		}, bound);
-	}, cs, id);
-}
-
+//! \since YSLib build 883
 ReductionStatus
 ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 {
@@ -668,50 +644,30 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 		YAssert(IsBranchedList(term), "Invalid node found.");
 		cs.SetNextTermRef(term);
 		cs.LastStatus = ReductionStatus::Neutral;
-
-		auto& sub(AccessFirstSubterm(term));
-
-		if(bool(sub.Value))
-			return [&]() YB_ATTR(always_inline){
-				cs.SetCombiningTermRef(term);
-				return ReduceFastIdOr(sub, cs, [&](string_view id){
-					return HandleLiteralOrCall(id, [&]() YB_FLATTEN{
-						return ReduceFastHNF(term, cs, sub, id);
-					});
-				}, [&]{
-					return ReduceNextCombinedBranch(term, cs);
-				});
-			}();
-		RelaySwitched(cs, [&](ContextNode& c){
-			return ReduceNextCombinedBranch(term, A1::ContextState::Access(c));
-		});
-		return RelaySwitched(cs, [&]{
-			return ReduceFastBranch(sub, cs);
+		return ReduceFastTmpl(AccessFirstSubterm(term), cs, [&](TermNode& nd){
+			cs.SetNextTermRef(term);
+			return ReduceCombinedReferent(term, cs, nd);
+		}, [&]{
+			return ReduceNextCombinedBranch(term, cs);
+		}, [&](TermNode& tm) -> observer_ptr<const TokenValue>{
+			if(const auto p = TermToNamePtr(tm))
+			{
+				term.Value = std::move(tm.Value);
+				return NPL::make_observer(
+					&term.Value.GetObject<TokenValue>());
+			}
+			return {};
+		}, [&](TermNode& sub, ContextNode& ctx){
+			RelaySwitched(ctx, [&](ContextNode& c){
+				return
+					ReduceNextCombinedBranch(term, A1::ContextState::Access(c));
+			});
+			return RelaySwitched(ctx, [&](ContextNode& c){
+				return ReduceFastBranch(sub, A1::ContextState::Access(c));
+			});
 		});
 	}
 	return ReductionStatus::Retained;
-}
-//@}
-
-//! \since YSLib build 882
-ReductionStatus
-ReduceOnceFast(TermNode& term, A1::ContextState& cs)
-{
-	return bool(term.Value)
-		? ReduceFastIdOr(term, cs, [&](string_view id) YB_FLATTEN{
-		return HandleLiteralOrCall(id, [&]() YB_FLATTEN{
-			return ReduceResolved(
-				[&](TermNode& bound, const shared_ptr<Environment>& p_env){
-				ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-					SetupTermEvaluatedTermOrRef(term, p_env, bound, nd, p_ref);
-					A1::EvaluateLiteralHandler(term, cs, nd);
-				}, bound);
-				return ReductionStatus::Neutral;
-			}, cs, id);
-		});
-	}, []() YB_ATTR_LAMBDA_QUAL(ynothrow, YB_STATELESS){
-		return ReductionStatus::Retained;
-	}) : ReduceFastBranch(term, cs);
 }
 #endif
 
@@ -731,7 +687,12 @@ Interpreter::Interpreter()
 	if(Context.IsAsynchronous())
 		// XXX: Only safe and meaningful for asynchrnous implementations.
 		Context.Root.ReduceOnce.Handler = [&](TermNode& term, ContextNode& ctx){
-			return ReduceOnceFast(term, A1::ContextState::Access(ctx));
+			return ReduceFastTmpl(term, A1::ContextState::Access(ctx),
+				[](TermNode&) YB_ATTR_LAMBDA_QUAL(ynothrow, YB_STATELESS){
+				return ReductionStatus::Neutral;
+			}, []() YB_ATTR_LAMBDA_QUAL(ynothrow, YB_STATELESS){
+				return ReductionStatus::Retained;
+			}, TermToNamePtr, ReduceFastBranch);
 		};
 #elif NPLC_Impl_LogBeforeReduce
 	using namespace placeholders;
