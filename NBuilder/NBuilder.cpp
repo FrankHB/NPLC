@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r7996
+\version r8001
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-07-07 15:23 +0800
+	2020-07-20 23:29 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -256,8 +256,9 @@ ReduceToLoadExternal(TermNode& term, ContextNode& ctx, Interpreter& intp)
 ReductionStatus
 RelayToLoadExternal(ContextNode& ctx, TermNode& term, Interpreter& intp)
 {
-	return RelaySwitched(ctx, std::bind(ReduceToLoadExternal,
-		std::ref(term), std::ref(ctx), std::ref(intp)));
+	return RelaySwitched(ctx,
+		A1::NameTypedReducerHandler(std::bind(ReduceToLoadExternal,
+		std::ref(term), std::ref(ctx), std::ref(intp)), "load-external"));
 }
 //@}
 
@@ -591,11 +592,11 @@ LoadFunctions(Interpreter& intp)
 			[&, p_root_env](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 			// NOTE: This does not support PTC.
-			RelaySwitched(ctx, std::bind(
+			RelaySwitched(ctx, A1::NameTypedReducerHandler(std::bind(
 				[](ystdex::guard<EnvironmentSwitcher>&){
 				return ReductionStatus::Neutral;
 			}, ystdex::guard<EnvironmentSwitcher>(rctx,
-				rctx.SwitchEnvironment(p_root_env))));
+				rctx.SwitchEnvironment(p_root_env))), "guard-load"));
 			return RelayToLoadExternal(ctx, term, intp);
 		});
 	}
