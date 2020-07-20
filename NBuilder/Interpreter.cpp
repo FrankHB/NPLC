@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2090
+\version r2095
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-20 23:22 +0800
+	2020-07-20 23:27 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -120,7 +120,10 @@ DecodeTypeName(const ystdex::type_info& ti)
 {
 	// NOTE: Some well-known types for unreadable objects are simplified.
 	using namespace A1;
+	const auto tname(QueryTypeName(ti));
 
+	if(tname.data())
+		return tname.data();
 	if(ti == ystdex::type_id<ContextHandler>())
 		return "ContextHandler";
 	if(ti == ystdex::type_id<LiteralHandler>())
@@ -849,13 +852,13 @@ Interpreter::Perform(string_view unit, ContextNode& ctx)
 		ctx.Shift(Backtrace, i);
 		HandleREPLException(std::move(p), ctx.Trace);
 	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
-	RelaySwitched(ctx, [&]{
+	RelaySwitched(ctx, A1::NameTypedReducerHandler([&]{
 	//	UpdateTextColor(InfoColor);
 	//	cout << "Unrecognized reduced token list:" << endl;
 		UpdateTextColor(ReducedColor);
 		LogTermValue(Term);
 		return ReductionStatus::Neutral;
-	});
+	}, "repl-print"));
 	Term = Context.ReadFrom(SourceLoadTagType(), platform_ex::DecodeArg(unit));
 	UpdateTextColor(SideEffectColor);
 	return A1::ReduceOnce(Term, ctx);

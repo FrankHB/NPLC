@@ -132,7 +132,7 @@ NBuilder 优化解释器的快速规约依赖 YSLib NPLA1 实现的异步规约�
 
 因为语言特性的要求（能捕获一等续延，尽管当前不提供公开 API ）和使用 AST 解释器实现，性能较大多数一般的语言解释器实现低。
 
-以下只给出基准测试用例的比较，使用支持类似特性且同为异步调用风格的 AST 解释器的 Kernel 实现[klisp](https://klisp.org) 0.3（只支持 32 位）在 MinGW32 下的 release 配置。
+以下只给出基准测试用例的比较，使用支持类似特性且同为异步调用风格的 AST 解释器的 Kernel 实现 [klisp](https://klisp.org) 0.3（只支持 32 位）在 MinGW32 下的 release 配置。
 
 兼容 POSIX shell 的命令行调用如下：
 
@@ -154,4 +154,12 @@ klisp -e '(display ($sequence ($define! fib ($lambda (n) ($if (<=? n 1) n (+ (fi
 * **V1.0** 约 0.95
 
 （使用较小参数的基准测试内容另见 `test.txt` 中的 `pt` 函数。）
+
+### 元数据
+
+在 NPLA1 元数据的基础上，支持以下续延名称：
+
+* `guard-load` ：恢复加载前保存的环境。
+* `load-external` ：加载外部翻译单元。
+* `repl-print` ：REPL 输出。
 
