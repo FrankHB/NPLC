@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2077
+\version r2090
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-20 00:27 +0800
+	2020-07-20 23:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -547,11 +547,11 @@ GetMonotonicPoolRef()
 //		after the initialization.
 //	3. No literal handlers rely on the value of the reduced term.
 //! \since YSLib build 896
-template<typename _func, typename _func2, typename _fTermToNamePtr,
+template<typename _func, typename _func2, typename _fSetupTailOpName,
 	typename _fReduceBranch>
 YB_FLATTEN inline ReductionStatus
 ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
-	_fTermToNamePtr term_to_name_ptr, _fReduceBranch reduce_branch)
+	_fSetupTailOpName setup_tail_op_name, _fReduceBranch reduce_branch)
 {
 	if(term.Value)
 	{
@@ -559,7 +559,7 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 		//	%ContextState::DefaultReduceOnce. For leaf values other than value
 		//	tokens, the next term is set up in the original implemenation but
 		//	omitted here, cf. assumption 1.
-		if(const auto p = term_to_name_ptr(term))
+		if(const auto p = TermToNamePtr(term))
 		{
 			string_view id(*p);
 
@@ -583,6 +583,7 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 							auto& bound(*pr.first);
 							const auto& p_env(pr.second);
 
+							setup_tail_op_name(term);
 							return ResolveTerm([&](TermNode& nd,
 								ResolvedTermReferencePtr p_ref){
 								if(p_ref)
@@ -649,14 +650,8 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 			return ReduceCombinedReferent(term, cs, nd);
 		}, [&]{
 			return ReduceNextCombinedBranch(term, cs);
-		}, [&](TermNode& tm) -> observer_ptr<const TokenValue>{
-			if(const auto p = TermToNamePtr(tm))
-			{
-				term.Value = std::move(tm.Value);
-				return NPL::make_observer(
-					&term.Value.GetObject<TokenValue>());
-			}
-			return {};
+		}, [&](TermNode& sub){
+			term.Value = std::move(sub.Value);
 		}, [&](TermNode& sub, ContextNode& ctx){
 			RelaySwitched(ctx, [&](ContextNode& c){
 				return
@@ -692,7 +687,7 @@ Interpreter::Interpreter()
 				return ReductionStatus::Neutral;
 			}, []() YB_ATTR_LAMBDA_QUAL(ynothrow, YB_STATELESS){
 				return ReductionStatus::Retained;
-			}, TermToNamePtr, ReduceFastBranch);
+			}, [](TermNode&) ynothrow{}, ReduceFastBranch);
 		};
 #elif NPLC_Impl_LogBeforeReduce
 	using namespace placeholders;
