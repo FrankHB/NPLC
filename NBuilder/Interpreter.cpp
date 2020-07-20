@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2095
+\version r2112
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-20 23:27 +0800
+	2020-07-21 02:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -806,7 +806,6 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 			for(const auto& act : Backtrace)
 			{
 				const auto name(A1::QueryContinuationName(act));
-				const auto opname(A1::QueryTailOperatorName(act));
 				const auto p(name.data() ? name.data() :
 #	if NDEBUG
 					"?"
@@ -816,9 +815,23 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 					act.target_type().name()
 #	endif
 				);
-				if(const auto p_o = opname.data())
-					trace.TraceFormat(Notice, "#[continuation: %s (%s)]", p_o,
-						p);
+				const auto p_opn_vo(A1::QueryTailOperatorName(act));
+				const auto p_opn_t(p_opn_vo ? p_opn_vo->AccessPtr<TokenValue>()
+					: nullptr);
+
+				if(const auto p_o = p_opn_t ? p_opn_t->data() : nullptr)
+				{
+#if NPLC_Impl_UseSourceInfo
+					if(const auto p_si = A1::QuerySourceInformation(*p_opn_vo))
+						trace.TraceFormat(Notice, "#[continuation: %s (%s) @"
+							" %s (line %zu, column %zu)]", p_o, p,
+							p_si->first->c_str(), p_si->second.Line + 1,
+							p_si->second.Column + 1);
+					else
+#endif
+						trace.TraceFormat(Notice, "#[continuation: %s (%s)]",
+							p_o, p);
+				}
 				else
 					trace.TraceFormat(Notice, "#[continuation (%s)]", p);
 			}
