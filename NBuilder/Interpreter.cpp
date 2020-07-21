@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2112
+\version r2121
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-21 02:15 +0800
+	2020-07-21 18:01 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -27,13 +27,13 @@
 
 #include "Interpreter.h" // for YAssertNonnull;
 #include <Helper/YModules.h>
-#include <iostream>
-#include YFM_YCLib_YCommon
+#include YFM_YCLib_YCommon // for ystdex::type_info, ystdex::call_value_or;
 #include YFM_YSLib_Core_YException // for FilterExceptions;
 #include YFM_YSLib_Service_TextFile
 #include YFM_NPL_NPLA1Forms
 #include <cstring> // for std::strcmp, std::strstr;
 #include <cstdio> // for std::fprintf;
+#include <iostream> // for std::cin, std::cout;
 
 #if YCL_Linux
 //#	define NPLC_Impl_mimalloc true
@@ -810,9 +810,12 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 #	if NDEBUG
 					"?"
 #	else
-				// XXX: This is enabled for debugging only because the name is
-				//	not guaranteed steady.
-					act.target_type().name()
+					// XXX: This is enabled for debugging only because the name
+					//	is not guaranteed steady.
+					ystdex::call_value_or([](const A1::Continuation& cont)
+						-> const ystdex::type_info&{
+						return cont.Handler.target_type();
+					}, act.target<A1::Continuation>(), act.target_type()).name()
 #	endif
 				);
 				const auto p_opn_vo(A1::QueryTailOperatorName(act));
