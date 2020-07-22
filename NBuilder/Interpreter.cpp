@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2121
+\version r2126
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-21 18:01 +0800
+	2020-07-23 00:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -694,14 +694,12 @@ Interpreter::Interpreter()
 		};
 #elif NPLC_Impl_LogBeforeReduce
 	using namespace placeholders;
-	A1::EvaluationPasses
-		passes(std::bind(std::ref(Context.ListTermPreprocess), _1, _2));
-
-	passes += [](TermNode& term){
+	A1::EvaluationPasses passes([](TermNode& term){
 		YTraceDe(Notice, "Before ReduceCombined:");
 		LogTermValue(term, Notice);
 		return ReductionStatus::Retained;
-	};
+	});
+
 	passes += ReduceHeadEmptyList;
 	passes += A1::ReduceFirst;
 	passes += A1::ReduceCombined;
