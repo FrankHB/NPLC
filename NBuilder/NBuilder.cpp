@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8001
+\version r8006
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-07-20 23:29 +0800
+	2020-07-23 17:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -225,11 +225,8 @@ LoadExternal(TermNode& term, ContextNode& ctx, Interpreter& intp,
 {
 	return LoadWithFilename([&](std::istream& is){
 		return intp.Load(term, ctx, std::move(name), is);
-	}, [&]{
-		// XXX: Return the error?
-		term.Value = ValueToken::Unspecified;
-		return ReductionStatus::Clean;
-	}, name.c_str());
+	// XXX: Return the error instead?
+	}, std::bind(A1::ReduceReturnUnspecified, std::ref(term)), name.c_str());
 }
 
 // NOTE: Preloading does not change the continuation of the context becasue it
