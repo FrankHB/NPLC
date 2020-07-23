@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2140
+\version r2169
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-23 17:28 +0800
+	2020-07-23 01:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -69,15 +69,11 @@ yconstexpr auto prompt("> ");
 namespace
 {
 
-//! \since YSLib build 852
-//@{
+//! \since YSLib build 896
 void
 PrintTermNode(std::ostream& os, const TermNode& term,
-	TermNodeToString term_to_str, IndentGenerator igen = DefaultGenerateIndent,
-	size_t depth = 0)
+	TermNodeToString term_to_str, size_t depth = 0, size_t idx = 0)
 {
-	PrintIndent(os, igen, depth);
-
 	const auto print_node_str([&](const TermNode& subterm){
 		return ResolveTerm([&](const TermNode& tm,
 			ResolvedTermReferencePtr p_ref) -> pair<lref<const TermNode>, bool>{
@@ -91,30 +87,30 @@ PrintTermNode(std::ostream& os, const TermNode& term,
 			}
 			try
 			{
-				os << term_to_str(tm) << '\n';
+				os << term_to_str(tm);
 				return {tm, true};
 			}
 			CatchIgnore(bad_any_cast&)
 			return {tm, false};
 		}, subterm);
 	});
+
+	if(depth != 0 && idx != 0)
+		os << ' ';
+
 	const auto pr(print_node_str(term));
 
 	if(!pr.second)
-	{
-		const auto& vterm(pr.first.get());
+		PrintContainedNodes([&](char b){
+			os << b;
+		}, [&]{
+			size_t i(0);
 
-		os << '\n';
-		if(vterm)
 			TraverseSubnodes([&](const TermNode& nd){
-				PrintContainedNodes([&](char b){
-					PrintIndent(os, igen, depth);
-					os << b << '\n';
-				}, [&]{
-					return PrintTermNode(os, nd, term_to_str, igen, depth + 1);
-				});
-			}, vterm);
-	}
+				PrintTermNode(os, nd, term_to_str, depth + 1, i);
+				++i;
+			}, pr.first.get());
+		});
 }
 
 //! \since YSLib build 889
@@ -181,6 +177,8 @@ StringifyContextHandler(const _tHandler& h)
 }
 //@}
 
+//! \since YSLib build 852
+//@{
 YB_ATTR_nodiscard YB_PURE string
 StringifyValueObject(const ValueObject& vo)
 {
