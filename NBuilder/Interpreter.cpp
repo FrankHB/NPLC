@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2126
+\version r2134
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-23 00:49 +0800
+	2020-07-23 17:27 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -105,11 +105,14 @@ PrintTermNode(std::ostream& os, const TermNode& term,
 
 		os << '\n';
 		if(vterm)
-			TraverseNodeChildAndPrint(os, vterm, [&]{
-				PrintIndent(os, igen, depth);
-			}, print_node_str, [&](const TermNode& nd){
-				return PrintTermNode(os, nd, term_to_str, igen, depth + 1);
-			});
+			TraverseSubnodes([&](const TermNode& nd){
+				PrintContainedNodes([&](char b){
+					PrintIndent(os, igen, depth);
+					os << b << '\n';
+				}, [&]{
+					return PrintTermNode(os, nd, term_to_str, igen, depth + 1);
+				});
+			}, vterm);
 	}
 }
 
