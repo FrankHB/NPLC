@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2134
+\version r2140
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-23 17:27 +0800
+	2020-07-23 17:28 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -27,7 +27,8 @@
 
 #include "Interpreter.h" // for YAssertNonnull;
 #include <Helper/YModules.h>
-#include YFM_YCLib_YCommon // for ystdex::type_info, ystdex::call_value_or;
+#include YFM_YCLib_YCommon // for ystdex::type_info, ystdex::quote,
+//	ystdex::call_value_or;
 #include YFM_YSLib_Core_YException // for FilterExceptions;
 #include YFM_YSLib_Service_TextFile
 #include YFM_NPL_NPLA1Forms
@@ -186,9 +187,9 @@ StringifyValueObject(const ValueObject& vo)
 	if(vo != A1::ValueToken::Null)
 	{
 		if(const auto p = vo.AccessPtr<string>())
-			return EscapeLiteral(*p);
+			return ystdex::quote(EscapeLiteral(*p));
 		if(const auto p = vo.AccessPtr<TokenValue>())
-			return sfmt<string>("[TokenValue] %s", EscapeLiteral(*p).c_str());
+			return EscapeLiteral(*p);
 		if(const auto p = vo.AccessPtr<A1::ValueToken>())
 			return sfmt<string>("[ValueToken] %s", to_string(*p).c_str());
 		if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
@@ -198,9 +199,9 @@ StringifyValueObject(const ValueObject& vo)
 		if(const auto p = vo.AccessPtr<A1::ContextHandler>())
 			return "#[" + StringifyContextHandler(*p) + "]";
 		if(const auto p = vo.AccessPtr<bool>())
-			return *p ? "[bool] true" : "[bool] false";
+			return *p ? "#t" : "#f";
 		if(const auto p = vo.AccessPtr<int>())
-			return sfmt<string>("[int] %d", *p);
+			return sfmt<string>("%d", *p);
 		if(const auto p = vo.AccessPtr<unsigned>())
 			return sfmt<string>("[uint] %u", *p);
 		if(const auto p = vo.AccessPtr<double>())
