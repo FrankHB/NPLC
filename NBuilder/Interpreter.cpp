@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2169
+\version r2172
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-23 01:20 +0800
+	2020-07-27 00:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -69,10 +69,11 @@ yconstexpr auto prompt("> ");
 namespace
 {
 
-//! \since YSLib build 896
+//! \since YSLib build 897
+template<typename _fTermNodeToString>
 void
 PrintTermNode(std::ostream& os, const TermNode& term,
-	TermNodeToString term_to_str, size_t depth = 0, size_t idx = 0)
+	_fTermNodeToString term_to_str, size_t depth = 0, size_t idx = 0)
 {
 	const auto print_node_str([&](const TermNode& subterm){
 		return ResolveTerm([&](const TermNode& tm,
