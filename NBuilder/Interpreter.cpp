@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2174
+\version r2181
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-07-27 15:42 +0800
+	2020-08-01 13:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -852,7 +852,7 @@ Interpreter::Load(TermNode& term, ContextNode& ctx, string&& name,
 	// NOTE: Swap guard for %Context.CurrentSource is not used to support PTC.
 	Context.CurrentSource
 		= YSLib::allocate_shared<string>(Context.Allocator, std::move(name));
-	term = Context.ReadFrom(SourceLoadTagType(), is, ctx);
+	term = ReadFor(Context, is, ctx);
 	// NOTE: This is explicitly not same to klisp. This is also friendly to PTC.
 	return A1::ReduceOnce(term, ctx);
 }
@@ -879,6 +879,13 @@ Interpreter::Perform(string_view unit, ContextNode& ctx)
 	Term = Context.ReadFrom(SourceLoadTagType(), platform_ex::DecodeArg(unit));
 	UpdateTextColor(SideEffectColor);
 	return A1::ReduceOnce(Term, ctx);
+}
+
+TermNode
+Interpreter::ReadFor(const REPLContext& context, std::istream& is,
+	ContextNode& ctx)
+{
+	return context.ReadFrom(SourceLoadTagType(), is, ctx);
 }
 
 void
