@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2188
+\version r2189
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-08-01 14:26 +0800
+	2020-08-01 19:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -796,7 +796,7 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 					throw;
 				print(lv, "Error", str);
 			}
-			CatchExpr(..., throw)
+			CatchExpr(..., print(Err, "Error", str))
 		}, e);
 		trace.TraceFormat(Notice, "Location: %s.", Context.CurrentSource
 			? Context.CurrentSource->c_str() : "<unknown>");
