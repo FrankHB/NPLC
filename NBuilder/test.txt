@@ -33,7 +33,7 @@ $defl%! or? &x $sequence
 	(or-aux? #f (forward! x));
 "NOTE", "Definitions of $and?, $or?, first-null?,",
 	" list-rest%, accl, accr are in %YFramework.NPL.Dependency.";
-$defl%! foldl1 (&kons &knil &l) d
+$defw%! foldl1 (&kons &knil &l) d
 	apply accl (list% (forward! l) null? (forward! knil) first rest% kons) d;
 $defw%! map1-reverse (&appv &l) d foldl1
 	($lambda (&x &xs) cons (apply appv (list% (forward! x)) d) xs) () l;
