@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2181
+\version r2188
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-08-01 13:56 +0800
+	2020-08-01 14:26 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -891,11 +891,8 @@ Interpreter::ReadFor(const REPLContext& context, std::istream& is,
 void
 Interpreter::Run()
 {
-	const auto a(Context.Allocator);
-
-	Context.CurrentSource = YSLib::allocate_shared<string>(a, "*STDIN*");
-	Context.Root.Rewrite(NPL::ToReducer(a, std::bind(&Interpreter::RunLoop,
-		std::ref(*this), std::placeholders::_1)));
+	Context.Root.Rewrite(NPL::ToReducer(Context.Allocator, std::bind(
+		&Interpreter::RunLoop, std::ref(*this), std::placeholders::_1)));
 }
 
 void
@@ -918,6 +915,8 @@ Interpreter::RunLoop(ContextNode& ctx)
 	// TODO: Set error continuation to filter exceptions.
 	if(WaitForLine())
 	{
+		Context.CurrentSource = YSLib::allocate_shared<string>(Context.Allocator,
+			"*STDIN*");
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
 		return !line.empty() ? Perform(line, A1::ContextState::Access(ctx))
