@@ -106,7 +106,8 @@ $defw! environment-bound? (&e &str) d
 	eval (list bound? str) (eval e d);
 "NOTE", "Definitions of $binds1? is in module std.environments in",
 	" %YFramework.NPL.Dependency.";
-$defv! $binds? (&e .&ss) d $let ((&senv eval e d))
+$defv/e! $binds? (make-environment (() get-current-environment)
+	std.environments) (&e .&ss) d $let ((&senv eval e d))
 	foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
 
 "NOTE", "Type operation library.";
