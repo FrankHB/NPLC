@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8013
+\version r8023
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-07-23 17:26 +0800
+	2020-08-01 14:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -238,7 +238,18 @@ PreloadExternalRoot(REPLContext& context, const char* name)
 {
 	return LoadWithFilename([&](std::istream& is){
 		FilterExceptions([&]{
-			TryLoadSource(context, name, is, context.Root);
+			// As A1::TryLoadSource.
+			try
+			{
+				context.CurrentSource
+					= YSLib::allocate_shared<string>(context.Allocator, name);
+
+				auto term(Interpreter::ReadFor(context, is));
+
+				Reduce(term, context.Root);
+			}
+			CatchExpr(..., std::throw_with_nested(NPLException(
+				ystdex::sfmt("Failed loading external unit '%s'.", name))));
 		});
 	}, []{}, name);
 }
