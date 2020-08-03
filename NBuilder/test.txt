@@ -240,6 +240,13 @@ $defl! test (&i)
 		$expect (list% #f #f #t #t #f)
 			list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
 				(fwd? (idv fwd?));
+		subinfo "simple recursive thunks without thunk cleanup";
+		$expect 1 $let () ($defrec! a 1; a);
+		$expect 1 $let () ($defrec! (a a) list 1 1; a);
+		$let () ($defrec! (&a b) list b ($lambda () 1));
+		subinfo "regression for $defrec!; fixed since b897";
+		$let () ($defrec! (&a b) list b ($lambda () 1));
+		$expect 1 $let () ($defrec! (b &a) list ($lambda () 1) b; () b);
 	))
 	((eqv? i 5) (
 		info "reference collapsing and reference assignment";
