@@ -210,92 +210,18 @@ $defl! test (&i)
 	$cond
 	((eqv? i 1) (
 		info "sanity";
-		subinfo "sequence and __make-stdenv";
-		$def! $sequence
-		(
-			wrap
-			(
-				$vau (&$seq2) #ignore $seq2
-					($defrec! $aux $vau/e (make-environment
-						(() get-current-environment) (() __make-stdenv))
-						(&first .&rest) env
-						($if (null? rest) (eval first env)
-							($seq2 (eval first env)
-								(eval (cons $aux rest) env))))
-					($vau/e (make-environment (() lock-current-environment)
-						(() __make-stdenv)) &body env
-						($if (null? body) #inert
-							(eval (cons $aux body) env)))
-			)
-		)
-		(
-			$vau (first second) d
-				(wrap ($vau #ignore #ignore (eval second d))) (eval first d)
-		);
-
-		$def! x "ss";
-		puts "testb";
-		$sequence (puts "a") (puts x) (puts "b") (puts x)
+		$expect ();
 	))
 	((eqv? i 2) (
-		info "combiner operations";
-		subinfo "combiner equals";
-		$check eqv? (idv idv) idv;
-		$check not? (eqv? (wrap idv) idv);
-		$check eqv? (wrap idv) (wrap idv);
-		$check eqv? (wrap% idv) (wrap idv);
-		$check eqv? (wrap% idv) (wrap% idv);
-		$check eqv? (unwrap unwrap) (unwrap unwrap);
-		$def! idv wrap $quote;
-		$check eqv? (unwrap idv) $quote;
-		$check eqv? (unwrap (idv idv)) $quote;
-		$check eqv? (unwrap idv) (unwrap (idv idv));
-		$check eqv? (wrap (unwrap idv)) idv;
-		subinfo "regression for wrap/unwrap; fixed since b859";
-		((unwrap (unwrap (wrap (wrap ($quote)))))) ($quote id);
-		subinfo "sanity on irregular representations; fixed since b876";
-		$let ()
-		(
-			$def! f idv;
-			$def! e () make-environment;
-			$set! e $f unwrap f;
-			$set! e &$fr unwrap f;
-			$def! $uf eval% ($quote $f) e;
-			$def! $ufr eval% ($quote $fr) e;
-			$def! &$urf eval% ($quote $f) e;
-			$def! &$urfr eval% ($quote $fr) e;
-			$def! &$urfri eval% (list $resolve-identifier ($quote $fr)) e;
-			$undef! e;
-			$uf 1;
-			$ufr 2;
-			$rem "Undefined behavior:"
-				"Expected failure on NPL_NPLA_CheckTermReferenceIndirection:"
-				($urf 3);
-			$rem "The following evaluations rely on correctly returning an"
-				" object of irregular representation, when only one of '$urfr'"
-				" and '$urfri' is defined (and thus the terms in the irregular"
-				" representation are not shared elsewhere).";
-			$urfr 4;
-			$rem $urfri 5;
-		);
-		subinfo "test for ref&, etc.";
-		$def! x "xx";
-		$def! rx ref& x;
-		$def! $f1 wrap ($vau/e (() get-current-environment) () env
-			eval (list $sequence (puts x) (assign! x "yy") (puts x)
-				(string<- rx "ee") (puts rx)) env);
-		() $f1
-	))
-	((eqv? i 3) (
-		info "funtion calls";
+		info "function calls";
 		subinfo "basic combiner calls";
 		$defl! gg fm apply - fm;
 		$defv! $gg fm #ignore eval (list* - fm) (() get-current-environment);
 		$expect (- 0 1) gg 2 3;
 		$expect (- 0 1) $gg 3 4;
 	))
-	((eqv? i 4) (
-		info "recursive functions";
+	((eqv? i 3) (
+		info "recursive function calls";
 		subinfo "Fibonacci";
 		$defl! fib (&n) $if (<=? n 1) 1 (+ (fib (- n 1)) (fib (- n 2)));
 		$expect 8 (fib 5);
@@ -305,373 +231,9 @@ $defl! test (&i)
 		$expect 5 F 7;
 		$expect 4 M 7;
 	))
-	((eqv? i 5) (
-		info "logical operations";
-		subinfo "non-strict logical operations";
-		$expect #t () $and?;
-		$expect #f () $or?;
-		$expect #f $and? #f #f;
-		$expect #t $or? #f #t;
-		$expect 2 $and? 1 2;
-		$expect 1 $or? 1 #f;
-		$expect 2 $or? #f 2 #f 3;
-		"regression for $or?; fixed since b884";
-		$or? #f #f (string->symbol "evaluate-once") #f;
-		subinfo "strict logical operations";
-		$expect #t () and?;
-		$expect #f () or?;
-		$expect #f and? #f #f;
-		$expect #t or? #f #t;
-		$expect 2 and? 1 2;
-		$expect 1 or? 1 #f;
-		$expect 3 or? #f 2 #f 3;
-	))
-	((eqv? i 6) (
-		info "list operations";
-		$def! a list 2 3;
-		subinfo "sanity test of list-forward-first";
-		$rem
-		(
-			"NOTE: ", "The following implementations are not conforming.";
-			$defl%! forward-list-first% (&list-appv &appv &l)
-				($lambda% ((&x .)) (forward! appv) ($resolve-identifier x))
-					((forward! list-appv) l);
-			$defl%! forward-list-first% (&list-appv &appv &l)
-				($lambda% ((&x .)) eval% (list% (forward! appv)
-					($resolve-identifier x)) (() make-environment))
-					(eval% (list% (forward! list-appv) l)
-						(() make-environment));
-		);
-		$defl%! first-test (%l0)
-			($lambda% (fwd) forward-list-first% fwd
-				(wrap ($vau% (&x) d
-					$sequence (eval ($quote l0) d) (forward! (forward! x)))) l0)
-				($if (bound-lvalue? ($resolve-identifier l0)) id expire);
-		$expect 1 (first-test (list 1 2));
-		subinfo "list lvalue elements read and move";
-		$expect 2 first (id a);
-		$expect 2 first a;
-		$expect 2 first (as-const (expire a));
-		$expect 2 first (expire a);
-		$expect () first a;
-		subinfo "list access";
-		list% q-li q-li2
-			(idv (first q-li)) (restv q-li)
-			(idv (first q-li2)) (restv q-li2)
-			(first q-li) (rest% q-li)
-			(first q-li2) (rest% q-li2)
-			(first& q-li) (rest& q-li)
-			(first& q-li2) (rest& q-li2)
-			(list*% q-a 1 2 (list% q-a 1 2))
-			(list-concat (list 1 2) q-li)
-			(append q-li (list 1 2) q-li2 (list 3 q-a))
-			($let ((&q-b q-a)) q-b)
-			($let* ((&q-b q-a) (&q-c q-b)) q-c)
-			(first& (first& q-li3))
-			(rest& (first& q-li3))
-			(first (rest& q-li3))
-			(rest% (rest& q-li3));
-		subinfo "list lambda binding";
-		apply ($lambda% (&x &y) x) (list% q-li q-li2);
-		subinfo "list algorithms";
-		reduce (list% q-li q-li2 q-li q-li2) ($lambda% (&x &y) x) q-li;
-		subinfo "list modification";
-		$let ()
-		(
-			set-first! q-li q-b;
-			set-first%! q-li q-b;
-			set-first! q-li 5;
-			set-first%! q-li 7;
-			set-rest! q-li q-li;
-			set-rest%! q-li q-li2;
-			cons% q-li q-li;
-			display (first& (first& q-li4));
-			set-first! (first& q-li4) (list () 2);
-			display (rest& (first& q-li4));
-			display q-li4
-		);
-	))
-	((eqv? i 7) (
-		info "list and list utility tests";
-		$def! a list "2" "3";
-		subinfo "sublists eagar logical operations";
-		$expect (list 3 #f 2 #f)
-			list (and? 1 2 3) (and? 1 #f 3) (or? #f 2 #f) (or? #f #f);
-		subinfo "accr";
-		accr (list (list "2") (list "3")) null? () first rest%
-			($lambda% (&x &y) accr (forward x) null? y first rest% cons%);
-		subinfo "foldr1";
-		$expect (list "2" "3")
-			foldr1 list-concat () (list (list "2") (list "3"));
-		subinfo "list-concat";
-		$expect (list "2" "3") list-concat (list "2") (list "3");
-		subinfo "append";
-		$expect (list% "2" id) append (list "2") (list% id);
-		subinfo "map1";
-		$expect (list% id 2 3) map1 id (list% id 2 3);
-		$expect (list "afx" "bfx" "cfx")
-			map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
-		subinfo "mapn";
-		$expect (list "246" "357")
-			mapn 2 ++ a (list "4" "5") (list "6" "7");
-		subinfo "map-fromn";
-		$expect (list "42" "53")
-			map-fromn ++ (list "4" "5") a;
-		$expect (list "421")
-			map-fromn ++ (list "4" "5") a (list "1");
-		subinfo "map-strict";
-		$expect (list "246" "357")
-			map-strict ++ a (list "4" "5") (list "6" "7");
-		subinfo "map";
-		$expect (list "42" "53")
-			map ++ (list "4" "5") a;
-		$expect (list (list (list 2)) (list (list 4)) (list (list 6)))
-			map list-restv (list (list 1 2) (list 3 4) (list 5 6));
-		$expect (list 5 7 9)
-			map + (list 1 2 3) (list 4 5 6);
-		$expect (list "421")
-			map ++ (list "4" "5") a (list "1");
-		subinfo "filter";
-		$expect (list "2" "3" "1" "2")
-			filter ($lambda (s) not? (string-empty? s))
-				(append a (list "" "1" "" "2"));
-		subinfo "assv";
-		$expect (list 1 "l")
-			assv 1 (list (list 9 2) (list 1 "l") (list 3 4) (list 1 3));
-		subinfo "memv?";
-		$check memv? 1 (list 1 2 4);
-		subinfo "reduce";
-		$expect 10 reduce (list 1 2 3 4) + 5;
-		subinfo "foldr";
-		$def! a0 0;
-		$def! a1 1;
-		$def! li1 list% 4 5 a1;
-		$expect (list 6 1)
-			foldr ($lambda (&x &y) list (+ x (first y)) x) (list% 0 a0 0)
-				(list a1 2 3);
-		$expect (list 16 1)
-			foldr ($lambda (&x &y &s) list (+ x y (first s)) x) (list% 0 a0 0)
-				(list% a1 2 3) (list% 4 5 a1);
-		info "well-formed list function definitions";
-		$defl! fold* (&kons &head .&tail) $if (null? tail) head
-			(kons head (apply fold* (cons kons tail)));
-		$defl! xlist* (.&xs) apply fold* (cons cons xs);
-	))
-	((eqv? i 8) (
-		info "environment basic operations";
-		subinfo "test case for freeze-environment!";
-		$def! e0 make-environment (() get-current-environment);
-		$set! e0 q0 0;
-		$def! e1 make-environment e0;
-		$set! e1 q1 1;
-		$set! e1 q2 2;
-		freeze-environment! e0;
-		eval ($quote (
-			$rem assign! q1 1;
-			$rem $def! q2 2;
-		)) e1;
-	))
-	((eqv? i 9) (
-		info "local bindings";
-		subinfo "$let";
-		$expect 5 $let ((&x 2) (&y 3)) + x y;
-		subinfo "$let*";
-		$expect 4 $let* ((&x 2) (&y x)) + x y;
-		subinfo "$letrec";
-		$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
-		subinfo "$letrec*";
-		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z;
-	))
-	((eqv? i 10) (
-		info "environment encapsulation";
-		subinfo "simple environment separation";
-		$let ()
-		(
-			$def! count 0;
-			$def! ez () get-current-environment;
-			$defl! ax () $set! ez count + 1 count;
-			() ax;
-			$expect 1 count;
-		);
-		subinfo "$let count";
-		$let ()
-		(
-			$def! count $let ((&counter 0))
-			(
-				$def! self () get-current-environment;
-				$lambda/e (lock-environment self) ()
-				(
-					$set! self counter + counter 1;
-					counter
-				)
-			);
-			$expect 1 () count
-		);
-		subinfo "$let count in new environment";
-		$let ()
-		(
-			$def! count $let
-				((&se make-environment (() get-current-environment)))
-			(
-				$set! se (wenv counter) list (weaken-environment se) 0;
-				$lambda/e se ()
-				(
-					$set! wenv counter + counter 1;
-					counter
-				)
-			);
-			$expect 1 () count
-		);
-		subinfo "$letrec count";
-		$let ()
-		(
-			$def! count $letrec
-			(
-				(self () get-current-environment)
-				(counter 0)
-			)
-			(
-				$lambda/e (lock-environment self) ()
-				(
-					$set! self counter + counter 1;
-					counter
-				)
-			);
-			$expect 1 () count
-		);
-		subinfo "$bindings->environment";
-		$let ()
-		(
-			$def! e $bindings->environment (x 1) (y 2);
-			$expect 3 eval (list + (string->symbol "x") (string->symbol "y")) e;
-		);
-		subinfo "let* environment encapsulation";
-		$expect (list 3 2 1)
-			$let* ((count 0) (env (() get-current-environment)))
-				map ($lambda (#ignore) (($set! env count add1 count); count))
-				(list 9 8 7)
-	))
-	((eqv? i 11) (
-		info "Y combinatior";
-		$defl! Y (f) ($lambda (&h) h h)
-			(wrap ($vau/e (() copy-environment) (x) #ignore f
-				(wrap ($vau/e (() copy-environment) z #ignore
-					(apply (x x) z)))));
-		$def! fact Y ($lambda (&f)
-			wrap ($vau/e (() copy-environment) (z) #ignore
-				$if (eqv? z 0) 1 (* z (f (- z 1)))));
-		$def! fib Y ($lambda (&f)
-			wrap ($vau/e (() copy-environment) (n) #ignore
-				$if (<? n 2) n (+ (f (- n 1)) (f (- n 2)))));
-		(list (fact 5) (fib 5))
-	))
-	((eqv? i 12) (
-		$def! $sequence
-		(
-			$lambda (&se) ($lambda #ignore $vau/e se body env
-				$if (null? body) #inert (eval (cons $aux body) env))
-				($setrec! se $aux $vau/e (weaken-environment se)
-					(&head .&tail) env
-					$if (null? tail) (eval head env) (($lambda #ignore
-						(eval (cons $aux tail) env)) (eval head env)))
-		)
-		(
-			() make-standard-environment
-		);
-
-		$def! x "ss";
-		puts "testb";
-		$sequence (puts "a") (puts x) (puts "b") (puts x)
-	))
-	((eqv? i 13) (
-		info "make-encapsulation-type";
-		$let ()
-		(
-			$def! (e p? d) () make-encapsulation-type;
-			p? 1;
-			$def! enc e 1;
-			$expect #t p? enc;
-			$expect #f p? "str";
-			$expect 1 d enc;
-			$expect 2 d (e 2);
-		)
-	))
-	((eqv? i 14) (
-		info "eval-string and eval-unit";
-		$let ()
-		(
-			$import! std.environments eval-string eval-unit get-current-repl;
-			eval-string "1" (() get-current-environment);
-			eval-unit "1;" (() get-current-repl)
-		)
-	))
-	((eqv? i 15) (
-		info "$provide!";
-		$let ()
-		(
-			$def! ee $provide! (a) $def! a 42;
-			$def! el ();
-			$def! b ($lambda (() a ()) a) () a el;
-			$expect 42 a;
-			$expect 42 b
-		)
-	))
-	((eqv? i 16) (
-		info "promises";
-		subinfo "test #1 (as RnRK)";
-		$let ()
-		(
-			$def! env_tmp_ $provide! (get-count pb) $sequence
-				($def! count 5)
-				($defl! get-count () count)
-				($def! p ($let ((self () get-current-environment))
-					(
-						$set! self saved_ () lock-current-environment;
-						$lazy $if (<=? count 0) count
-							($sequence
-								($set! self count (- count 1))
-								(force p)
-								($set! self count (+ count 2))
-								count)
-					)
-				))
-				($def! pb box% p);
-			$expect 5 (() get-count);
-			$expect 0 (force (unbox pb));
-			$expect 10 (() get-count);
-		);
-		subinfo "test #2 (as RnRK)";
-		$let ()
-		(
-			puts "expect output: single line of \"*\"";
-			$def! p1 $lazy (puts "*");
-			$def! p2 $lazy p1;
-			force p2;
-			force p1
-		);
-		subinfo "test #3 (as RnRK)";
-		$let ()
-		(
-			$def! maxn 3;
-			$defl! stream-filter (p? s)
-			(
-				$lazy/e (() lock-current-environment) $let ((v (force s)))
-				(
-					$if (null? v) v
-					(
-						$let ((s stream-filter p? (first (rest& v))))
-							$if (p? (first& v)) (list (first v) s) s
-					)
-				)
-			);
-			$defl! from (n)
-				$lazy/e (() lock-current-environment) list n (from (+ n 1));
-			force (stream-filter ($lambda (n) eqv? n maxn) (from 0));
-		)
-	))
-	((eqv? i 17) (
-		info "equal? + fwd?";
-		puts "expect result: #t";
+	((eqv? i 4) (
+		info "basic object operations";
+		subinfo "equal? + fwd?";
 		$def! fwd? $vau% (&x) d
 			($lambda% (%v) bound-lvalue? ($resolve-identifier v))
 				(eval% x d);
@@ -679,7 +241,7 @@ $defl! test (&i)
 			list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
 				(fwd? (idv fwd?));
 	))
-	((eqv? i 18) (
+	((eqv? i 5) (
 		info "reference collapsing and reference assignment";
 		$def! (a b) list 1 2;
 		$def! li list% a 2;
@@ -751,8 +313,466 @@ $defl! test (&i)
 		assign@! b (first@ li);
 		$expect #f uncollapsed? (move! b);
 	))
+	((eqv? i 6) (
+		info "combiner operations";
+		subinfo "combiner equals";
+		$check eqv? (idv idv) idv;
+		$check not? (eqv? (wrap idv) idv);
+		$check eqv? (wrap idv) (wrap idv);
+		$check eqv? (wrap% idv) (wrap idv);
+		$check eqv? (wrap% idv) (wrap% idv);
+		$check eqv? (unwrap unwrap) (unwrap unwrap);
+		$def! idv wrap $quote;
+		$check eqv? (unwrap idv) $quote;
+		$check eqv? (unwrap (idv idv)) $quote;
+		$check eqv? (unwrap idv) (unwrap (idv idv));
+		$check eqv? (wrap (unwrap idv)) idv;
+		subinfo "regression for wrap/unwrap; fixed since b859";
+		((unwrap (unwrap (wrap (wrap ($quote)))))) ($quote id);
+		subinfo "sanity on irregular representations; fixed since b876";
+		$let ()
+		(
+			$def! f idv;
+			$def! e () make-environment;
+			$set! e $f unwrap f;
+			$set! e &$fr unwrap f;
+			$def! $uf eval% ($quote $f) e;
+			$def! $ufr eval% ($quote $fr) e;
+			$def! &$urf eval% ($quote $f) e;
+			$def! &$urfr eval% ($quote $fr) e;
+			$def! &$urfri eval% (list $resolve-identifier ($quote $fr)) e;
+			$undef! e;
+			$uf 1;
+			$ufr 2;
+			$rem "Undefined behavior:"
+				"Expected failure on NPL_NPLA_CheckTermReferenceIndirection:"
+				($urf 3);
+			$rem "The following evaluations rely on correctly returning an"
+				" object of irregular representation, when only one of '$urfr'"
+				" and '$urfri' is defined (and thus the terms in the irregular"
+				" representation are not shared elsewhere).";
+			$urfr 4;
+			$rem $urfri 5;
+		);
+		subinfo "test for ref&, etc.";
+		$def! x "xx";
+		$def! rx ref& x;
+		$def! $f1 wrap ($vau/e (() get-current-environment) () env
+			eval (list $sequence (puts x) (assign! x "yy") (puts x)
+				(string<- rx "ee") (puts rx)) env);
+		() $f1
+	))
+	((eqv? i 7) (
+		info "logical operations";
+		subinfo "non-strict logical operations";
+		$expect #t () $and?;
+		$expect #f () $or?;
+		$expect #f $and? #f #f;
+		$expect #t $or? #f #t;
+		$expect 2 $and? 1 2;
+		$expect 1 $or? 1 #f;
+		$expect 2 $or? #f 2 #f 3;
+		"regression for $or?; fixed since b884";
+		$or? #f #f (string->symbol "evaluate-once") #f;
+		subinfo "strict logical operations";
+		$expect #t () and?;
+		$expect #f () or?;
+		$expect #f and? #f #f;
+		$expect #t or? #f #t;
+		$expect 2 and? 1 2;
+		$expect 1 or? 1 #f;
+		$expect 3 or? #f 2 #f 3;
+	))
+	((eqv? i 8) (
+		info "list operations";
+		$def! a list 2 3;
+		subinfo "sanity test of list-forward-first";
+		$rem
+		(
+			"NOTE: ", "The following implementations are not conforming.";
+			$defl%! forward-list-first% (&list-appv &appv &l)
+				($lambda% ((&x .)) (forward! appv) ($resolve-identifier x))
+					((forward! list-appv) l);
+			$defl%! forward-list-first% (&list-appv &appv &l)
+				($lambda% ((&x .)) eval% (list% (forward! appv)
+					($resolve-identifier x)) (() make-environment))
+					(eval% (list% (forward! list-appv) l)
+						(() make-environment));
+		);
+		$defl%! first-test (%l0)
+			($lambda% (fwd) forward-list-first% fwd
+				(wrap ($vau% (&x) d
+					$sequence (eval ($quote l0) d) (forward! (forward! x)))) l0)
+				($if (bound-lvalue? ($resolve-identifier l0)) id expire);
+		$expect 1 (first-test (list 1 2));
+		subinfo "list lvalue elements read and move";
+		$expect 2 first (id a);
+		$expect 2 first a;
+		$expect 2 first (as-const (expire a));
+		$expect 2 first (expire a);
+		$expect () first a;
+		subinfo "list access";
+		list% q-li q-li2
+			(idv (first q-li)) (restv q-li)
+			(idv (first q-li2)) (restv q-li2)
+			(first q-li) (rest% q-li)
+			(first q-li2) (rest% q-li2)
+			(first& q-li) (rest& q-li)
+			(first& q-li2) (rest& q-li2)
+			(list*% q-a 1 2 (list% q-a 1 2))
+			(list-concat (list 1 2) q-li)
+			(append q-li (list 1 2) q-li2 (list 3 q-a))
+			($let ((&q-b q-a)) q-b)
+			($let* ((&q-b q-a) (&q-c q-b)) q-c)
+			(first& (first& q-li3))
+			(rest& (first& q-li3))
+			(first (rest& q-li3))
+			(rest% (rest& q-li3));
+		subinfo "list lambda binding";
+		apply ($lambda% (&x &y) x) (list% q-li q-li2);
+		subinfo "list algorithms";
+		reduce (list% q-li q-li2 q-li q-li2) ($lambda% (&x &y) x) q-li;
+		subinfo "list modification";
+		$let ()
+		(
+			set-first! q-li q-b;
+			set-first%! q-li q-b;
+			set-first! q-li 5;
+			set-first%! q-li 7;
+			set-rest! q-li q-li;
+			set-rest%! q-li q-li2;
+			cons% q-li q-li;
+			display (first& (first& q-li4));
+			set-first! (first& q-li4) (list () 2);
+			display (rest& (first& q-li4));
+			display q-li4
+		);
+	))
+	((eqv? i 9) (
+		info "list utility tests";
+		$def! a list "2" "3";
+		subinfo "sublists eagar logical operations";
+		$expect (list 3 #f 2 #f)
+			list (and? 1 2 3) (and? 1 #f 3) (or? #f 2 #f) (or? #f #f);
+		subinfo "accr";
+		accr (list (list "2") (list "3")) null? () first rest%
+			($lambda% (&x &y) accr (forward x) null? y first rest% cons%);
+		subinfo "foldr1";
+		$expect (list "2" "3")
+			foldr1 list-concat () (list (list "2") (list "3"));
+		subinfo "list-concat";
+		$expect (list "2" "3") list-concat (list "2") (list "3");
+		subinfo "append";
+		$expect (list% "2" id) append (list "2") (list% id);
+		subinfo "map1";
+		$expect (list% id 2 3) map1 id (list% id 2 3);
+		$expect (list "afx" "bfx" "cfx")
+			map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
+		subinfo "mapn";
+		$expect (list "246" "357")
+			mapn 2 ++ a (list "4" "5") (list "6" "7");
+		subinfo "map-fromn";
+		$expect (list "42" "53")
+			map-fromn ++ (list "4" "5") a;
+		$expect (list "421")
+			map-fromn ++ (list "4" "5") a (list "1");
+		subinfo "map-strict";
+		$expect (list "246" "357")
+			map-strict ++ a (list "4" "5") (list "6" "7");
+		subinfo "map";
+		$expect (list "42" "53")
+			map ++ (list "4" "5") a;
+		$expect (list (list (list 2)) (list (list 4)) (list (list 6)))
+			map list-restv (list (list 1 2) (list 3 4) (list 5 6));
+		$expect (list 5 7 9)
+			map + (list 1 2 3) (list 4 5 6);
+		$expect (list "421")
+			map ++ (list "4" "5") a (list "1");
+		subinfo "filter";
+		$expect (list "2" "3" "1" "2")
+			filter ($lambda (s) not? (string-empty? s))
+				(append a (list "" "1" "" "2"));
+		subinfo "assv";
+		$expect (list 1 "l")
+			assv 1 (list (list 9 2) (list 1 "l") (list 3 4) (list 1 3));
+		subinfo "memv?";
+		$check memv? 1 (list 1 2 4);
+		subinfo "reduce";
+		$expect 10 reduce (list 1 2 3 4) + 5;
+		subinfo "foldr";
+		$def! a0 0;
+		$def! a1 1;
+		$def! li1 list% 4 5 a1;
+		$expect (list 6 1)
+			foldr ($lambda (&x &y) list (+ x (first y)) x) (list% 0 a0 0)
+				(list a1 2 3);
+		$expect (list 16 1)
+			foldr ($lambda (&x &y &s) list (+ x y (first s)) x) (list% 0 a0 0)
+				(list% a1 2 3) (list% 4 5 a1);
+		info "well-formed list function definitions";
+		$defl! fold* (&kons &head .&tail) $if (null? tail) head
+			(kons head (apply fold* (cons kons tail)));
+		$defl! xlist* (.&xs) apply fold* (cons cons xs);
+	))
+	((eqv? i 10) (
+		info "environment basic operations";
+		subinfo "test case for freeze-environment!";
+		$def! e0 make-environment (() get-current-environment);
+		$set! e0 q0 0;
+		$def! e1 make-environment e0;
+		$set! e1 q1 1;
+		$set! e1 q2 2;
+		freeze-environment! e0;
+		eval ($quote (
+			$rem assign! q1 1;
+			$rem $def! q2 2;
+		)) e1;
+	))
+	((eqv? i 11) (
+		info "local bindings";
+		subinfo "$let";
+		$expect 5 $let ((&x 2) (&y 3)) + x y;
+		subinfo "$let*";
+		$expect 4 $let* ((&x 2) (&y x)) + x y;
+		subinfo "$letrec";
+		$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
+		subinfo "$letrec*";
+		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z;
+	))
+	((eqv? i 12) (
+		info "binding operations";
+		subinfo "simple environment separation";
+		$let ()
+		(
+			$def! count 0;
+			$def! ez () get-current-environment;
+			$defl! ax () $set! ez count + 1 count;
+			() ax;
+			$expect 1 count;
+		);
+		subinfo "$let count";
+		$let ()
+		(
+			$def! count $let ((&counter 0))
+			(
+				$def! self () get-current-environment;
+				$lambda/e (lock-environment self) ()
+				(
+					$set! self counter + counter 1;
+					counter
+				)
+			);
+			$expect 1 () count
+		);
+		subinfo "$let count in new environment";
+		$let ()
+		(
+			$def! count $let
+				((&se make-environment (() get-current-environment)))
+			(
+				$set! se (wenv counter) list (weaken-environment se) 0;
+				$lambda/e se ()
+				(
+					$set! wenv counter + counter 1;
+					counter
+				)
+			);
+			$expect 1 () count
+		);
+		subinfo "$letrec count";
+		$let ()
+		(
+			$def! count $letrec
+			(
+				(self () get-current-environment)
+				(counter 0)
+			)
+			(
+				$lambda/e (lock-environment self) ()
+				(
+					$set! self counter + counter 1;
+					counter
+				)
+			);
+			$expect 1 () count
+		);
+		subinfo "$bindings->environment";
+		$let ()
+		(
+			$def! e $bindings->environment (x 1) (y 2);
+			$expect 3 eval (list + (string->symbol "x") (string->symbol "y")) e;
+		);
+		subinfo "let* environment encapsulation";
+		$expect (list 3 2 1)
+			$let* ((count 0) (env (() get-current-environment)))
+				map ($lambda (#ignore) (($set! env count add1 count); count))
+				(list 9 8 7)
+	))
+	((eqv? i 13) (
+		info "copy-environment";
+		subinfo "Y combinatior";
+		$defl! Y (f) ($lambda (&h) h h)
+			(wrap ($vau/e (() copy-environment) (x) #ignore f
+				(wrap ($vau/e (() copy-environment) z #ignore
+					(apply (x x) z)))));
+		$def! fact Y ($lambda (&f)
+			wrap ($vau/e (() copy-environment) (z) #ignore
+				$if (eqv? z 0) 1 (* z (f (- z 1)))));
+		$def! fib Y ($lambda (&f)
+			wrap ($vau/e (() copy-environment) (n) #ignore
+				$if (<? n 2) n (+ (f (- n 1)) (f (- n 2)))));
+		(list (fact 5) (fib 5))
+	))
+	((eqv? i 14) (
+		info "$sequence derivations";
+		subinfo "with $setrec!";
+		$let ()
+		(
+			$def! $sequence
+			(
+				$lambda (&se) ($lambda #ignore $vau/e se body env
+					$if (null? body) #inert (eval (cons $aux body) env))
+					($setrec! se $aux $vau/e (weaken-environment se)
+						(&head .&tail) env
+						$if (null? tail) (eval head env) (($lambda #ignore
+							(eval (cons $aux tail) env)) (eval head env)))
+			)
+			(
+				() make-standard-environment
+			);
+
+			$def! x "x";
+			$sequence (puts "a") (puts x) (puts "b") (puts x)
+		);
+		subinfo "with __make-stdenv";
+		$let ()
+		(
+			$def! $sequence
+			(
+				wrap
+				(
+					$vau (&$seq2) #ignore $seq2
+						($defrec! $aux $vau/e (make-environment
+							(() get-current-environment) (() __make-stdenv))
+							(&first .&rest) env
+							($if (null? rest) (eval first env)
+								($seq2 (eval first env)
+									(eval (cons $aux rest) env))))
+						($vau/e (make-environment (() lock-current-environment)
+							(() __make-stdenv)) &body env
+							($if (null? body) #inert
+								(eval (cons $aux body) env)))
+				)
+			)
+			(
+				$vau (first second) d
+					(wrap ($vau #ignore #ignore (eval second d))) (eval first d)
+			);
+
+			$def! x "x";
+			$sequence (puts "a") (puts x) (puts "b") (puts x)
+		);
+	))
+	((eqv? i 15) (
+		info "make-encapsulation-type";
+		$let ()
+		(
+			$def! (e p? d) () make-encapsulation-type;
+			p? 1;
+			$def! enc e 1;
+			$expect #t p? enc;
+			$expect #f p? "str";
+			$expect 1 d enc;
+			$expect 2 d (e 2);
+		)
+	))
+	((eqv? i 16) (
+		info "eval-string and eval-unit";
+		$let ()
+		(
+			$import! std.environments eval-string eval-unit get-current-repl;
+			eval-string "1" (() get-current-environment);
+			eval-unit "1;" (() get-current-repl)
+		)
+	))
+	((eqv? i 17) (
+		info "$provide!";
+		$let ()
+		(
+			$def! ee $provide! (a) $def! a 42;
+			$def! el ();
+			$def! b ($lambda (() a ()) a) () a el;
+			$expect 42 a;
+			$expect 42 b
+		)
+	))
+	((eqv? i 18) (
+		info "promises";
+		subinfo "test #1 (as RnRK)";
+		$let ()
+		(
+			$def! env_tmp_ $provide! (get-count pb) $sequence
+				($def! count 5)
+				($defl! get-count () count)
+				($def! p ($let ((self () get-current-environment))
+					(
+						$set! self saved_ () lock-current-environment;
+						$lazy $if (<=? count 0) count
+							($sequence
+								($set! self count (- count 1))
+								(force p)
+								($set! self count (+ count 2))
+								count)
+					)
+				))
+				($def! pb box% p);
+			$expect 5 (() get-count);
+			$expect 0 (force (unbox pb));
+			$expect 10 (() get-count);
+		);
+		subinfo "test #2 (as RnRK)";
+		$let ()
+		(
+			puts "expect output: single line of \"*\"";
+			$def! p1 $lazy (puts "*");
+			$def! p2 $lazy p1;
+			force p2;
+			force p1
+		);
+		subinfo "test #3 (as RnRK)";
+		$let ()
+		(
+			$def! maxn 3;
+			$defl! stream-filter (p? s)
+			(
+				$lazy/e (() lock-current-environment) $let ((v (force s)))
+				(
+					$if (null? v) v
+					(
+						$let ((s stream-filter p? (first (rest& v))))
+							$if (p? (first& v)) (list (first v) s) s
+					)
+				)
+			);
+			$defl! from (n)
+				$lazy/e (() lock-current-environment) list n (from (+ n 1));
+			force (stream-filter ($lambda (n) eqv? n maxn) (from 0));
+		)
+	))
 	((eqv? i 19) (
-		info "arithmetic tests";
+		info "reduce";
+		$defl! |> (&f &g) $lambda/e% ($bindings/p->environment
+			((() make-standard-environment)) (&f (forward f)) (&g (forward g)))
+			(&x) (forward g) ((forward f) (forward x));
+		$defl! double (n) * n 2;
+		$defl! increment (n) + n 1;
+		$expect 42 double (increment (double (double 5)));
+		$expect 42 (|> (|> (|> double double) increment) double) 5;
+		$defl! pipes (fs x) (reduce fs |> idv) x;
+		$expect 42 pipes (list double double increment double) 5;
+	))
+	((eqv? i 20) (
+		info "arithmetic operations";
 		$rem (
 			"The following Kernel code conforms to PTC.";
 			($define! solve ($lambda (n) ($let ((x (* n n)))
@@ -765,18 +785,6 @@ $defl! test (&i)
 				(=? (/ (% x 100) 10) (% x 10)))
 			x (solve (+ n 1));
 		$expect 7744 (solve 80)
-	))
-	((eqv? i 20) (
-		info "test case for reduce";
-		$defl! |> (&f &g) $lambda/e% ($bindings/p->environment
-			((() make-standard-environment)) (&f (forward f)) (&g (forward g)))
-			(&x) (forward g) ((forward f) (forward x));
-		$defl! double (n) * n 2;
-		$defl! increment (n) + n 1;
-		$expect 42 double (increment (double (double 5)));
-		$expect 42 (|> (|> (|> double double) increment) double) 5;
-		$defl! pipes (fs x) (reduce fs |> idv) x;
-		$expect 42 pipes (list double double increment double) 5;
 	))
 	(#t "No case found.")
 );
