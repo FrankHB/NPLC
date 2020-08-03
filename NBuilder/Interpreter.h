@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r356
+\version r358
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-08-01 14:02 +0800
+	2020-08-03 12:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -171,8 +171,6 @@ class Interpreter
 private:
 	//! \since YSLib build 755
 	platform_ex::Terminal terminal;
-	//! \since YSLib build 674
-	YSLib::RecordLevel err_threshold;
 	//! \since YSLib build 867
 	shared_pool_resource pool_rsrc;
 	//! \since YSLib build 674

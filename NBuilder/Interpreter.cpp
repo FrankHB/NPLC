@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2189
+\version r2198
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-08-01 19:26 +0800
+	2020-08-03 12:44 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -675,8 +675,8 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 } // unnamed namespace;
 
 Interpreter::Interpreter()
-	: terminal(), err_threshold(RecordLevel(0x10)),
-	pool_rsrc(&GetPoolResourceRef()), line(), Context(NPLC_Impl_PoolName)
+	: terminal(), pool_rsrc(&GetPoolResourceRef()), line(),
+	Context(NPLC_Impl_PoolName)
 {
 	using namespace std;
 
@@ -788,14 +788,7 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 			CatchExpr(bad_any_cast& ex,
 				print(Warning, "Error", ystdex::sfmt("Mismatched types ('%s',"
 					" '%s') found.", ex.from(), ex.to()).c_str()))
-			catch(LoggedEvent& ex)
-			{
-				const auto lv(ex.GetLevel());
-
-				if(lv < err_threshold)
-					throw;
-				print(lv, "Error", str);
-			}
+			CatchExpr(LoggedEvent& ex, print(ex.GetLevel(), "Error", str))
 			CatchExpr(..., print(Err, "Error", str))
 		}, e);
 		trace.TraceFormat(Notice, "Location: %s.", Context.CurrentSource
