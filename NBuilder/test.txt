@@ -654,52 +654,80 @@ $defl! test (&i)
 	))
 	((eqv? i 14) (
 		info "$sequence derivations";
-		subinfo "with $setrec!";
+		$defl! test-sequence ($f)
+		(
+			$def! x "x";
+			$f (puts "a") (puts x) (puts "b") (puts x)
+		);
+		subinfo "with $set! and $lambda%";
 		$let ()
 		(
 			$def! $sequence
-			(
-				$lambda (&se) ($lambda #ignore $vau/e se body env
-					$if (null? body) #inert (eval (cons $aux body) env))
-					($setrec! se $aux $vau/e (weaken-environment se)
-						(&head .&tail) env
-						$if (null? tail) (eval head env) (($lambda #ignore
-							(eval (cons $aux tail) env)) (eval head env)))
-			)
-			(
-				() make-standard-environment
-			);
-
-			$def! x "x";
-			$sequence (puts "a") (puts x) (puts "b") (puts x)
+				($lambda (&se) ($lambda #ignore $vau/e% se exprseq d
+					$if (null? exprseq) #inert (eval% (cons% $aux exprseq) d))
+					($set! se $aux
+						$vau/e% (weaken-environment se) (&head .&tail) d
+							$if (null? tail) (eval% head d)
+								(($lambda% #ignore
+									(eval% (cons% $aux tail) d))
+										(eval% head d))))
+				(() make-standard-environment);
+			test-sequence $sequence;
 		);
 		subinfo "with __make-stdenv";
 		$let ()
 		(
 			$def! $sequence
-			(
-				wrap
-				(
-					$vau (&$seq2) #ignore $seq2
-						($defrec! $aux $vau/e (make-environment
-							(() get-current-environment) (() __make-stdenv))
-							(&first .&rest) env
-							($if (null? rest) (eval first env)
-								($seq2 (eval first env)
-									(eval (cons $aux rest) env))))
-						($vau/e (make-environment (() lock-current-environment)
-							(() __make-stdenv)) &body env
-							($if (null? body) #inert
-								(eval (cons $aux body) env)))
-				)
-			)
-			(
-				$vau (first second) d
-					(wrap ($vau #ignore #ignore (eval second d))) (eval first d)
-			);
-
-			$def! x "x";
-			$sequence (puts "a") (puts x) (puts "b") (puts x)
+				(wrap ($vau% (&$seq2) #ignore $seq2
+					($def! $aux $vau/e% (make-environment
+						(() get-current-environment) (() __make-stdenv))
+						(&head .&tail) d
+						($if (null? tail) (eval head d)
+							($seq2 (eval% head d)
+								(eval% (cons% $aux tail) d))))
+					($vau/e% (make-environment (() lock-current-environment)
+						(() __make-stdenv)) &exprseq d
+						($if (null? exprseq) #inert
+							(eval% (cons% $aux exprseq) d)))
+				))
+				($vau (head second) d (wrap
+					($vau #ignore #ignore (eval second d))) (eval head d));
+			test-sequence $sequence;
+		);
+		subinfo "with copy-environment";
+		$let ()
+		(
+			$def! $sequence
+				(wrap ($vau% (&$seq2) #ignore $seq2
+					($def! $aux $vau/e% (make-environment
+						(() lock-current-environment) (() copy-environment))
+							(&head .&tail) d
+						($if (null? tail) (eval head d)
+							($seq2 (eval% head d)
+								(eval% (cons% $aux tail) d))))
+					($vau/e% (make-environment (() lock-current-environment)
+						(() copy-environment)) &exprseq d
+						($if (null? exprseq) #inert
+							(eval% (cons% $aux exprseq) d)))
+				))
+				($vau (head second) d (wrap
+					($vau #ignore #ignore (eval% second d))) (eval% head d));
+			test-sequence $sequence;
+		);
+		subinfo "with copy-enviornment invalid";
+		$let ()
+		(
+			$def! $sequence
+				(wrap ($vau% (&$seq2) #ignore $seq2
+					($def! $aux $vau/e% (() copy-environment)
+						(&head .&tail) d ($if (null? tail) (eval% head d)
+							($seq2 (eval% head d)
+								(eval% (cons% $aux tail) d))))
+					($vau/e% (() copy-environment) &exprseq d
+						($if (null? exprseq) #inert
+							(eval% (cons% $aux exprseq) d)))))
+				($vau (head second) d (wrap
+					($vau #ignore #ignore (eval% second d))) (eval head d));
 		);
 	))
 	((eqv? i 15) (
