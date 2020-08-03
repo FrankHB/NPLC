@@ -219,6 +219,20 @@ $defl! test (&i)
 		$defv! $gg fm #ignore eval (list* - fm) (() get-current-environment);
 		$expect (- 0 1) gg 2 3;
 		$expect (- 0 1) $gg 3 4;
+		subinfo "regression for tail calls; fixed since b856";
+		$expect () ($lambda (x) forward x) ();
+		$expect () ($lambda (x) ($lambda (y) idv y) x) ();
+		$expect () ($lambda (x) ($lambda (y) id y) x) ();
+		$expect "" ($lambda (x) ($lambda (y) ++ y) x) "";
+		$expect () ($lambda (x) ($lambda (y)) x) ();
+		$expect () ($lambda (x) ($lambda (.)) x) ();
+		$expect () ($lambda (x) ($lambda (.) ()) x) ();
+		$expect () ($lambda (x) ($lambda (y) y) x) ();
+		$expect () ($lambda (x) ($lambda (y) (idv y)) x) ();
+		$expect ()
+			($def! foo $lambda% (z) z; ($lambda (x) ($lambda (y) foo y) x) ());
+		$expect () ($lambda (x) ($lambda (y) ($lambda% (z) z) y) x) ();
+		$expect () ($def! l list (); ($lambda ((&x .)) x) l);
 	))
 	((eqv? i 3) (
 		info "recursive function calls";
@@ -454,6 +468,9 @@ $defl! test (&i)
 			display (rest& (first& q-li4));
 			display q-li4
 		);
+		subinfo "regression for list* and list*%; fixed since b897";
+		$expect () list* ();
+		$expect () list*% ();
 	))
 	((eqv? i 9) (
 		info "list utility tests";
@@ -520,6 +537,9 @@ $defl! test (&i)
 		$defl! fold* (&kons &head .&tail) $if (null? tail) head
 			(kons head (apply fold* (cons kons tail)));
 		$defl! xlist* (.&xs) apply fold* (cons cons xs);
+		subinfo "regression for tail calls; fixed since b856";
+		$expect #inert for-each-ltr ($lambda .) (list ());
+		$expect (list ()) map-reverse ($lambda .) (list ());
 	))
 	((eqv? i 10) (
 		info "environment basic operations";
@@ -537,6 +557,8 @@ $defl! test (&i)
 	))
 	((eqv? i 11) (
 		info "local bindings";
+		subinfo "regression for tail calls; fixed since b856";
+		$expect () $let ();
 		subinfo "$let";
 		$expect 5 $let ((&x 2) (&y 3)) + x y;
 		subinfo "$let*";
