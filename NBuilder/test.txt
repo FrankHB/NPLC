@@ -83,7 +83,10 @@ $defv! $let-safe% (&bindings .&body) d
 $defv! $remote-eval (&o &e) d eval o (eval e d);
 $defv! $remote-eval% (&o &e) d eval% o (eval e d);
 "NOTE", "Definitions of $bindings/p->environment, $bindings->environment,",
-	" $provide!, $import! are in %YFramework.NPL.Dependency.";
+	" $provide!, $import!, unfoldable?, list-extract, list-extract-first,",
+	" list-extract-rest%, list-push-front! are in %YFramework.NPL.Dependency.";
+$defl! list-push-back! (&l &x)
+	assign! l (list-concat (move! l) (list% (forward! x)));
 $defw%! foldr (&kons &knil .&ls) d
 	accr (move! ls) unfoldable? (forward! knil) list-extract-first
 		list-extract-rest%
@@ -93,8 +96,8 @@ $defw%! map (&appv .&ls) d
 		list-extract-rest%
 		($lambda (&x &xs) cons% (apply appv (forward! x) d) xs);
 $defw! for-each-rtl &ls env $sequence (apply map ls env) #inert;
-"NOTE", "Definitions of unfoldable?, map-reverse for-each-ltr",
-	" are in %YFramework.NPL.Dependency.";
+"NOTE", "Definitions of map-reverse, for-each-ltr are in",
+	" %YFramework.NPL.Dependency.";
 
 "NOTE", "Environments library.";
 "NOTE", "Definitions of lock-current-environment, bound?, value-of is in",
