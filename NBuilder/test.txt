@@ -15,7 +15,7 @@ $import! env_SHBuild_ SHBuild_RaiseError_;
 
 "NOTE", "Core library.";
 "NOTE", "Definitions of id, idv, list, list&, $quote, $defl!, first, first&,",
-	" restv, rest%, rest& %YFramework.NPL.Dependency.";
+	" restv, rest%, rest& are in %YFramework.NPL.Dependency.";
 $defl! xcons (&x &y) cons y x;
 $defl! xcons% (&x &y) cons% y x;
 "NOTE", "Definitions of $set!, $defv!, $lambda, $setrec!, $defl!,",
@@ -53,9 +53,7 @@ $defl! reduce (&ls &bin &id) $cond
 	((null? (rest& ls)) first (forward! ls))
 	(#t bin (first (forward ls))
 		(reduce (rest% (forward ls)) bin (forward! id)));
-$defl%! assv (&object &alist) $cond ((null? alist) ())
-	((eqv? object (first& (first& alist))) first alist)
-	(#t assv (forward! object) (rest& alist));
+"NOTE", "Definition of assv is in %YFramework.NPL.Dependency.";
 $defl! memv? (&object &ls)
 	apply or? (map1 ($lambda (&x) eqv? object x) ls);
 $defl%! assq (&object &alist) $cond ((null? alist) ())
