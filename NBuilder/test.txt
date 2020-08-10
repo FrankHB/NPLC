@@ -231,8 +231,8 @@ $defl! test (&i)
 		$expect () ($lambda (x) ($lambda (y) y) x) ();
 		$expect () ($lambda (x) ($lambda (y) (idv y)) x) ();
 		$expect ()
-			($def! foo $lambda% (z) z; ($lambda (x) ($lambda (y) foo y) x) ());
-		$expect () ($lambda (x) ($lambda (y) ($lambda% (z) z) y) x) ();
+			($def! foo $lambda (z) z; ($lambda (x) ($lambda (y) foo y) x) ());
+		$expect () ($lambda (x) ($lambda (y) ($lambda (z) z) y) x) ();
 		$expect () ($def! l list (); ($lambda ((&x .)) x) l);
 	))
 	((eqv? i 3) (
