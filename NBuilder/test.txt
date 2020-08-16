@@ -905,11 +905,21 @@ $defl! teste-all () for-each-ltr teste (list 1);
 $rem "Load libraries.";
 $def! ll ($lambda () load-at-root "0.txt");
 
-$rem "Performance test.";
+$rem "Performance tests.";
 $defl! pt ()
 (
 	$defl! fib (&n) ($if (<=? n 1) n (+ (fib (- n 1)) (fib (- n 2))));
 	iput (fib 17);
+	exit
+);
+$defl! pt-map ()
+(
+	for-each display (iota 5);
+	exit
+);
+$defl! pt-mapr ()
+(
+	for-each-ltr display (iota 5);
 	exit
 );
 
