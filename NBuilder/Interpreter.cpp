@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2198
+\version r2201
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-08-03 12:44 +0800
+	2020-08-23 02:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -649,13 +649,11 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 		if(IsEmpty(AccessFirstSubterm(term)))
 			RemoveHead(term);
 		YAssert(IsBranchedList(term), "Invalid node found.");
-		cs.SetNextTermRef(term);
 		cs.LastStatus = ReductionStatus::Neutral;
 		return ReduceFastTmpl(AccessFirstSubterm(term), cs, [&](TermNode& nd){
-			cs.SetNextTermRef(term);
 			return ReduceCombinedReferent(term, cs, nd);
 		}, [&]{
-			return ReduceNextCombinedBranch(term, cs);
+			return ReduceCombinedBranch(term, cs);
 		}, [&](TermNode& sub){
 			term.Value = std::move(sub.Value);
 		}, [&](TermNode& sub, ContextNode& ctx){
