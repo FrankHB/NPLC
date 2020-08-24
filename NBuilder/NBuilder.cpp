@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8023
+\version r8028
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-08-01 14:25 +0800
+	2020-08-20 14:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -355,7 +355,7 @@ LoadFunctions(Interpreter& intp)
 	renv.DefineChecked("root-context", ValueObject(rctx, OwnershipTag<>()));
 	intp.SaveGround();
 
-	const auto p_root_env(rctx.ShareRecord());
+	const auto rwenv(rctx.WeakenRecord());
 
 	// NOTE: Literal expression forms.
 	RegisterForm(rctx, "$retain", Retain);
@@ -603,14 +603,14 @@ LoadFunctions(Interpreter& intp)
 			return RelayToLoadExternal(ctx, term, intp);
 		});
 		RegisterStrict(rctx, "load-at-root",
-			[&, p_root_env](TermNode& term, ContextNode& ctx){
+			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 			// NOTE: This does not support PTC.
 			RelaySwitched(ctx, A1::NameTypedReducerHandler(std::bind(
 				[](ystdex::guard<EnvironmentSwitcher>&){
 				return ReductionStatus::Neutral;
 			}, ystdex::guard<EnvironmentSwitcher>(rctx,
-				rctx.SwitchEnvironment(p_root_env))), "guard-load"));
+				rctx.SwitchEnvironment(rwenv.Lock()))), "guard-load"));
 			return RelayToLoadExternal(ctx, term, intp);
 		});
 	}
@@ -621,11 +621,11 @@ LoadFunctions(Interpreter& intp)
 			return ReduceToLoadExternal(term, ctx, intp);
 		});
 		RegisterStrict(rctx, "load-at-root",
-			[&, p_root_env](TermNode& term, ContextNode& ctx){
+			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 
 			const ystdex::guard<EnvironmentSwitcher> gd(ctx,
-				ctx.SwitchEnvironment(p_root_env));
+				ctx.SwitchEnvironment(rwenv.Lock()));
 
 			return ReduceToLoadExternal(term, ctx, intp);
 		});
