@@ -386,6 +386,8 @@ $defl! test (&i)
 	))
 	((eqv? i 7) (
 		info "logical operations";
+		"regression for not?; fixed since b899";
+		$expect #t eqv? ($let ((f #f)) not? f) (not? #f);
 		subinfo "non-strict logical operations";
 		$expect #t () $and?;
 		$expect #f () $or?;
