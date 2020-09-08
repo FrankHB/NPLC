@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8028
+\version r8029
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-08-20 14:06 +0800
+	2020-09-06 15:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -310,22 +310,12 @@ LoadFunctions(Interpreter& intp)
 	auto& context(intp.Context);
 	auto& rctx(context.Root);
 	auto& renv(rctx.GetRecordRef());
-	const auto load_std_module([&](string_view module_name,
-		void(&load_module)(REPLContext&)){
-		LoadModuleChecked(rctx, "std." + string(module_name),
-			std::bind(load_module, std::ref(context)));
-	});
 	string init_trace_option;
 
 	rctx.Trace.FilterLevel = FetchEnvironmentVariable(init_trace_option,
 		"NBUILDER_TRACE") ? Logger::Level::Debug : Logger::Level::Informative;
 	p_context = make_observer(&context);
-	LoadGroundContext(context);
-	load_std_module("strings", LoadModule_std_strings);
-	load_std_module("environments", LoadModule_std_environments),
-	load_std_module("promises", LoadModule_std_promises);
-	load_std_module("io", LoadModule_std_io),
-	load_std_module("system", LoadModule_std_system);
+	LoadStandardContext(context);
 	LoadModuleChecked(rctx, "env_SHBuild_", [&]{
 		LoadModule_SHBuild(context);
 		// XXX: Overriding.
