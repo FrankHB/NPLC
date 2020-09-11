@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8029
+\version r8076
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-09-06 15:03 +0800
+	2020-09-12 01:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -203,62 +203,38 @@ FetchListLength(TermNode& term) ynothrow
 
 //! \since YSLib build 894
 //@{
-template<typename _func, typename _func2>
-YB_NONNULL(3) auto
-LoadWithFilename(_func f, _func2 f2, const char* name) -> decltype(f2())
-{
-	const auto p_is(A1::OpenFile(name));
-
-	if(std::istream& is{*p_is})
-	{
-		YTraceDe(Notice, "Test unit '%s' found.", name);
-		return f(is);
-	}
-	else
-		YTraceDe(Notice, "Test unit '%s' not found.", name);
-	return f2();
-}
-
-ReductionStatus
-LoadExternal(TermNode& term, ContextNode& ctx, Interpreter& intp,
-	string&& name)
-{
-	return LoadWithFilename([&](std::istream& is){
-		return intp.Load(term, ctx, std::move(name), is);
-	// XXX: Return the error instead?
-	}, std::bind(A1::ReduceReturnUnspecified, std::ref(term)), name.c_str());
-}
-
-// NOTE: Preloading does not change the continuation of the context becasue it
+// NOTE: Preloading does not change the continuation of the context because it
 //	is essentially synchronized. It also does not use the backtrace handling in
 //	the normal interactive interpreter run (the REPL loop and the single line
 //	evaluation).
 YB_NONNULL(2) void
 PreloadExternalRoot(REPLContext& context, const char* name)
 {
-	return LoadWithFilename([&](std::istream& is){
-		FilterExceptions([&]{
-			// As A1::TryLoadSource.
-			try
-			{
-				context.CurrentSource
-					= YSLib::allocate_shared<string>(context.Allocator, name);
+	const auto p_is(A1::OpenFile(name));
 
-				auto term(Interpreter::ReadFor(context, is));
+	FilterExceptions([&]{
+		// As A1::TryLoadSource.
+		try
+		{
+			context.CurrentSource
+				= YSLib::allocate_shared<string>(context.Allocator, name);
 
-				Reduce(term, context.Root);
-			}
-			CatchExpr(..., std::throw_with_nested(NPLException(
-				ystdex::sfmt("Failed loading external unit '%s'.", name))));
-		});
-	}, []{}, name);
+			auto term(Interpreter::ReadFor(context, *p_is));
+
+			Reduce(term, context.Root);
+		}
+		CatchExpr(..., std::throw_with_nested(NPLException(
+			ystdex::sfmt("Failed loading external unit '%s'.", name))));
+	});
 }
 
 ReductionStatus
 ReduceToLoadExternal(TermNode& term, ContextNode& ctx, Interpreter& intp)
 {
-	return LoadExternal(term, ctx, intp, std::move(NPL::ResolveRegular<string>(
-		NPL::Deref(std::next(term.begin())))));
+	auto name(std::move(
+		NPL::ResolveRegular<string>(NPL::Deref(std::next(term.begin())))));
+
+	return intp.Load(term, ctx, std::move(name), *A1::OpenFile(name.c_str()));
 }
 
 ReductionStatus
