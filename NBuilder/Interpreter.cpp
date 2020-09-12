@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2201
+\version r2236
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-08-23 02:23 +0800
+	2020-09-12 17:28 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -245,17 +245,6 @@ const auto min_lb_size(ceiling_lb(min_block_size));
 //! \since YSLib build 885
 const size_t max_fast_block_shift(min_lb_size + init_pool_num - 1);
 const size_t max_fast_block_size(1U << max_fast_block_shift);
-#endif
-//@}
-
-//! \since YSLib build 894
-//@{
-#if NPLC_Impl_UseSourceInfo
-using SourceLoadTagType
-	= REPLContext::LoadOptionTag<REPLContext::WithSourceLocation>;
-#else
-using SourceLoadTagType
-	= REPLContext::LoadOptionTag<REPLContext::NoSourceInformation>;
 #endif
 //@}
 
@@ -678,6 +667,9 @@ Interpreter::Interpreter()
 {
 	using namespace std;
 
+#if NPLC_Impl_UseSourceInfo
+	Context.UseSourceLocation = true;
+#endif
 #if NPLC_Impl_TracePerformDetails
 	SetupTraceDepth(Context.Root);
 #endif
@@ -837,18 +829,6 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 }
 
 ReductionStatus
-Interpreter::Load(TermNode& term, ContextNode& ctx, string&& name,
-	std::istream& is)
-{
-	// NOTE: Swap guard for %Context.CurrentSource is not used to support PTC.
-	Context.CurrentSource
-		= YSLib::allocate_shared<string>(Context.Allocator, std::move(name));
-	term = ReadFor(Context, is, ctx);
-	// NOTE: This is explicitly not same to klisp. This is also friendly to PTC.
-	return A1::ReduceOnce(term, ctx);
-}
-
-ReductionStatus
 Interpreter::Perform(string_view unit, ContextNode& ctx)
 {
 	ctx.SaveExceptionHandler();
@@ -867,16 +847,9 @@ Interpreter::Perform(string_view unit, ContextNode& ctx)
 		LogTermValue(Term);
 		return ReductionStatus::Neutral;
 	}, "repl-print"));
-	Term = Context.ReadFrom(SourceLoadTagType(), platform_ex::DecodeArg(unit));
+	Term = Context.ReadFrom(platform_ex::DecodeArg(unit));
 	UpdateTextColor(SideEffectColor);
 	return A1::ReduceOnce(Term, ctx);
-}
-
-TermNode
-Interpreter::ReadFor(const REPLContext& context, std::istream& is,
-	ContextNode& ctx)
-{
-	return context.ReadFrom(SourceLoadTagType(), is, ctx);
 }
 
 void
@@ -891,10 +864,9 @@ Interpreter::RunLine(string_view unit)
 {
 	if(!unit.empty())
 	{
-		const auto a(Context.Allocator);
-
-		Context.CurrentSource = YSLib::allocate_shared<string>(a, "*STDIN*");
-		Context.Root.Rewrite(NPL::ToReducer(a, [&](ContextNode& ctx){
+		Context.ShareCurrentSource("*STDIN*");
+		Context.Root.Rewrite(
+			NPL::ToReducer(Context.Allocator, [&](ContextNode& ctx){
 			return Perform(unit, A1::ContextState::Access(ctx));
 		}));
 	}
@@ -906,8 +878,7 @@ Interpreter::RunLoop(ContextNode& ctx)
 	// TODO: Set error continuation to filter exceptions.
 	if(WaitForLine())
 	{
-		Context.CurrentSource = YSLib::allocate_shared<string>(Context.Allocator,
-			"*STDIN*");
+		Context.ShareCurrentSource("*STDIN*");
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
 		return !line.empty() ? Perform(line, A1::ContextState::Access(ctx))

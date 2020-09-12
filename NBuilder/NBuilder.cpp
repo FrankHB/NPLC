@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8076
+\version r8116
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-09-12 01:08 +0800
+	2020-09-12 18:46 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -200,51 +200,6 @@ FetchListLength(TermNode& term) ynothrow
 {
 	return int(term.size());
 }
-
-//! \since YSLib build 894
-//@{
-// NOTE: Preloading does not change the continuation of the context because it
-//	is essentially synchronized. It also does not use the backtrace handling in
-//	the normal interactive interpreter run (the REPL loop and the single line
-//	evaluation).
-YB_NONNULL(2) void
-PreloadExternalRoot(REPLContext& context, const char* name)
-{
-	const auto p_is(A1::OpenFile(name));
-
-	FilterExceptions([&]{
-		// As A1::TryLoadSource.
-		try
-		{
-			context.CurrentSource
-				= YSLib::allocate_shared<string>(context.Allocator, name);
-
-			auto term(Interpreter::ReadFor(context, *p_is));
-
-			Reduce(term, context.Root);
-		}
-		CatchExpr(..., std::throw_with_nested(NPLException(
-			ystdex::sfmt("Failed loading external unit '%s'.", name))));
-	});
-}
-
-ReductionStatus
-ReduceToLoadExternal(TermNode& term, ContextNode& ctx, Interpreter& intp)
-{
-	auto name(std::move(
-		NPL::ResolveRegular<string>(NPL::Deref(std::next(term.begin())))));
-
-	return intp.Load(term, ctx, std::move(name), *A1::OpenFile(name.c_str()));
-}
-
-ReductionStatus
-RelayToLoadExternal(ContextNode& ctx, TermNode& term, Interpreter& intp)
-{
-	return RelaySwitched(ctx,
-		A1::NameTypedReducerHandler(std::bind(ReduceToLoadExternal,
-		std::ref(term), std::ref(ctx), std::ref(intp)), "load-external"));
-}
-//@}
 
 #if NPLC_Impl_TestTemporaryOrder
 //! \since YSLib build 860
@@ -562,11 +517,11 @@ LoadFunctions(Interpreter& intp)
 	});
 	RegisterStrict(rctx, "logv", ystdex::bind1(LogTermValue, Notice));
 	RegisterUnary<Strict, const string>(rctx, "echo", Echo);
-	if(intp.Context.IsAsynchronous())
+	if(context.IsAsynchronous())
 	{
 		RegisterStrict(rctx, "load", [&](TermNode& term, ContextNode& ctx){
 			RetainN(term);
-			return RelayToLoadExternal(ctx, term, intp);
+			return A1::RelayToLoadExternal(ctx, term, context);
 		});
 		RegisterStrict(rctx, "load-at-root",
 			[&, rwenv](TermNode& term, ContextNode& ctx){
@@ -577,14 +532,14 @@ LoadFunctions(Interpreter& intp)
 				return ReductionStatus::Neutral;
 			}, ystdex::guard<EnvironmentSwitcher>(rctx,
 				rctx.SwitchEnvironment(rwenv.Lock()))), "guard-load"));
-			return RelayToLoadExternal(ctx, term, intp);
+			return A1::RelayToLoadExternal(ctx, term, context);
 		});
 	}
 	else
 	{
 		RegisterStrict(rctx, "load", [&](TermNode& term, ContextNode& ctx){
 			RetainN(term);
-			return ReduceToLoadExternal(term, ctx, intp);
+			return A1::ReduceToLoadExternal(term, ctx, context);
 		});
 		RegisterStrict(rctx, "load-at-root",
 			[&, rwenv](TermNode& term, ContextNode& ctx){
@@ -593,7 +548,7 @@ LoadFunctions(Interpreter& intp)
 			const ystdex::guard<EnvironmentSwitcher> gd(ctx,
 				ctx.SwitchEnvironment(rwenv.Lock()));
 
-			return ReduceToLoadExternal(term, ctx, intp);
+			return A1::ReduceToLoadExternal(term, ctx, context);
 		});
 	}
 	RegisterUnary<Strict, const string>(rctx, "ofs", [&](const string& path){
@@ -624,7 +579,10 @@ LoadFunctions(Interpreter& intp)
 		MarkGuard("A"), MarkGuard("B"), MarkGuard("C");
 	});
 #endif
-	PreloadExternalRoot(intp.Context, "test.txt");
+	// NOTE: Preloading does not use the backtrace handling in the normal
+	//	interactive interpreter run (the REPL loop and the single line
+	//	evaluation).
+	A1::PreloadExternal(intp.Context, "test.txt");
 #if NPLC_Impl_DebugAction
 	rctx.EvaluateList.Add(DefaultDebugAction, 255);
 	rctx.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
