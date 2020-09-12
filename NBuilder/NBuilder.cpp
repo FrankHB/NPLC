@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8116
+\version r8127
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-09-12 18:46 +0800
+	2020-09-12 21:55 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -518,11 +518,6 @@ LoadFunctions(Interpreter& intp)
 	RegisterStrict(rctx, "logv", ystdex::bind1(LogTermValue, Notice));
 	RegisterUnary<Strict, const string>(rctx, "echo", Echo);
 	if(context.IsAsynchronous())
-	{
-		RegisterStrict(rctx, "load", [&](TermNode& term, ContextNode& ctx){
-			RetainN(term);
-			return A1::RelayToLoadExternal(ctx, term, context);
-		});
 		RegisterStrict(rctx, "load-at-root",
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
@@ -534,13 +529,7 @@ LoadFunctions(Interpreter& intp)
 				rctx.SwitchEnvironment(rwenv.Lock()))), "guard-load"));
 			return A1::RelayToLoadExternal(ctx, term, context);
 		});
-	}
 	else
-	{
-		RegisterStrict(rctx, "load", [&](TermNode& term, ContextNode& ctx){
-			RetainN(term);
-			return A1::ReduceToLoadExternal(term, ctx, context);
-		});
 		RegisterStrict(rctx, "load-at-root",
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
@@ -550,7 +539,6 @@ LoadFunctions(Interpreter& intp)
 
 			return A1::ReduceToLoadExternal(term, ctx, context);
 		});
-	}
 	RegisterUnary<Strict, const string>(rctx, "ofs", [&](const string& path){
 		if(ifstream ifs{path})
 			return ifs;

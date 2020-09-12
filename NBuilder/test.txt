@@ -134,7 +134,7 @@ $defl! retain-string (&str) ++ "\"" str "\"";
 $defl! get-module (&filename .&opt)
 	$let ((&env () make-standard-environment)) $sequence
 		($unless (null? opt) ($set! env module-parameters (first& opt)))
-		(eval (list load filename) env) env;
+		(eval (list ($remote-eval% load std.io) filename) env) env;
 $defl! iput (&x) puts (itos x);
 $defl! b2str (&b) $if b "#t" "#f";
 $defl! bput (&b) put (b2str b);
