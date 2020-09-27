@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2238
+\version r2239
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-09-25 18:11 +0800
+	2020-09-27 14:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -151,7 +151,7 @@ DecodeTypeName(const ystdex::type_info& ti)
 YB_ATTR_nodiscard YB_PURE string
 StringifyEnvironment(const shared_ptr<Environment>& p_env, bool weak)
 {
-	return (weak ? "[environment] " : "[weak environment] ")
+	return (weak ? "[weak environment] " : "[environment] ")
 		+ (p_env ? sfmt<string>("%p", ystdex::pvoid(p_env.get())) : "Invalid");
 }
 
