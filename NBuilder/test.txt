@@ -9,8 +9,7 @@ $def! $redef! $def!;
 $defv%! $unspecified ((&x .)) d forward! (eval% x d);
 $defv! $defu! (&x .&xs) d eval (list $set! d x $unspecified xs) d;
 
-$import! std.strings string->symbol symbol->string ++ string<- string-empty?;
-$import! std.promises promise? memoize $lazy $lazy/e force;
+$import! std.strings ++ string<- string-empty? string->symbol;
 $import! env_SHBuild_ SHBuild_RaiseError_;
 
 "NOTE", "Core library.";
@@ -777,6 +776,7 @@ $defl! test (&i)
 	))
 	((eqv? i 18) (
 		info "promises";
+		$import! std.promises promise? memoize $lazy $lazy/e force;
 		subinfo "test #1 (as RnRK)";
 		$let ()
 		(
