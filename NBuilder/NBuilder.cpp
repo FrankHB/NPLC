@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8127
+\version r8128
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-09-12 21:55 +0800
+	2020-10-06 17:37 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -68,7 +68,6 @@ RegisterLiteralSignal(ContextNode& ctx, const string& name, SSignal sig)
 
 using namespace NPL;
 using namespace A1;
-using namespace YSLib;
 using namespace platform_ex;
 
 namespace
