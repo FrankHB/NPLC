@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8128
+\version r8131
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-10-06 17:37 +0800
+	2020-10-06 17:38 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -480,7 +480,8 @@ LoadFunctions(Interpreter& intp)
 	RegisterStrict(rctx, "+", std::bind(CallBinaryFold<int, ystdex::plus<>>,
 		ystdex::plus<>(), 0, _1));
 	// FIXME: Overflow?
-	RegisterBinary<Strict, const int, const int>(rctx, "add2", ystdex::plus<>());
+	RegisterBinary<Strict, const int, const int>(rctx, "add2",
+		ystdex::plus<>());
 	// FIXME: Underflow?
 	RegisterBinary<Strict, const int, const int>(rctx, "-", ystdex::minus<>());
 	// FIXME: Overflow?
@@ -577,7 +578,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "b893+"
+#define NPLC_VER "V1.1 b899+"
 #define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
