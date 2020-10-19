@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2240
+\version r2247
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-10-20 07:43 +0800
+	2020-10-20 07:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -773,12 +773,12 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 						si.second.Column + 1, si.first->c_str());
 			}
 #endif
-			CatchExpr(NPLException& ex,
-				print(ex.GetLevel(), "NPLException", str))
 			CatchExpr(bad_any_cast& ex,
-				print(Warning, "Error", ystdex::sfmt("Mismatched types ('%s',"
-					" '%s') found.", ex.from(), ex.to()).c_str()))
-			CatchExpr(LoggedEvent& ex, print(ex.GetLevel(), "Error", str))
+				print(Warning, "TypeError", ystdex::sfmt(
+					"Mismatched types ('%s', '%s') found.", ex.from(),
+					ex.to()).c_str()))
+			CatchExpr(LoggedEvent& ex, print(ex.GetLevel(), typeid(ex).name(),
+				str))
 			CatchExpr(..., print(Err, "Error", str))
 		}, e);
 		trace.TraceFormat(Notice, "Location: %s.", Context.CurrentSource
