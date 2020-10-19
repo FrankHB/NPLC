@@ -10,6 +10,7 @@ $defv%! $unspecified ((&x .)) d forward! (eval% x d);
 $defv! $defu! (&x .&xs) d eval (list $set! d x $unspecified xs) d;
 
 $import! std.strings ++ string<- string-empty? string->symbol;
+$import! std.io puts;
 $import! env_SHBuild_ SHBuild_RaiseError_;
 
 "NOTE", "Core library.";
