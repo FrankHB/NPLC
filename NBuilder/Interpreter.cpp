@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2239
+\version r2240
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-09-27 14:08 +0800
+	2020-10-20 07:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -847,7 +847,7 @@ Interpreter::Perform(string_view unit, ContextNode& ctx)
 		LogTermValue(Term);
 		return ReductionStatus::Neutral;
 	}, "repl-print"));
-	Term = Context.ReadFrom(platform_ex::DecodeArg(unit));
+	Term = Context.ReadFrom(unit);
 	UpdateTextColor(SideEffectColor);
 	return A1::ReduceOnce(Term, ctx);
 }

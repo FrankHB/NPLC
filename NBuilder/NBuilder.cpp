@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8131
+\version r8135
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-10-06 17:38 +0800
+	2020-10-20 07:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -94,8 +94,7 @@ ParseStream(std::istream& is)
 		cout << "cbuf size:" << cbuf.size() << endl
 			<< "token list size:" << rlst.size() << endl;
 		for(const auto& str : rlst)
-			cout << EncodeArg(str) << endl
-				<< "* u8 length: " << str.size() << endl;
+			cout << str << endl << "* u8 length: " << str.size() << endl;
 		cout << rlst.size() << " token(s) parsed." <<endl;
 		is.clear();
 		is.seekg(0);
@@ -551,12 +550,12 @@ LoadFunctions(Interpreter& intp)
 	RegisterUnary<Strict, ifstream>(rctx, "parse-f", ParseStream);
 	RegisterUnary<Strict, std::istringstream>(rctx, "parse-s", ParseStream);
 	RegisterUnary<Strict, const string>(rctx, "put", [&](const string& str){
-		std::cout << EncodeArg(str);
+		std::cout << str;
 		return ValueToken::Unspecified;
 	});
 	RegisterUnary<Strict, const string>(rctx, "puts", [&](const string& str){
 		// XXX: Overridding.
-		std::cout << EncodeArg(str) << std::endl;
+		std::cout << str << std::endl;
 		return ValueToken::Unspecified;
 	});
 #if NPLC_Impl_TestTemporaryOrder
