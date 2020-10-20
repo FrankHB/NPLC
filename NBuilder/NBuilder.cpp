@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8135
+\version r8141
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-10-20 07:43 +0800
+	2020-10-20 08:04 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -553,11 +553,6 @@ LoadFunctions(Interpreter& intp)
 		std::cout << str;
 		return ValueToken::Unspecified;
 	});
-	RegisterUnary<Strict, const string>(rctx, "puts", [&](const string& str){
-		// XXX: Overridding.
-		std::cout << str << std::endl;
-		return ValueToken::Unspecified;
-	});
 #if NPLC_Impl_TestTemporaryOrder
 	RegisterUnary<Strict, const string>(renv, "mark-guard", [](string str){
 		return MarkGuard(std::move(str));
@@ -577,7 +572,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.1 b899+"
+#define NPLC_VER "V1.1 b901+"
 #define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
