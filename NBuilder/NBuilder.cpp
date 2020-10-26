@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8143
+\version r8157
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-10-20 08:05 +0800
+	2020-10-27 07:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -251,15 +251,22 @@ LoadFunctions(Interpreter& intp)
 		// XXX: Overriding.
 		rctx.GetRecordRef().Define("SHBuild_BaseTerminalHook_",
 			ValueObject(function<void(const string&, const string&)>(
-			[](const string& n, const string& val){
-				// XXX: Errors from stream operations are ignored.
-				using namespace std;
+			[&](const string& n, const string& val){
+				auto& os(context.GetOutputStreamRef());
 				Terminal te;
 
-				cout << te.LockForeColor(DarkCyan) << n;
-				cout << " = \"";
-				cout << te.LockForeColor(DarkRed) << val;
-				cout << '"' << endl;
+				{
+					const auto t_gd(te.LockForeColor(DarkCyan));
+
+					YSLib::IO::StreamPut(os, n.c_str());
+				}
+				ystdex::write_literal(os, " = \"");
+				{
+					const auto t_gd(te.LockForeColor(DarkRed));
+
+					YSLib::IO::StreamPut(os, val.c_str());
+				}
+				os.put('"') << std::endl;
 		})));
 	});
 	intp.EnableExtendedLiterals();
