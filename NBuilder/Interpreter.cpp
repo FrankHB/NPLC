@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2247
+\version r2251
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-10-20 07:50 +0800
+	2020-10-26 20:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,7 +29,8 @@
 #include <Helper/YModules.h>
 #include YFM_YCLib_YCommon // for ystdex::type_info, ystdex::quote,
 //	ystdex::call_value_or;
-#include YFM_YSLib_Core_YException // for FilterExceptions;
+#include YFM_YSLib_Core_YException // for FilterExceptions,
+//	YSLib::IO::StreamGet;
 #include YFM_YSLib_Service_TextFile
 #include YFM_NPL_NPLA1Forms
 #include <cstring> // for std::strcmp, std::strstr;
@@ -913,7 +914,8 @@ Interpreter::WaitForLine(std::istream& is, std::ostream& os)
 	UpdateTextColor(PromptColor);
 	os << prompt;
 	UpdateTextColor(DefaultColor);
-	return std::getline(is, line);
+	YSLib::IO::StreamGet(is, line);
+	return is;
 }
 
 } // namespace NPL;
