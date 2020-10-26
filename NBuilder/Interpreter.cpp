@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2251
+\version r2260
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-10-26 20:22 +0800
+	2020-10-26 20:32 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -25,7 +25,8 @@
 */
 
 
-#include "Interpreter.h" // for YAssertNonnull;
+#include "Interpreter.h" // for YSLib::sfmt, YSLib::ostringstream,
+//	YAssertNonnull, namespace YSLib;
 #include <Helper/YModules.h>
 #include YFM_YCLib_YCommon // for ystdex::type_info, ystdex::quote,
 //	ystdex::call_value_or;
@@ -59,8 +60,6 @@
 #if NPLC_Impl_mimalloc
 #	include NPLC_Impl_ExtInc_mimalloc
 #endif
-
-using namespace YSLib;
 
 namespace NPL
 {
@@ -152,8 +151,8 @@ DecodeTypeName(const ystdex::type_info& ti)
 YB_ATTR_nodiscard YB_PURE string
 StringifyEnvironment(const shared_ptr<Environment>& p_env, bool weak)
 {
-	return (weak ? "[weak environment] " : "[environment] ")
-		+ (p_env ? sfmt<string>("%p", ystdex::pvoid(p_env.get())) : "Invalid");
+	return (weak ? "[weak environment] " : "[environment] ") + (p_env
+		? YSLib::sfmt<string>("%p", ystdex::pvoid(p_env.get())) : "Invalid");
 }
 
 template<class _tHandler>
@@ -166,10 +165,10 @@ StringifyContextHandler(const _tHandler& h)
 		case 0:
 			return "operative[" + StringifyContextHandler(p->Handler) + "]";
 		case 1:
-			return sfmt<string>("applicative[%s]",
+			return YSLib::sfmt<string>("applicative[%s]",
 				StringifyContextHandler(p->Handler).c_str());
 		default:
-			return sfmt<string>("applicative[%s, wrapping = %zu]",
+			return YSLib::sfmt<string>("applicative[%s, wrapping = %zu]",
 				StringifyContextHandler(p->Handler).c_str(), p->Wrapping);
 		}
 	if(const auto p = h.template target<A1::WrappedContextHandler<
@@ -186,6 +185,8 @@ StringifyValueObject(const ValueObject& vo)
 {
 	if(vo != A1::ValueToken::Null)
 	{
+		using YSLib::sfmt;
+
 		if(const auto p = vo.AccessPtr<string>())
 			return ystdex::quote(EscapeLiteral(*p));
 		if(const auto p = vo.AccessPtr<TokenValue>())
@@ -355,7 +356,7 @@ shared_pool_resource::find_pool(size_t lb_size) ynothrow
 void
 LogTree(const ValueNode& node, Logger::Level lv)
 {
-	ostringstream oss(string(node.get_allocator()));
+	YSLib::ostringstream oss(string(node.get_allocator()));
 
 	PrintNode(oss, node, NodeValueLogger());
 	YTraceDe(lv, "%s", oss.str().c_str());
@@ -364,7 +365,7 @@ LogTree(const ValueNode& node, Logger::Level lv)
 void
 LogTermValue(const TermNode& term, Logger::Level lv)
 {
-	ostringstream oss(string(term.get_allocator()));
+	YSLib::ostringstream oss(string(term.get_allocator()));
 
 	PrintTermNode(oss, term, NodeValueLogger());
 	YTraceDe(lv, "%s", oss.str().c_str());
@@ -749,6 +750,8 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 	}
 	catch(std::exception& e)
 	{
+		using namespace YSLib;
+
 		terminal.UpdateForeColor(ErrorColor);
 		ExtractException([&](const char* str, size_t level) YB_NONNULL(2){
 			const auto print([&](RecordLevel lv, const char* name,
