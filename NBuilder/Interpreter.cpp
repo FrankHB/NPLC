@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2260
+\version r2330
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-10-26 20:32 +0800
+	2020-11-17 01:16 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -33,7 +33,7 @@
 #include YFM_YSLib_Core_YException // for FilterExceptions,
 //	YSLib::IO::StreamGet;
 #include YFM_YSLib_Service_TextFile
-#include YFM_NPL_NPLA1Forms
+#include YFM_NPL_NPLA1Forms // for TraceException, A1::TraceBacktrace;
 #include <cstring> // for std::strcmp, std::strstr;
 #include <cstdio> // for std::fprintf;
 #include <iostream> // for std::cin, std::cout;
@@ -752,83 +752,13 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 	{
 		using namespace YSLib;
 
-		terminal.UpdateForeColor(ErrorColor);
-		ExtractException([&](const char* str, size_t level) YB_NONNULL(2){
-			const auto print([&](RecordLevel lv, const char* name,
-				const char* msg) YB_ATTR_LAMBDA_QUAL(ynothrow, YB_NONNULL(3)){
-				// XXX: Format '%*c' may not work in some implementations of
-				//	%ystdex::sfmt used as the default by %trace.TraceFormat.
-				trace.TraceFormat(lv, "%*s%s<%u>: %s", int(level), "", name,
-					unsigned(lv), msg);
-			});
-
-			TryExpr(throw)
-#if NPLC_Impl_UseSourceInfo
-			catch(BadIdentifier& ex)
-			{
-				print(ex.GetLevel(), "BadIdentifier", str);
-
-				const auto& si(ex.Source);
-
-				if(ex.Source.first)
-					trace.TraceFormat(ex.GetLevel(), "%*sIdentifier '%s' is at"
-						" line %zu, column %zu in %s.", int(level + 1), "",
-						ex.GetIdentifier().c_str(), si.second.Line + 1,
-						si.second.Column + 1, si.first->c_str());
-			}
-#endif
-			CatchExpr(bad_any_cast& ex,
-				print(Warning, "TypeError", ystdex::sfmt(
-					"Mismatched types ('%s', '%s') found.", ex.from(),
-					ex.to()).c_str()))
-			CatchExpr(LoggedEvent& ex, print(ex.GetLevel(), typeid(ex).name(),
-				str))
-			CatchExpr(..., print(Err, "Error", str))
-		}, e);
+		UpdateTextColor(ErrorColor);
+		TraceException(e, trace);
 		trace.TraceFormat(Notice, "Location: %s.", Context.CurrentSource
 			? Context.CurrentSource->c_str() : "<unknown>");
 #if NPLC_Impl_UseBacktrace
-		if(!Backtrace.empty())
-			trace.TraceFormat(Notice, "Backtrace:");
-		FilterExceptions([&]{
-			for(const auto& act : Backtrace)
-			{
-				const auto name(A1::QueryContinuationName(act));
-				const auto p(name.data() ? name.data() :
-#	if NDEBUG
-					"?"
-#	else
-					// XXX: This is enabled for debugging only because the name
-					//	is not guaranteed steady.
-					ystdex::call_value_or([](const A1::Continuation& cont)
-						-> const ystdex::type_info&{
-						return cont.Handler.target_type();
-					}, act.target<A1::Continuation>(), act.target_type()).name()
-#	endif
-				);
-				const auto p_opn_vo(A1::QueryTailOperatorName(act));
-				const auto p_opn_t(p_opn_vo ? p_opn_vo->AccessPtr<TokenValue>()
-					: nullptr);
-
-				if(const auto p_o = p_opn_t ? p_opn_t->data() : nullptr)
-				{
-#if NPLC_Impl_UseSourceInfo
-					if(const auto p_si = A1::QuerySourceInformation(*p_opn_vo))
-						trace.TraceFormat(Notice, "#[continuation: %s (%s) @"
-							" %s (line %zu, column %zu)]", p_o, p,
-							p_si->first ? p_si->first->c_str() : "<unknown>",
-							p_si->second.Line + 1, p_si->second.Column + 1);
-					else
+		A1::TraceBacktrace(Backtrace, trace);
 #endif
-						trace.TraceFormat(Notice, "#[continuation: %s (%s)]",
-							p_o, p);
-				}
-				else
-					trace.TraceFormat(Notice, "#[continuation (%s)]", p);
-			}
-		}, "guard unwinding");
-#endif
-		Backtrace.clear();
 	}
 }
 
