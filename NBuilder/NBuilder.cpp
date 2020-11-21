@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8157
+\version r8159
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-10-27 07:11 +0800
+	2020-11-22 00:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -453,8 +453,6 @@ LoadFunctions(Interpreter& intp)
 	RegisterUnary<>(rctx, "list-length",
 		ComposeReferencedTermOp(FetchListLength));
 	RegisterUnary<>(rctx, "listv-length", FetchListLength);
-	RegisterUnary<>(rctx, "branch?", ComposeReferencedTermOp(IsBranch));
-	RegisterUnary<>(rctx, "branchv?", IsBranch);
 	RegisterUnary<>(rctx, "leaf?", ComposeReferencedTermOp(IsLeaf));
 	RegisterUnary<>(rctx, "leafv?", IsLeaf);
 	// NOTE: Encapsulations library is in %YFramework.NPL.Dependency.
