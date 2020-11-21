@@ -62,9 +62,6 @@ $defl%! assq (&x &alist) $cond ((null? alist) ())
 $defl! memq? (&x &ls)
 	apply or? (map1 ($lambda (&x) eq? x x) ls);
 "TODO", "Provide 'eq%?' and 'equal%?'.";
-$defl! equal? (&x &y) $if ($and? (branch? x) (branch? y))
-	($and? (equal? (first x) (first y)) (equal? (restv x) (restv y)))
-	(eqv? x y);
 "NOTE", "Definitions of $let*, $letrec are in %YFramework.NPL.Dependency.";
 $defv%! $letrec* (&bindings .&body) d
 	eval% ($if (null? bindings) (list*% $letrec bindings body)
