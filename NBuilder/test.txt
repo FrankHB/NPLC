@@ -749,7 +749,9 @@ $defl! test (&i)
 			$expect #t p? enc;
 			$expect #f p? "str";
 			$expect 1 d enc;
-			$expect 2 d (e 2)
+			$expect 2 d (e 2);
+			$expect #t eqv? (e (list 1 2)) (e (list 1 2));
+			$expect #f eqv? (e (list 1 2)) (e (list 3 4))
 		)
 	))
 	((eqv? i 16) (
