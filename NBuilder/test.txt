@@ -903,7 +903,8 @@ $defl! teste (i)
 );
 
 $defl! iota (&x) $if (eqv? x 0) () (list-concat (iota (- x 1)) (list x));
-$defl! iota-range (first last) $if (<? first last) (cons first (iota-range (+ first 1) last)) ();
+$defl! iota-range (first last)
+	$if (<? first last) (cons first (iota-range (+ first 1) last)) ();
 
 $defl! test-in (&l) for-each-ltr test l;
 $defl! test-range (first last) test-in (iota-range first last);
