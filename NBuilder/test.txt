@@ -208,7 +208,7 @@ $defl! test (&i)
 	$cond
 	((eqv? i 1) (
 		info "sanity";
-		$expect ();
+		$expect ()
 	))
 	((eqv? i 2) (
 		info "function calls";
@@ -230,7 +230,7 @@ $defl! test (&i)
 		$expect ()
 			($def! foo $lambda (z) z; ($lambda (x) ($lambda (y) foo y) x) ());
 		$expect () ($lambda (x) ($lambda (y) ($lambda (z) z) y) x) ();
-		$expect () ($def! l list (); ($lambda ((&x .)) x) l);
+		$expect () ($def! l list (); ($lambda ((&x .)) x) l)
 	))
 	((eqv? i 3) (
 		info "recursive function calls";
@@ -241,7 +241,7 @@ $defl! test (&i)
 		$def! (F M) (list ($lambda (&n) $if (=? n 0) 1 (- n (M (F (- n 1)))))
 			($lambda (&n) $if (=? n 0) 0 (- n (F (M (- n 1))))));
 		$expect 5 F 7;
-		$expect 4 M 7;
+		$expect 4 M 7
 	))
 	((eqv? i 4) (
 		info "basic object operations";
@@ -258,7 +258,7 @@ $defl! test (&i)
 		$let () ($defrec! (&a b) list b ($lambda () 1));
 		subinfo "regression for $defrec!; fixed since b897";
 		$let () ($defrec! (&a b) list b ($lambda () 1));
-		$expect 1 $let () ($defrec! (b &a) list ($lambda () 1) b; () b);
+		$expect 1 $let () ($defrec! (b &a) list ($lambda () 1) b; () b)
 	))
 	((eqv? i 5) (
 		info "reference collapsing and reference assignment";
@@ -330,7 +330,7 @@ $defl! test (&i)
 		$def! b 2;
 		$def! li list% a 2;
 		assign@! b (first@ li);
-		$expect #f uncollapsed? (move! b);
+		$expect #f uncollapsed? (move! b)
 	))
 	((eqv? i 6) (
 		info "combiner operations";
@@ -371,7 +371,7 @@ $defl! test (&i)
 				" and '$urfri' is defined (and thus the terms in the irregular"
 				" representation are not shared elsewhere).";
 			$urfr 4;
-			$rem $urfri 5;
+			$rem $urfri 5
 		);
 		subinfo "test for ref&, etc.";
 		$def! x "xx";
@@ -402,7 +402,7 @@ $defl! test (&i)
 		$expect #t or? #f #t;
 		$expect 2 and? 1 2;
 		$expect 1 or? 1 #f;
-		$expect 3 or? #f 2 #f 3;
+		$expect 3 or? #f 2 #f 3
 	))
 	((eqv? i 8) (
 		info "list operations";
@@ -422,7 +422,7 @@ $defl! test (&i)
 			$defw%! forward-list-first% (&list-appv &appv &l) d
 				($lambda% ((&x .))
 					eval% (list% (forward! appv) ($move-resolved! x)) d)
-					(eval% (list% (forward! list-appv) l) d);
+					(eval% (list% (forward! list-appv) l) d)
 		);
 		$defl%! first-test (%l0)
 			($lambda% (fwd) forward-list-first% fwd
@@ -479,7 +479,7 @@ $defl! test (&i)
 		);
 		subinfo "regression for list* and list*%; fixed since b897";
 		$expect () list* ();
-		$expect () list*% ();
+		$expect () list*% ()
 	))
 	((eqv? i 9) (
 		info "list utility tests";
@@ -548,7 +548,7 @@ $defl! test (&i)
 		$defl! xlist* (.&xs) apply fold* (cons cons xs);
 		subinfo "regression for tail calls; fixed since b856";
 		$expect #inert for-each-ltr ($lambda .) (list ());
-		$expect (list ()) map-reverse ($lambda .) (list ());
+		$expect (list ()) map-reverse ($lambda .) (list ())
 	))
 	((eqv? i 10) (
 		info "environment basic operations";
@@ -561,8 +561,8 @@ $defl! test (&i)
 		freeze-environment! e0;
 		eval ($quote (
 			$rem assign! q1 1;
-			$rem $def! q2 2;
-		)) e1;
+			$rem $def! q2 2
+		)) e1
 	))
 	((eqv? i 11) (
 		info "local bindings";
@@ -575,7 +575,7 @@ $defl! test (&i)
 		subinfo "$letrec";
 		$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
 		subinfo "$letrec*";
-		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z;
+		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z
 	))
 	((eqv? i 12) (
 		info "binding operations";
@@ -586,7 +586,7 @@ $defl! test (&i)
 			$def! ez () get-current-environment;
 			$defl! ax () $set! ez count + 1 count;
 			() ax;
-			$expect 1 count;
+			$expect 1 count
 		);
 		subinfo "$let count";
 		$let ()
@@ -638,7 +638,7 @@ $defl! test (&i)
 		$let ()
 		(
 			$def! e $bindings->environment (x 1) (y 2);
-			$expect 3 eval (list + (string->symbol "x") (string->symbol "y")) e;
+			$expect 3 eval (list + (string->symbol "x") (string->symbol "y")) e
 		);
 		subinfo "let* environment encapsulation";
 		$expect (list 3 2 1)
@@ -681,7 +681,7 @@ $defl! test (&i)
 									(eval% (cons% $aux tail) d))
 										(eval% head d))))
 				(() make-standard-environment);
-			test-sequence $sequence;
+			test-sequence $sequence
 		);
 		subinfo "with __make-stdenv";
 		$let ()
@@ -701,7 +701,7 @@ $defl! test (&i)
 				))
 				($vau (head second) d (wrap
 					($vau #ignore #ignore (eval second d))) (eval head d));
-			test-sequence $sequence;
+			test-sequence $sequence
 		);
 		subinfo "with copy-environment";
 		$let ()
@@ -721,7 +721,7 @@ $defl! test (&i)
 				))
 				($vau (head second) d (wrap
 					($vau #ignore #ignore (eval% second d))) (eval% head d));
-			test-sequence $sequence;
+			test-sequence $sequence
 		);
 		subinfo "with copy-enviornment invalid";
 		$let ()
@@ -736,7 +736,7 @@ $defl! test (&i)
 						($if (null? exprseq) #inert
 							(eval% (cons% $aux exprseq) d)))))
 				($vau (head second) d (wrap
-					($vau #ignore #ignore (eval% second d))) (eval head d));
+					($vau #ignore #ignore (eval% second d))) (eval head d))
 		);
 	))
 	((eqv? i 15) (
@@ -749,7 +749,7 @@ $defl! test (&i)
 			$expect #t p? enc;
 			$expect #f p? "str";
 			$expect 1 d enc;
-			$expect 2 d (e 2);
+			$expect 2 d (e 2)
 		)
 	))
 	((eqv? i 16) (
@@ -823,7 +823,7 @@ $defl! test (&i)
 			);
 			$defl! from (n)
 				$lazy/e (() lock-current-environment) list n (from (+ n 1));
-			force (stream-filter ($lambda (n) eqv? n maxn) (from 0));
+			force (stream-filter ($lambda (n) eqv? n maxn) (from 0))
 		)
 	))
 	((eqv? i 19) (
@@ -836,7 +836,7 @@ $defl! test (&i)
 		$expect 42 double (increment (double (double 5)));
 		$expect 42 (|> (|> (|> double double) increment) double) 5;
 		$defl! pipes (fs x) (reduce fs |> idv) x;
-		$expect 42 pipes (list double double increment double) 5;
+		$expect 42 pipes (list double double increment double) 5
 	))
 	((eqv? i 20) (
 		info "arithmetic operations";
