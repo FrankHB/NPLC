@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2330
+\version r2345
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-11-17 01:16 +0800
+	2020-12-13 07:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -41,11 +41,11 @@
 #if YCL_Linux
 //#	define NPLC_Impl_mimalloc true
 // XXX: Hard-coded for AUR package 'mimalloc-git'. Set environment variable
-//	'LDFLAGS' to '/usr/lib/mimalloc-1.4/mimalloc.o -pthread' to link in with
-//	%SHBuild-BuildApp.sh, before the build system is ready to configure the
-//	paths. Alternatively, 'LD_PRELOAD=/usr/lib/mimalloc-1.4/libmimalloc.so'
+//	'SHBuild_LIBS' to '/usr/lib/mimalloc-1.6/mimalloc.o -pthread' to link in
+//	with %SHBuild-BuildPkg.sh, before the build system is ready to configure the
+//	paths. Alternatively, 'LD_PRELOAD=/usr/lib/mimalloc-1.6/libmimalloc.so'
 //	can be used without link the library.
-#	define NPLC_Impl_ExtInc_mimalloc </usr/lib/mimalloc-1.4/include/mimalloc.h>
+#	define NPLC_Impl_ExtInc_mimalloc </usr/lib/mimalloc-1.6/include/mimalloc.h>
 #endif
 #define NPLC_Impl_FastAsyncReduce true
 #define NPLC_Impl_LogBeforeReduce false
@@ -55,6 +55,7 @@
 #define NPLC_Impl_UseBacktrace true
 #define NPLC_Impl_UseDebugMR false
 #define NPLC_Impl_UseMonotonic false
+#define NPLC_Impl_UsePool true
 #define NPLC_Impl_UseSourceInfo true
 
 #if NPLC_Impl_mimalloc
@@ -509,9 +510,9 @@ struct test_memory_resource : public memory_resource,
 };
 #endif
 
-//! \since YSLib build 881
+//! \since YSLib build 905
 YB_ATTR_nodiscard memory_resource&
-GetPoolResourceRef() ynothrowv
+GetUpstreamResourceRef() ynothrowv
 {
 #if NPLC_Impl_TestMemoryResource
 	static test_memory_resource r;
@@ -522,7 +523,9 @@ GetPoolResourceRef() ynothrowv
 #endif
 }
 
-#if NPLC_Impl_UseMonotonic
+#if NPLC_Impl_UsePool
+#	define NPLC_Impl_MemoryResourceName pool_rsrc
+#elif NPLC_Impl_UseMonotonic
 memory_resource&
 GetMonotonicPoolRef()
 {
@@ -531,9 +534,10 @@ GetMonotonicPoolRef()
 	return r;
 }
 
-#	define NPLC_Impl_PoolName GetMonotonicPoolRef()
+#	define NPLC_Impl_MemoryResourceName GetMonotonicPoolRef()
 #else
-#	define NPLC_Impl_PoolName pool_rsrc
+// XXX: Skip %pool_rsrc by using default upstream resource.
+#	define NPLC_Impl_MemoryResourceName GetUpstreamResourceRef()
 #endif
 
 #if NPLC_Impl_FastAsyncReduce
@@ -664,8 +668,8 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 } // unnamed namespace;
 
 Interpreter::Interpreter()
-	: terminal(), pool_rsrc(&GetPoolResourceRef()), line(),
-	Context(NPLC_Impl_PoolName)
+	: terminal(), pool_rsrc(&GetUpstreamResourceRef()), line(),
+	Context(NPLC_Impl_MemoryResourceName)
 {
 	using namespace std;
 
