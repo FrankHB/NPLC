@@ -2,25 +2,25 @@
 
 ## 概要
 
-NPLC 是 NPL 命令行特性的试验项目。
+　　NPLC 是 NPL 命令行特性的试验项目。
 
-关于 NPL ，参见 [YSLib](https://bitbucket.org/FrankHB/yslib) 的 [Wiki 页面][和 YSLib 中的项目文档 `doc/NPL.txt` 。
+　　关于 NPL ，参见 [YSLib](https://bitbucket.org/FrankHB/yslib) 的 [Wiki 页面][和 YSLib 中的项目文档 `doc/NPL.txt` 。
 
 ## NBuilder
 
-NBuilder 实现了 NPLA1 的扩展，包含解释器的优化实现和不提供文档的试验性特性（全局函数）。
+　　NBuilder 实现了 NPLA1 的扩展，包含解释器的优化实现和不提供文档的试验性特性（全局函数）。
 
-NBuilder 基于 YSLib 中 YFramework 库的 NPL 模块实现。
+　　NBuilder 基于 YSLib 中 YFramework 库的 NPL 模块实现。
 
 ### 构建
 
-NBuilder 支持多种构建方式。
+　　NBuilder 支持多种构建方式。
 
 #### 使用 Code::Blocks 构建
 
-确保已在其中配置 YSLib 库的位置后，选择 `debug` 或 `release` 配置，直接构建。
+　　确保已在其中配置 YSLib 库的位置后，选择 `debug` 或 `release` 配置，直接构建。
 
-生成的可执行文件在配置名的目录下。
+　　生成的可执行文件在配置名的目录下。
 
 #### 使用 YSLib [Sysroot](https://bitbucket.org/FrankHB/yslib/wiki/Sysroot.zh-CN.md)
 
@@ -30,33 +30,33 @@ bash
 SHBuild_BuildApp . -xj,3
 ```
 
-调用 `bash` 以避免覆盖当前 shell 。
+　　以上命令调用 `bash` 以避免覆盖当前 shell 。
 
-若需指定配置，使用 `. SHBuild-BuildApp.sh -cdebug` 等代替以上第二行。不指定配置名称，默认同 `-crelease` 。
+　　若需指定配置，使用 `. SHBuild-BuildApp.sh -cdebug` 等代替以上第二行。不指定配置名称，默认同 `-crelease` 。
 
-使用 debug 配置由配置名称推断，除非指定的名称包含 `debug` ，默认为 release 配置。
+　　使用 debug 配置由配置名称推断，除非指定的名称包含 `debug` ，默认为 release 配置。
 
-其它具体调用详见 Sysroot 文档。
+　　其它具体调用详见 Sysroot 文档。
 
-生成的可执行文件在 `SHBuild-BuildApp.sh` 指定的配置名对应的带有前缀 `.` 的目录下（默认为 `.release` ）。
+　　生成的可执行文件在 `SHBuild-BuildApp.sh` 指定的配置名对应的带有前缀 `.` 的目录下（默认为 `.release` ）。
 
 #### 使用 YSLib [SHBuild](https://bitbucket.org/FrankHB/yslib/wiki/Tools/SHBuild.zh-CN.md) 工具
 
-SHBuild 是 Sysroot 脚本调用的构建工具。具体使用方式详见工具对应的文档。
+　　SHBuild 是 Sysroot 脚本调用的构建工具。具体使用方式详见工具对应的文档。
 
 ### 使用
 
-运行解释器可执行文件直接进入 REPL ；或使用命令行选项 `-e` ，支持直接求值字符串参数。
+　　运行解释器可执行文件直接进入 REPL ；或使用命令行选项 `-e` ，支持直接求值字符串参数。
 
-当前实现支持 `doc/NPL.txt` 中的函数和一些未公开的函数。
+　　当前实现支持 `doc/NPL.txt` 中的函数和一些未公开的函数。
 
 #### 运行环境
 
-V0.8 起初始化加载 `test.txt`（可为空）。若没有这个文件，初始化出错。
+　　V0.8 起初始化加载 `test.txt`（可为空）。若没有这个文件，初始化出错。
 
 ## 发布注记
 
-当前所有历史版本都是试验性测试版本，为 PreAlpha 开发阶段。
+　　当前所有历史版本都是试验性测试版本，为 PreAlpha 开发阶段。
 
 * **V0.1** 添加 NBuilder 解释器框架（依赖 YSLib V0.4 ）。
 	* 添加命令行界面。
@@ -127,7 +127,7 @@ V0.8 起初始化加载 `test.txt`（可为空）。若没有这个文件，初�
 		* 修复资源池的实现。
 		* 优化分配参数。
 	* 添加 `-e` 选项支持直接求值命令行字符串参数。
-* **V1.1** 调整部分实现语义和行为（依赖 YSLib build 896 ）。
+* **V1.1** NBuilder 改进诊断消息（依赖 YSLib build 896 ）。
 	* 改进诊断消息。
 		* 编码部分类型名称代替宿主类型名称。
 		* 默认保存源信息，并在未声明的标识符的错误消息中使用。
@@ -136,24 +136,38 @@ V0.8 起初始化加载 `test.txt`（可为空）。若没有这个文件，初�
 	* 调整 REPL 输出。
 		* 使用紧凑格式在 REPL 显示列表。
 		* 调整部分数据类型的输出格式。
-
+* **V1.2** NBuilder 调整部分实现语义和行为（依赖 YSLib build 907 ）。
+	* 标准库扩展：
+		* 移除 YSLib 已实现的函数：
+			* `assv`
+			* `equal?`
+			* `load`（使用模块 `std.io` ）
+			* `puts`（使用模块 `std.io` ）
+		* 添加标准库扩展函数 `list-push-back!` 。
+		* 修复 `$remote-eval%` 结果冗余提升。
+		* 拆分扩展标准库实现为模块并在初始化后冻结。
+	* 添加和修复部分测试用例。 
+	* 修复初始化时的环境资源泄漏（自 V1.1 ）。
+	* 修复部分诊断输出。
+	* 修复 Win32 环境下编码处理错误依赖当前代码页。
+	
 ## 实现注记
 
-NBuilder 优化解释器的快速规约依赖 YSLib NPLA1 实现的异步规约，且不支持其中的可扩展规约定制特性。
+　　NBuilder 优化解释器的快速规约依赖 YSLib NPLA1 实现的异步规约，且不支持其中的可扩展规约定制特性。
 
 ### 性能
 
-因为语言特性的要求（能捕获一等续延，尽管当前不提供公开 API ）和使用 AST 解释器实现，性能较大多数一般的语言解释器实现低。
+　　因为语言特性的要求（能捕获一等续延，尽管当前不提供公开 API ）和使用 AST 解释器实现，性能较大多数一般的语言解释器实现低。
 
-以下只给出基准测试用例的比较，使用支持类似特性且同为异步调用风格的 AST 解释器的 Kernel 实现 [klisp](https://klisp.org) 0.3（只支持 32 位）在 MinGW32 下的 release 配置。
+　　以下只给出基准测试用例的比较，使用支持类似特性且同为异步调用风格的 AST 解释器的 Kernel 实现 [klisp](https://klisp.org) 0.3（只支持 32 位）在 MinGW32 下的 release 配置。
 
-兼容 POSIX shell 的命令行调用如下：
+　　兼容 POSIX shell 的命令行调用如下：
 
 ```
 NBuilder -e '$defl! fib (&n) ($if (<=? n 1) n (+ (fib (- n 1)) (fib (- n 2)))); iput (fib 30)'
 ```
 
-对应的 klisp 调用如下：
+　　对应的 klisp 调用如下：
 
 ```
 klisp -e '(display ($sequence ($define! fib ($lambda (n) ($if (<=? n 1) n (+ (fib (- n 1)) (fib (- n 2)))))) (fib 30)))'
@@ -166,11 +180,11 @@ klisp -e '(display ($sequence ($define! fib ($lambda (n) ($if (<=? n 1) n (+ (fi
 * **V0.11** 约 1.80
 * **V1.0** 约 0.95
 
-（使用较小参数的基准测试内容另见 `test.txt` 中的 `pt` 函数。）
+　　（使用较小参数的基准测试内容另见 `test.txt` 中的 `pt` 函数。）
 
 ### 元数据
 
-在 NPLA1 元数据的基础上，支持以下续延名称：
+　　在 NPLA1 元数据的基础上，支持以下续延名称：
 
 * `guard-load` ：恢复加载前保存的环境。
 * `load-external` ：加载外部翻译单元。
