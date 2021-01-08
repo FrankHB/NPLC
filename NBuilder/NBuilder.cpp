@@ -1,5 +1,5 @@
 ﻿/*
-	© 2011-2020 FrankHB.
+	© 2011-2021 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8159
+\version r8167
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2020-11-22 00:36 +0800
+	2021-01-08 18:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -280,7 +280,9 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Context builtins.
 	renv.DefineChecked("REPL-context", ValueObject(context, OwnershipTag<>()));
 	renv.DefineChecked("root-context", ValueObject(rctx, OwnershipTag<>()));
-	intp.SaveGround();
+	// XXX: Temporarily unfrezz the environment to allow the external
+	//	definitions in the ground environment.
+	renv.Frozen = {};
 
 	const auto rwenv(rctx.WeakenRecord());
 
@@ -570,6 +572,9 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Preloading does not use the backtrace handling in the normal
 	//	interactive interpreter run (the REPL loop and the single line
 	//	evaluation).
+	A1::PreloadExternal(intp.Context, "std.txt");
+	renv.Frozen = true;
+	intp.SaveGround();
 	A1::PreloadExternal(intp.Context, "test.txt");
 #if NPLC_Impl_DebugAction
 	rctx.EvaluateList.Add(DefaultDebugAction, 255);
@@ -578,7 +583,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.1 b901+"
+#define NPLC_VER "V1.1 b906+"
 #define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
