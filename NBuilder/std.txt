@@ -6,10 +6,6 @@ $def! $redef! $def!;
 $defv%! $unspecified ((&x .)) d forward! (eval% x d);
 $defv! $defu! (&x .&xs) d eval (list $set! d x $unspecified xs) d;
 
-$import! std.strings ++ string<- string-empty? string->symbol;
-$import! std.io puts;
-$import! env_SHBuild_ SHBuild_RaiseError_;
-
 "NOTE", "Core library.";
 "NOTE", "Definitions of id, idv, list, list&, $quote, $defl!, first, first&,",
 	" restv, rest%, rest& are in %YFramework.NPL.Dependency.";
@@ -106,7 +102,7 @@ $defv/e! $binds? (make-environment (() get-current-environment)
 	foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
 
 "NOTE", "Type operation library.";
-$defl! ptype (&x) puts (nameof (typeid x));
+$defl! ptype (&x) ($remote-eval puts std.io) (nameof (typeid x));
 $defl! typeid-match? (&x &id) eqv? (get-typeid id) (typeid x);
 $defl! bool? (&x) typeid-match? x "bool";
 $defl! symbol? (&x) $and? (typeid-match? x "symbol")
@@ -122,15 +118,33 @@ $defl! int? (&x) typeid-match? x "int";
 $defl! string? (&x) typeid-match? x "string";
 
 "NOTE", "String library.";
-$defl! retain-string (&str) ++ "\"" str "\"";
-$defl! b2str (&b) $if b "#t" "#f";
+$def! std.strings make-environment ($as-environment ($provide/let! (
+	retain-string
+	b2str
+)
+((mods () get-current-environment))
+(
+	$defl/e! retain-string std.strings (&str) ++ "\"" str "\"";
+	$defl/e! b2str mods (&b) $if b "#t" "#f"
+))) std.strings;
 
 "NOTE", "I/O library.";
-$defl! get-module (&filename .&opt)
-	$let ((&env () make-standard-environment)) $sequence
-		($unless (null? opt) ($set! env module-parameters (first& opt)))
-		(eval (list ($remote-eval% load std.io) filename) env) env;
-$defl! iput (&x) puts (itos x);
-$defl! bput (&b) put (b2str b);
-$defl! bputs (&b) puts (b2str b);
+$def! std.io make-environment ($as-environment ($provide/let! (
+	get-module
+	bput
+	bputs
+	iput
+	putss
+)
+((mods derive-current-environment std.strings std.io))
+(
+	$defl/e! get-module mods (&filename .&opt)
+		$let ((&env () make-standard-environment)) $sequence
+			($unless (null? opt) ($set! env module-parameters (first& opt)))
+			(eval (list ($remote-eval% load std.io) filename) env) env;
+	$defl/e! bput mods (&b) put (b2str b);
+	$defl/e! bputs mods (&b) puts (b2str b);
+	$defl/e! iput mods (&x) puts (itos x);
+	$defl/e! putss mods (.&xs) puts (apply ++ xs)
+))) std.io;
 

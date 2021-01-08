@@ -4,6 +4,10 @@
 "NOTE", "For the test purpose, this file is deliberatedly kept as UTF-8+BOM",
 	"with LF as the EOL mark.";
 
+$import! std.strings ++ string<- string-empty? string->symbol;
+$import! std.io puts putss iput;
+$import! env_SHBuild_ SHBuild_RaiseError_;
+
 $def! SS_TestOpts_QuickFail #t;
 $def! report-failure $if SS_TestOpts_QuickFail SHBuild_RaiseError_ puts;
 $defl! pass (.) puts "PASS.";
@@ -28,7 +32,6 @@ $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
 		$if (equal? res expected) (pass res)
 			(fail-on-expect expr (forward! res) (forward! expected));
-$defl! putss (.&xs) puts (apply ++ xs);
 $defl! info (&msg) putss "Test case: " msg;
 $defl! subinfo (&msg) putss "Sub test case: " msg;
 
