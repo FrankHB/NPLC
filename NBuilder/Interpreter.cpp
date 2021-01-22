@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2020 FrankHB.
+	© 2013-2021 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2345
+\version r2348
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-12-13 07:15 +0800
+	2021-01-23 01:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -152,8 +152,8 @@ DecodeTypeName(const ystdex::type_info& ti)
 YB_ATTR_nodiscard YB_PURE string
 StringifyEnvironment(const shared_ptr<Environment>& p_env, bool weak)
 {
-	return (weak ? "[weak environment] " : "[environment] ") + (p_env
-		? YSLib::sfmt<string>("%p", ystdex::pvoid(p_env.get())) : "Invalid");
+	return YSLib::sfmt<string>("#[%senvironment: %p]", weak ? "weak " : "",
+		ystdex::pvoid(p_env.get()));
 }
 
 template<class _tHandler>
