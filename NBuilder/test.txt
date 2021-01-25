@@ -131,7 +131,7 @@ $defl! test (&i)
 		$expect 1 $let () ($defrec! (b &a) list ($lambda () 1) b; () b)
 	))
 	((eqv? i 5) (
-		info "reference collapsing and reference assignment";
+		info "reference, reference collapsing and reference assignment";
 		$def! (a b) list 1 2;
 		$def! li list% a 2;
 		$def! li2 list% 3 4;
@@ -634,7 +634,8 @@ $defl! test (&i)
 		)
 	))
 	((eqv? i 17) (
-		info "$provide!";
+		info "imports and $provide!";
+		subinfo "$provide!";
 		$let ()
 		(
 			$def! ee $provide! (a) $def! a 42;
@@ -642,6 +643,16 @@ $defl! test (&i)
 			$def! b ($lambda (() a ()) a) () a el;
 			$expect 42 a;
 			$expect 42 b
+		);
+		subinfo "$import and $import&";
+		$let ()
+		(
+			$import&! std.strings ++;
+			$expect #f modifiable? ++;
+			$import! std.strings ++;
+			$expect #t modifiable? ++;
+			$import! std.strings &++;
+			$expect #f modifiable? ++
 		)
 	))
 	((eqv? i 18) (
