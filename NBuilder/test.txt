@@ -354,6 +354,16 @@ $defl! test (&i)
 	((eqv? i 9) (
 		info "list utility tests";
 		$def! a list "2" "3";
+		subinfo "first-null?";
+		$expect #f first-null? (list 1 2);
+		$expect #t first-null? (list () 2);
+		$let ()
+		(
+			$def! i 42;
+			$def! el ();
+			$expect #f first-null? (list i 2);
+			$expect #t first-null? (list el 2)
+		);
 		subinfo "sublists eagar logical operations";
 		$expect (list 3 #f 2 #f)
 			list (and? 1 2 3) (and? 1 #f 3) (or? #f 2 #f) (or? #f #f);
