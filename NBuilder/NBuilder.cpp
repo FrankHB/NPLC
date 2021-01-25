@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8172
+\version r8174
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-01-23 23:34 +0800
+	2021-01-25 23:10 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -314,7 +314,7 @@ LoadFunctions(Interpreter& intp)
 	//	eval, eval%, copy-environment, lock-current-environment,
 	//	lock-environment, make-environment, weaken-environment are in
 	//	%YFramework.NPL.Dependency.
-	RegisterUnary<>(rctx, "resolve-environment", [](const TermNode& term){
+	RegisterUnary<>(rctx, "resolve-environment", [](TermNode& term){
 		return ResolveEnvironment(term).first;
 	});
 	// NOTE: Environment mutation is optional in Kernel and supported here.
@@ -587,7 +587,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.1 b908+"
+#define NPLC_VER "V1.1 b909+"
 #define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
