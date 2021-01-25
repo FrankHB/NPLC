@@ -445,7 +445,14 @@ $defl! test (&i)
 		subinfo "$letrec";
 		$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
 		subinfo "$letrec*";
-		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z
+		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z;
+		subinfo "local bindings with static environments";
+		$expect "cd"
+			$let/e (list std.strings std.io) ()
+				(puts (++ "a" "b"); (++ "c" "d"));
+		$expect "cd"
+			$let/e (derive-environment std.strings std.io) ((d "d"))
+				(puts (++ "a" "b"); (++ "c" d))
 	))
 	((eqv? i 12) (
 		info "binding operations";
