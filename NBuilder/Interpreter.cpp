@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2348
+\version r2350
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-01-23 01:11 +0800
+	2021-01-27 01:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -653,8 +653,7 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 			term.Value = std::move(sub.Value);
 		}, [&](TermNode& sub, ContextNode& ctx){
 			RelaySwitched(ctx, A1::NameTypedReducerHandler([&](ContextNode& c){
-				return
-					ReduceNextCombinedBranch(term, A1::ContextState::Access(c));
+				return A1::ReduceCombinedBranch(term, c);
 			}, "eval-combine-operands"));
 			return RelaySwitched(ctx, [&](ContextNode& c){
 				return ReduceFastBranch(sub, A1::ContextState::Access(c));
