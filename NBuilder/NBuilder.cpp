@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8174
+\version r8191
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-01-25 23:10 +0800
+	2021-01-30 12:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -476,37 +476,42 @@ LoadFunctions(Interpreter& intp)
 	});
 	// NOTE: Definitions of string->symbol, symbol->string, string->regex,
 	//	regex-match? are in module std.strings in %YFramework.NPL.Dependency.
+	using Number = int;
 	// NOTE: Comparison.
-	RegisterBinary<Strict, const int, const int>(rctx, "=?",
+	RegisterBinary<Strict, const Number, const Number>(rctx, "=?",
 		ystdex::equal_to<>());
-	RegisterBinary<Strict, const int, const int>(rctx, "<?", ystdex::less<>());
-	RegisterBinary<Strict, const int, const int>(rctx, "<=?",
+	RegisterBinary<Strict, const Number, const Number>(rctx, "<?",
+		ystdex::less<>());
+	RegisterBinary<Strict, const Number, const Number>(rctx, "<=?",
 		ystdex::less_equal<>());
-	RegisterBinary<Strict, const int, const int>(rctx, ">=?",
+	RegisterBinary<Strict, const Number, const Number>(rctx, ">=?",
 		ystdex::greater_equal<>());
-	RegisterBinary<Strict, const int, const int>(rctx, ">?",
+	RegisterBinary<Strict, const Number, const Number>(rctx, ">?",
 		ystdex::greater<>());
 	// NOTE: Arithmetic procedures.
 	// FIXME: Overflow?
-	RegisterStrict(rctx, "+", std::bind(CallBinaryFold<int, ystdex::plus<>>,
+	RegisterStrict(rctx, "+", std::bind(CallBinaryFold<Number, ystdex::plus<>>,
 		ystdex::plus<>(), 0, _1));
 	// FIXME: Overflow?
-	RegisterBinary<Strict, const int, const int>(rctx, "add2",
+	RegisterBinary<Strict, const Number, const Number>(rctx, "add2",
 		ystdex::plus<>());
 	// FIXME: Underflow?
-	RegisterBinary<Strict, const int, const int>(rctx, "-", ystdex::minus<>());
+	RegisterBinary<Strict, const Number, const Number>(rctx, "-",
+		ystdex::minus<>());
 	// FIXME: Overflow?
-	RegisterStrict(rctx, "*", std::bind(CallBinaryFold<int,
+	RegisterStrict(rctx, "*", std::bind(CallBinaryFold<Number,
 		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1));
 	// FIXME: Overflow?
-	RegisterBinary<Strict, const int, const int>(rctx, "multiply2",
+	RegisterBinary<Strict, const Number, const Number>(rctx, "multiply2",
 		ystdex::multiplies<>());
-	RegisterBinary<Strict, const int, const int>(rctx, "/", [](int e1, int e2){
+	RegisterBinary<Strict, const Number, const Number>(rctx, "/",
+		[](const Number& e1, const Number& e2){
 		if(e2 != 0)
 			return e1 / e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	RegisterBinary<Strict, const int, const int>(rctx, "%", [](int e1, int e2){
+	RegisterBinary<Strict, const Number, const Number>(rctx, "%",
+		[](const Number& e1, const Number& e2){
 		if(e2 != 0)
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
