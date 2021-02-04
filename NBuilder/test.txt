@@ -310,6 +310,10 @@ $defl! test (&i)
 		$expect 2 first a;
 		$expect 2 first (as-const (expire a));
 		$expect 2 first (expire a);
+		$expect 2 list-length
+			($let ((li q-li2)) (restv (expire (as-const li)); li));
+		$expect 1 list-length
+			($let ((li q-li2)) (restv (expire li); li));
 		$expect () first a;
 		subinfo "list access";
 		list% q-li q-li2
