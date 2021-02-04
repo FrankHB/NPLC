@@ -813,7 +813,8 @@ $defl! test-all () test-seq 20;
 $defl! teste-all () for-each-ltr teste (list 1);
 
 $rem "Load libraries.";
-$def! ll ($lambda () load-at-root "0.txt");
+$defw%! ll () d eval (list ($remote-eval load std.io) "0.txt") d;
+$rem $defl%! lr () load-at-root "0.txt";
 
 $rem "Performance tests.";
 $defl! pt ()
