@@ -1,0 +1,34 @@
+﻿"#", "(C) 2017-2021 FrankHB.",
+"NPLC basic derivation extension and initialization module.";
+
+$import! std.promises $lazy force;
+$import! std.io iput;
+
+$rem "Load libraries.";
+$defw%! ll () d eval (list ($remote-eval load std.io) "0.txt") d;
+$rem $defl%! lr () load-at-root "0.txt";
+
+$rem "Functionality tests.";
+$def! prom-load-test $lazy ($remote-eval load std.io) "test.txt";
+$defl! load-test () force prom-load-test;
+$defl! test-all () (() load-test; test-seq test-case-num);
+$defl! teste-all () (() load-test; for-each-ltr teste teste-case-list);
+
+$rem "Performance tests.";
+$defl! pt ()
+(
+	$defl! fib (&n) ($if (<=? n 1) n (+ (fib (- n 1)) (fib (- n 2))));
+	iput (fib 17);
+	exit
+);
+$defl! pt-map ()
+(
+	for-each display (iota 5);
+	exit
+);
+$defl! pt-mapr ()
+(
+	for-each-ltr display (iota 5);
+	exit
+);
+

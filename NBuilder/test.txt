@@ -628,6 +628,7 @@ $defl! test (&i)
 							(eval% (cons% $aux exprseq) d)))))
 				($vau (head second) d (wrap
 					($vau #ignore #ignore (eval% second d))) (eval head d))
+			test-sequence $sequence
 		);
 	))
 	((eqv? i 15) (
@@ -811,28 +812,4 @@ $def! teste-case-list list 1;
 $defl! test-in (&l) for-each-ltr test l;
 $defl! test-range (first last) test-in (iota-range first last);
 $defl! test-seq (i) test-in (iota i);
-$defl! test-all () test-seq test-case-num;
-$defl! teste-all () for-each-ltr teste teste-case-list;
-
-$rem "Load libraries.";
-$defw%! ll () d eval (list ($remote-eval load std.io) "0.txt") d;
-$rem $defl%! lr () load-at-root "0.txt";
-
-$rem "Performance tests.";
-$defl! pt ()
-(
-	$defl! fib (&n) ($if (<=? n 1) n (+ (fib (- n 1)) (fib (- n 2))));
-	iput (fib 17);
-	exit
-);
-$defl! pt-map ()
-(
-	for-each display (iota 5);
-	exit
-);
-$defl! pt-mapr ()
-(
-	for-each-ltr display (iota 5);
-	exit
-);
 

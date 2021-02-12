@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8191
+\version r8193
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-01-30 12:08 +0800
+	2021-02-12 22:18 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -584,7 +584,7 @@ LoadFunctions(Interpreter& intp)
 	A1::PreloadExternal(intp.Context, "std.txt");
 	renv.Frozen = true;
 	intp.SaveGround();
-	A1::PreloadExternal(intp.Context, "test.txt");
+	A1::PreloadExternal(intp.Context, "init.txt");
 #if NPLC_Impl_DebugAction
 	rctx.EvaluateList.Add(DefaultDebugAction, 255);
 	rctx.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
@@ -592,7 +592,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.1 b909+"
+#define NPLC_VER "V1.1 b911+"
 #define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
