@@ -117,6 +117,11 @@ $defl! applicative? (&x) $and? (combiner? x)
 $defl! int? (&x) typeid-match? x "int";
 $defl! string? (&x) typeid-match? x "string";
 
+"NOTE", "Numeric library.";
+$defl! iota (&x) $if (eqv? x 0) () (list-concat (iota (- x 1)) (list x));
+$defl! iota-range (first last)
+	$if (<? first last) (cons first (iota-range (+ first 1) last)) ();
+
 "NOTE", "String library.";
 $def! std.strings make-environment ($as-environment ($provide/let! (
 	retain-string
