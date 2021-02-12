@@ -600,7 +600,7 @@ $defl! test (&i)
 			$def! $sequence
 				(wrap ($vau% (&$seq2) #ignore $seq2
 					($def! $aux $vau/e% (make-environment
-						(() lock-current-environment) (() copy-environment))
+						(() get-current-environment) (() copy-environment))
 							(&head .&tail) d
 						($if (null? tail) (eval head d)
 							($seq2 (eval% head d)
@@ -628,7 +628,6 @@ $defl! test (&i)
 							(eval% (cons% $aux exprseq) d)))))
 				($vau (head second) d (wrap
 					($vau #ignore #ignore (eval% second d))) (eval head d))
-			test-sequence $sequence
 		);
 	))
 	((eqv? i 15) (
