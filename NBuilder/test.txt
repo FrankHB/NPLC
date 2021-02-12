@@ -806,11 +806,13 @@ $defl! teste (i)
 	(#t "No case found.")
 );
 
+$def! test-case-num 20;
+$def! teste-case-list list 1;
 $defl! test-in (&l) for-each-ltr test l;
 $defl! test-range (first last) test-in (iota-range first last);
 $defl! test-seq (i) test-in (iota i);
-$defl! test-all () test-seq 20;
-$defl! teste-all () for-each-ltr teste (list 1);
+$defl! test-all () test-seq test-case-num;
+$defl! teste-all () for-each-ltr teste teste-case-list;
 
 $rem "Load libraries.";
 $defw%! ll () d eval (list ($remote-eval load std.io) "0.txt") d;
