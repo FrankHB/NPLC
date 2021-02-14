@@ -277,33 +277,30 @@ $defl! test (&i)
 	((eqv? i 8) (
 		info "list operations";
 		$def! a list 2 3;
-		subinfo "sanity test of forward-list-first%";
+		subinfo "sanity test of forward-first%";
 		$rem
 		(
 			"NOTE: ", "The following implementations are not conforming.";
-			$defl%! forward-list-first% (&list-appv &appv &l)
-				($lambda% ((&x .)) (forward! appv) ($move-resolved! x))
-					((forward! list-appv) l);
-			$defl%! forward-list-first% (&list-appv &appv &l)
+			$defl%! forward-first% (&list-appv &appv &l)
+				($lambda% ((&x .)) (forward! appv) ($move-resolved! x)) l;
+			$defl%! forward-first% (&list-appv &appv &l)
 				($lambda% ((&x .)) eval% (list% (forward! appv)
-					($move-resolved! x)) (() make-environment))
-					(eval% (list% (forward! list-appv) l)
-						(() make-environment));
-			$defw%! forward-list-first% (&list-appv &appv &l) d
+					($move-resolved! x)) (() make-environment)) l;
+			$defw%! forward-first% (&list-appv &appv &l) d
 				($lambda% ((&x .))
-					eval% (list% (forward! appv) ($move-resolved! x)) d)
-					(eval% (list% (forward! list-appv) l) d)
+					eval% (list% (forward! appv) ($move-resolved! x)) d) l
 		);
 		$defl%! first-test (%l0)
-			($lambda% (fwd) forward-list-first% fwd
+			($lambda% (fwd) forward-first%
 				(wrap ($vau% (&x) d
-					$sequence (eval ($quote l0) d) (forward! (forward! x)))) l0)
-				($if (bound-lvalue? ($resolve-identifier l0)) id expire);
+					$sequence (eval ($quote l0) d) (forward! (forward! x))))
+					(fwd l0))
+			($if (bound-lvalue? ($resolve-identifier l0)) id expire);
 		subinfo (++ "regression for forward-list-first%;"
 			" fixed derivation since b898");
 		$expect "should not be evaluated"
-			first (rest% (forward-list-first% idv idv (list%
-				(list% SHBuild_RaiseError_ "should not be evaluated") 1)));
+			first (rest% (forward-first% idv (idv (list%
+				(list% SHBuild_RaiseError_ "should not be evaluated") 1))));
 		$expect 1 (first-test (list 1 2));
 		subinfo "list lvalue elements read and move";
 		$expect 2 first (id a);
