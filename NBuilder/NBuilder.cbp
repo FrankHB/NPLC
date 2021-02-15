@@ -29,13 +29,15 @@
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
 					<Add option="-fexpensive-optimizations" />
-					<Add option="-fno-enforce-eh-specs" />
 					<Add option="-O3" />
 					<Add option="-flto=jobserver" />
+					<Add option="-fno-enforce-eh-specs" />
 					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-flto" />
+					<Add option="-Wl,-allow-multiple-definition" />
 					<Add library="YFramework" />
 					<Add library="YBase" />
 				</Linker>
@@ -43,6 +45,7 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wnon-virtual-dtor" />
+			<Add option="-Wshadow" />
 			<Add option="-Wredundant-decls" />
 			<Add option="-Wcast-align" />
 			<Add option="-Wmissing-declarations" />
@@ -60,11 +63,14 @@
 			<Add option="-Wformat=2" />
 			<Add option="-Wmultichar" />
 			<Add option="-Wno-format-nonliteral" />
-			<Add option="-Wno-noexcept-type" />
-			<Add option="-Wpacked" />
+			<Add option="-Wdouble-promotion" />
+			<Add option="-Wfloat-equal" />
 			<Add option="-Wlogical-op" />
+			<Add option="-Wsign-conversion" />
 			<Add option="-Wtrampolines" />
 			<Add option="-Wconditionally-supported" />
+			<Add option="-Wno-noexcept-type" />
+			<Add option="-Wpacked" />
 			<Add option="-Wstrict-null-sentinel" />
 			<Add option="-fdata-sections" />
 			<Add option="-ffunction-sections" />
@@ -73,6 +79,10 @@
 			<Add option="-U__GXX_MERGED_TYPEINFO_NAMES" />
 			<Add option="-D__GXX_MERGED_TYPEINFO_NAMES=1" />
 		</Compiler>
+		<Linker>
+			<Add option="-Wl,--gc-sections" />
+			<Add option="-pipe" />
+		</Linker>
 		<Unit filename="Interpreter.cpp" />
 		<Unit filename="Interpreter.h" />
 		<Unit filename="NBuilder.cpp" />
