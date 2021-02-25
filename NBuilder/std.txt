@@ -7,8 +7,8 @@ $defv%! $unspecified ((&x .)) d forward! (eval% x d);
 $defv! $defu! (&x .&xs) d eval (list $set! d x $unspecified xs) d;
 
 "NOTE", "Core library.";
-"NOTE", "Definitions of id, idv, list, list&, $quote, $defl!, first, first&,",
-	" restv, rest%, rest& are in %YFramework.NPL.Dependency.";
+"NOTE", "Definitions of id, idv, list, list%, rlist, $quote, $defl!, first,",
+	" first&, restv, rest%, rest& are in %YFramework.NPL.Dependency.";
 $defl! xcons (&x &y) cons y x;
 $defl! xcons% (&x &y) cons% y x;
 "NOTE", "Definitions of $set!, $defv!, $lambda, $setrec!, $defl!,",
@@ -24,8 +24,8 @@ $defl%! or? &x $sequence
 		($sequence ($def! &c first (forward l)) (or-aux? (forward! ($if c c h))
 			(rest% (forward l)))))
 	(or-aux? #f (forward! x));
-"NOTE", "Definitions of $and?, $or?, first-null?,",
-	" list-rest%, accl, accr are in %YFramework.NPL.Dependency.";
+"NOTE", "Definitions of $and?, $or?, first-null?, accl, accr are in",
+	" %YFramework.NPL.Dependency.";
 $defw%! foldl1 (&kons &knil &l) d
 	apply accl (list% (forward! l) null? (forward! knil) first rest% kons) d;
 $defw%! map1-reverse (&appv &l) d foldl1
