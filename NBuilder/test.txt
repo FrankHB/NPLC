@@ -384,6 +384,10 @@ $defl! test (&i)
 		$expect (list% id 2 3) map1 id (list% id 2 3);
 		$expect (list "afx" "bfx" "cfx")
 			map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
+		subinfo "list algorithm safety";
+		$expect (list% (list% 1 2 3) (list% 1 2 3)) list%
+			($let () ($def! li list 1 2 3; map1 id li))
+			($let () ($def! li list 1 2 3; append li));
 		$let (($list unwrap list))
 		(
 			subinfo "list-extract";
