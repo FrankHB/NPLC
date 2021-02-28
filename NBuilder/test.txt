@@ -375,15 +375,15 @@ $defl! test (&i)
 		subinfo "foldr1";
 		$expect (list "2" "3")
 			foldr1 list-concat () (list (list "2") (list "3"));
+		subinfo "map1";
+		$expect (list% id 2 3) map1 id (list% id 2 3);
+		$expect (list "afx" "bfx" "cfx")
+			map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
 		subinfo "list-concat";
 		$expect (list "2" "3") list-concat (list "2") (list "3");
 		$expect #f reference? (list-concat () q-e);
 		subinfo "append";
 		$expect (list% "2" id) append (list "2") (list% id);
-		subinfo "map1";
-		$expect (list% id 2 3) map1 id (list% id 2 3);
-		$expect (list "afx" "bfx" "cfx")
-			map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
 		subinfo "list algorithm safety";
 		$expect (list% (list% 1 2 3) (list% 1 2 3)) list%
 			($let () ($def! li list 1 2 3; map1 id li))
