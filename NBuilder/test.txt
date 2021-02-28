@@ -384,6 +384,29 @@ $defl! test (&i)
 		$expect (list% id 2 3) map1 id (list% id 2 3);
 		$expect (list "afx" "bfx" "cfx")
 			map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
+		$let (($list unwrap list))
+		(
+			subinfo "list-extract";
+			$defl%! list-extract-first! (&l)
+				list-extract (map1 expire (rlist l)) first;
+			$defl%! list-extract-rest%! (&l)
+				list-extract (map1 expire (rlist l)) rest%;
+			$defl! make-test-list () $list (x + 1 2) (y idv) (z id id);
+			$def! li () make-test-list;
+			$expect ($list x y z) list-extract-first! li;
+			$expect ($list (() + 1 2) (() idv) (() id id)) li;
+			$def! li () make-test-list;
+			$expect ($list (+ 1 2) (idv) (id id)) list-extract-rest%! li;
+			$expect ($list (x) (y) (z)) li;
+			$expect ($list x y z) list-extract-first! (() make-test-list);
+			$expect ($list (+ 1 2) (idv) (id id))
+				list-extract-rest%! (() make-test-list);
+			subinfo "list-extract-first";
+			$expect ($list x y z) list-extract-first (() make-test-list);
+			subinfo "list-extract-rest%";
+			$expect ($list (+ 1 2) (idv) (id id))
+				list-extract-rest% (() make-test-list);
+		);
 		subinfo "mapn";
 		$expect (list "246" "357")
 			mapn 2 ++ a (list "4" "5") (list "6" "7");
