@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8208
+\version r8215
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-03-02 23:10 +0800
+	2021-03-02 23:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -26,6 +26,7 @@
 
 
 #include "NBuilder.h" // for istringstream;
+#include <ystdex/base.h> // for ystdex::noncopyable;
 #include <iostream> // for std::cout, std::endl;
 #include <ystdex/typeindex.h> // for ystdex::type_index;
 #include <sstream> // for complete istringstream;
@@ -309,6 +310,14 @@ LoadFunctions(Interpreter& intp)
 			LiftTerm(term, tm);
 			return ReductionStatus::Retained;
 		}, term);
+	});
+	RegisterStrict(rctx, "make-nocopy", [](TermNode& term){
+		struct NoCopy : ystdex::noncopyable
+		{};
+
+		RetainN(term, 0);
+
+		term.Value = NoCopy();
 	});
 	// NOTE: Definitions of ref&, assign@!, cons, cons%, set-rest!, set-rest%!,
 	//	eval, eval%, copy-environment, lock-current-environment,
