@@ -390,11 +390,11 @@ $defl! test (&i)
 			($let () ($def! li list 1 2 3; append li));
 		$let (($list unwrap list))
 		(
-			subinfo "list-extract";
+			subinfo "list-extract%";
 			$defl%! list-extract-first! (&l)
-				list-extract (map1 expire (rlist l)) first;
+				list-extract% (map1 expire (rlist l)) first;
 			$defl%! list-extract-rest%! (&l)
-				list-extract (map1 expire (rlist l)) rest%;
+				list-extract% (map1 expire (rlist l)) rest%;
 			$defl! make-test-list () $list (x + 1 2) (y idv) (z id id);
 			$def! li () make-test-list;
 			$expect ($list x y z) list-extract-first! li;
