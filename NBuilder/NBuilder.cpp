@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8215
+\version r8226
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-03-02 23:17 +0800
+	2021-03-11 18:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -301,16 +301,8 @@ LoadFunctions(Interpreter& intp)
 	RegisterUnary<>(rctx, "listv?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
 	// NOTE: Definitions of null?, nullv?, reference?, bound-lvalue?,
-	//	uncollapsed?, unique?, move!, transfer!, deshare, expire are in
-	//	%YFramework.NPL.Dependency.
-	RegisterStrict(rctx, "as-const", [](TermNode& term){
-		return Forms::CallRawUnary([&](TermNode& tm){
-			if(const auto p = NPL::TryAccessLeaf<TermReference>(tm))
-				p->SetTags(p->GetTags() | TermTags::Nonmodifying);
-			LiftTerm(term, tm);
-			return ReductionStatus::Retained;
-		}, term);
-	});
+	//	uncollapsed?, unique?, move!, transfer!, deshare, as-const, expire are
+	//	in %YFramework.NPL.Dependency.
 	RegisterStrict(rctx, "make-nocopy", [](TermNode& term){
 		struct NoCopy : ystdex::noncopyable
 		{};
@@ -600,7 +592,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.1 b913+"
+#define NPLC_VER "V1.1 b914+"
 #define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
