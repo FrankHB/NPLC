@@ -492,7 +492,36 @@ $defl! test (&i)
 				(puts (++ "a" "b"); (++ "c" "d"));
 		$expect "cd"
 			$let/e (derive-environment std.strings std.io) ((d "d"))
-				(puts (++ "a" "b"); (++ "c" d))
+				(puts (++ "a" "b"); (++ "c" d));
+		subinfo "regression for binding noncopy objects; fixed since b914";
+		$let ()
+		(
+			$defl! test-let-case ($let &x can-copy)
+			(
+				$def! bindings (list% (list% ($quote a) 42)
+					(list% ($quote t) (move! x)));
+				$if can-copy
+				(
+					$def! backup bindings;
+					eval% (list% $let (as-const bindings) move! ($quote t))
+						(() get-current-environment);
+					$expect bindings backup;
+					eval% (list% $let bindings move! ($quote t))
+						(() get-current-environment);
+					$expect bindings backup
+				);
+				eval% (list% $let (expire bindings) move! ($quote t))
+					(() get-current-environment);
+				display bindings
+			);
+			$defl! test-let ($let)
+			(
+				test-let-case $let (list make-nocopy) #t;
+				test-let-case $let (() make-nocopy) #f
+			);
+			for-each-ltr test-let
+				(list $let $let% $let* $let*% $letrec $letrec%)
+		)
 	))
 	((eqv? i 12) (
 		info "binding operations";
