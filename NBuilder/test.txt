@@ -861,6 +861,12 @@ $defl! teste (i)
 	(#t "No case found.")
 );
 
+$let ()
+(
+	"Sanity", "strong normalized", "well-formed";
+	eval (list ($lambda x () ($lambda x $if)) 1) (() make-environment)
+);
+
 $def! test-case-num 20;
 $def! teste-case-list list 1;
 $defl! test-in (&l) for-each-ltr test l;
