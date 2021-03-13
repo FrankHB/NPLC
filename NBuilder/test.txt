@@ -861,6 +861,215 @@ $defl! teste (i)
 	(#t "No case found.")
 );
 
+$defl! testptc (i)
+(
+	"The following cases are for PTC.",
+		" Unless otherwise specified, the execution of the case will not stop",
+		" with constant memory consumption.";
+	$cond
+	((eqv? i 1) (
+		"PTC $if";
+		$let ()
+		(
+			$defl! f (n) $if #t (f n);
+			f 1
+		);
+		$let ()
+		(
+			$defl! f (n) $if #t (f n) 2;
+			f 1
+		);
+		$let ()
+		(
+			$defl! f (n) $if #f 3 (f n);
+			f 1
+		);
+		$let ()
+		(
+			$defl! f (x .y) $if (null? y) (f x #t) (f (x));
+			f 1
+		)
+	))
+	((eqv? i 2) (
+		"PTC eval";
+		$let ()
+		(
+			$def! l list (string->symbol "f") (string->symbol "x");
+				$defl! f (x) (eval l (() get-current-environment));
+			f 1
+		);
+		$let ()
+		(
+			$def! l list () (string->symbol "f");
+			$def! c () get-current-environment;
+			$defl! f () eval l c;
+			() f;
+		);
+	))
+	((eqv? i 3) (
+		"PTC combiner with recursive function lvalues";
+		$defv! $f () #ignore () $f; () $f;
+		$defv! $f () d eval (list () $f) d; () $f;
+		$defv! $f (x) d eval x d; $defl! f (n) $f (f n); f ();
+		$defl! f () () f; () f;
+		$defl! f (n) f n; f 1;
+		$defl! f (&n) f n; f 42;
+		$defl! f (n) f (- n 1); f 1;
+		$defl! f ((x y)) f (list x y); f (list 1 2);
+		$defrec! (f g) (list ($lambda (x) (g (- x 1)))
+			($lambda (x) (f (- x 1)))); f 1;
+		$defl! g (x) f x; $defl! f (n) g n; f 1;
+		$defv! $g (x) d f (eval x d); $defl! f (n) $g n; f 1;
+		"Regression:", "lifetime invalid @ b823", "fixed @ b826",
+			"see YSLib %ChangeLog";
+		$defv! $seq2 (x y) d eval (list $sequence x y) d;
+			$defl! f (n) $seq2 n (f (- n 1)); f 1;
+		$defv! $seq2 (x y) d eval (list $sequence x y) (lock-environment d);
+			$defl! f (n) $seq2 n (f (- n 1)); f 1;
+	))
+	((eqv? i 4) (
+		"PTC combiner with comsumed recursive function prvalues";
+		$defl! f (n) ($vau (x) d eval (list f x) d) n; f 1;
+		$defl! f (n) ($vau (x) d eval x d) (f n); f 1;
+		$defl! f (n) ($vau (x y) d eval (list $sequence x y) d) n (f n); f 1;
+		$defl! f (n)
+			($vau (x y) d eval (list $sequence x y) (lock-environment d)) n (f n);
+		f 1;
+		"Regression:", "PTC combiner with saved recursive function prvalues",
+			"since b861r0c", "cf. $2019-06 @ YSLib %Documentation::Workflow";
+		$defl! f (n) ($lambda (x) f x) n; f 1;
+		$defl! f (n) ($vau (x) d f (eval x d)) n; f 1;
+	))
+	((eqv? i 5) (
+		"PTC combiners with wrap/unwrap";
+		$let ()
+		(
+			$defv! $f () #ignore () (wrap $f);
+			() $f
+		);
+		$let ()
+		(
+			$defl! f () () (unwrap f);
+			() f
+		)
+	))
+	((eqv? i 6) (
+		"PTC $sequence (lvalue/rvalue/eval)";
+		$let ()
+		(
+			$defl! f (n) $sequence n (f (- n 1));
+			f 1
+		);
+		$let ()
+		(
+			$defl! f (n) (n; (f (- n 1)));
+			f 1
+		)
+	))
+	((eqv? i 7) (
+		"PTC $cond";
+		$let ()
+		(
+			$defl! f (n) $cond (#f 3) (#t f n);
+			f 1
+		);
+		$let ()
+		(
+			$defl! f (&n) $cond (#f 3) ((eqv? n 1) f n);
+			$def! a 1;
+			f a
+		)
+	))
+	((eqv? i 8) (
+		"PTC $quote";
+		$def! c () get-current-environment; $defl! f () eval ($quote (() f)) c;
+		() f
+	))
+	((eqv? i 9) (
+		"PTC id";
+		$defl%! f (&x) f (id x);
+		f f
+	))
+	((eqv? i 10) (
+		"PTC idv";
+		$defl! f (&x) f (idv x);
+		f f
+	))
+	((eqv? i 11) (
+		"PTC $and?";
+		$defl! f (n) $and? #t (f n);
+		f #t
+	))
+	((eqv? i 12) (
+		"PTC $or?";
+		$defl! f (n) $or? #f (f n);
+		f #f
+	))
+	((eqv? i 13) (
+		"PTC apply";
+		$defl! f (n) apply f (list n);
+		f 1
+	))
+	((eqv? i 14) (
+		"PTC accl";
+		accl () ($lambda (.) #f) () idv idv ($lambda (x .) x)
+	))
+	((eqv? i 15) (
+		"PTC $let";
+		"Regression:", "since b829", "fixed @ b861", "see YSLib %ChangeLog";
+		$defl! f (x) $let () f x;
+		f ()
+	))
+	((eqv? i 16) (
+		"PTC promises", "as klisp #3, with less n value, fixed @ b862 as $let";
+		$let ()
+		(
+			$import! std.promises $lazy/e force;
+			$defl! stream-filter (p? s) ($lazy/e (() lock-current-environment)
+				$let ((v (force s)))
+					($if (null? v) v
+						($let ((s stream-filter p? (first (rest& v))))
+							$if (p? (first& v)) (list (first v) s) s)));
+			$defl! from (n)
+				$lazy/e (() lock-current-environment) list n (from (+ n 1));
+			force (stream-filter ($lambda (n) eqv? n 1000) (from 0))
+		)
+	))
+	((eqv? i 17) (
+		"PTC example", "klisp failed",
+			"see https://bitbucket.org/AndresNavarro/klisp/issues/12";
+		$let ()
+		(
+			$sequence
+				($def! f ($lambda (n) ((($vau (x y) e (eval ($sequence x y) e))
+				n (f n))))) (f 1)
+		)
+	))
+	((eqv? i 18) (
+		"This case can terminate.";
+		"TCO from ECMAScript compat-table",
+			"Value 1e6 shrinked to 100000 to reduce execution time",
+			"For debug configurations, better a smaller value, e.g. 10000.";
+		$def! recn 100000;
+		"https://github.com/kangax/compat-table/blob/gh-pages/data-es6.js#L20";
+		"Expect: \"foo\" + LF.";
+		$let ()
+		(
+			$defl! f (n) $if (<=? n 0) "foo" (f (- n 1));
+			puts (f recn)
+		);
+		"https://github.com/kangax/compat-table/blob/gh-pages/data-es6.js#L50";
+		"Expect: \"foo\" + LF + \"foo\" + LF.";
+		$let ()
+		(
+			$def! (f g) list ($lambda (n) $if (<=? n 0) "foo" (g (- n 1)))
+				($lambda (n) $if (<=? n 0) "bar" (f (- n 1))); puts (f recn);
+			puts (g (+ recn 1))
+		)
+	))
+	(#t "No case found.")
+);
+
 $let ()
 (
 	"Sanity", "strong normalized", "well-formed";
