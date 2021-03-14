@@ -498,8 +498,11 @@ $defl! test (&i)
 		(
 			$defl! test-let-case ($let &x can-copy)
 			(
-				$def! bindings (list% (list% ($quote a) 42)
-					(list% ($quote t) (move! x)));
+				"regression for reference support in parameter trees;",
+					" fixed since b915";
+				$def! n 42;
+				$def! li1 list% ($quote a) n;
+				$def! bindings list% li1 (list% ($quote t) (move! x));
 				$if can-copy
 				(
 					$def! backup bindings;
