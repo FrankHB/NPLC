@@ -15,6 +15,14 @@ $defl! xcons% (&x &y) cons% y x;
 	" apply, list*, $defw!, $lambda/e, $sequence, get-current-environment,",
 	" $cond, make-standard-environment, not?, $when, $unless are in",
 	" %YFramework.NPL.Dependency.";
+$defv%! $while (&test .&exprseq) d
+	$when (eval test d)
+		(eval% (list* () $sequence exprseq) d)
+		(eval% (list* () $while (move! test) (move! exprseq)) d);
+$defv%! $until (&test .&exprseq) d
+	$unless (eval test d)
+		(eval% (list* () $sequence exprseq) d)
+		(eval% (list* () $until (move! test) (move! exprseq)) d);
 $defl%! and? &x $sequence
 	($defl%! and-aux? (&h &l) $if (null? l) (forward! h)
 		(and-aux? ($if h (first (forward l)) #f) (rest% (forward l))))
