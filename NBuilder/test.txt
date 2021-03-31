@@ -864,6 +864,15 @@ $defl! teste (i)
 	(#t "No case found.")
 );
 
+$defl! test-nested ()
+(
+	"The following case test the hosted nested call safety.";
+	"Regression:", "fixed @ b916";
+	$defl! make-list (l n)
+		$unless (eqv? n 0) (list% (make-list (move! l) (- n 1)));
+	$expect 1 list-length (make-list () 50000);
+);
+
 $defl! testptc (i)
 (
 	"The following cases are for PTC.",
