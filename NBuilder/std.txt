@@ -81,7 +81,7 @@ $defv! $let-safe% (&bindings .&body) d
 $defv! $remote-eval (&o &e) d eval o (eval e d);
 $defv%! $remote-eval% (&o &e) d eval% o (eval e d);
 "NOTE", "Definitions of $bindings/p->environment, $bindings->environment,",
-	" $provide!, $import!, nonfoldable?, list-extract, list-extract-first,",
+	" $provide!, $import!, nonfoldable?, list-extract-first,",
 	" list-extract-rest%, list-push-front! are in %YFramework.NPL.Dependency.";
 $defl! list-push-back! (&l &x)
 	assign! l (list-concat (move! l) (list% (forward! x)));
