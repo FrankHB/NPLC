@@ -543,6 +543,48 @@ $defl! test (&i)
 			);
 			for-each-ltr test-let
 				(list $let $let% $let* $let*% $letrec $letrec%)
+		);
+		subinfo (++ "regression for binding noncopy objects on new"
+			" environment; fixed since b918");
+		$let ()
+		(
+			$defv! $bp-seq (&parents .&bindings) d $sequence
+				($def! (res bref) list (apply make-environment
+					(map1 ($lambda% (x) eval% x d) parents)) (rulist bindings))
+				(eval% (list $set! res (list-extract-first bref)
+					(list* () list (list-extract-rest% bref))) d)
+				res;
+			$defv! $bp-let (&parents .&bindings) d
+				$let ((res apply make-environment (map1 ($lambda% (x) eval% x d)
+					parents)) (bref rulist bindings))
+					$let ((#ignore eval% (list $set! res
+						(list-extract-first bref) (list* () list
+						(list-extract-rest% bref))) d)) res;
+			$defl! test-b-case ($b &x can-copy)
+			(
+				$def! n 42;
+				$def! li1 list% ($quote a) n;
+				$def! bindings list% li1 (list% ($quote t) (move! x));
+				$if can-copy
+				(
+					$def! backup bindings;
+					eval% (list*% $b (as-const bindings))
+						(() get-current-environment);
+					$expect bindings backup;
+					eval% (list*% $b bindings) (() get-current-environment);
+					$expect bindings backup
+				);
+				eval% (list*% $b (expire bindings))
+					(() get-current-environment);
+				display bindings
+			);
+			$defl! test-bp ($bp)
+			(
+				$defv! $b (.&bindings) d eval (list* $bp () (move! bindings)) d;
+				test-b-case $b (list make-nocopy) #t;
+				test-b-case $b (() make-nocopy) #f
+			);
+			for-each-ltr test-bp (list $bindings/p->environment $bp-seq $bp-let)
 		)
 	))
 	((eqv? i 12) (
