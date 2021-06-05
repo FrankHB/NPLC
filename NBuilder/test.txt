@@ -794,6 +794,16 @@ $defl! test (&i)
 			$import! std.strings &++;
 			$expect #f modifiable? ++
 		);
+		subinfo "regression of $provide for trailing symbols; fixed since b920";
+		$let ()
+		(
+			$def! e $provide! (.a .b)
+			(
+				$def! .a 42;
+				$def! .b 43
+			);
+			list .a .b
+		);
 		subinfo "regression of $import for trailing symbols; fixed since b920";
 		$let ()
 		(
