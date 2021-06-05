@@ -793,6 +793,15 @@ $defl! test (&i)
 			$expect #t modifiable? ++;
 			$import! std.strings &++;
 			$expect #f modifiable? ++
+		);
+		subinfo "regression of $import for trailing symbols; fixed since b920";
+		$let ()
+		(
+			$def! e () make-environment;
+			$set! e .a 42;
+			$set! e .b 43;
+			$import! e .a .b;
+			list .a .b
 		)
 	))
 	((eqv? i 18) (
