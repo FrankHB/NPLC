@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8229
+\version r8237
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-05-07 00:14 +0800
+	2021-06-05 19:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -34,7 +34,7 @@
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
 #include YFM_NPL_NPLA1Forms // for NPL::A1::Forms;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
-#include YFM_NPL_Dependency // for NPL, NPL::A1, LoadGroundContext;
+#include YFM_NPL_Dependency // for NPL, NPL::A1, EnvironmentGuard;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
 //	std::chrono::duration_cast;
 #include <ytest/timing.hpp> // for ytest::timing::once;
@@ -538,11 +538,11 @@ LoadFunctions(Interpreter& intp)
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 			// NOTE: This does not support PTC.
-			RelaySwitched(ctx, A1::NameTypedReducerHandler(std::bind(
-				[](ystdex::guard<EnvironmentSwitcher>&){
+			RelaySwitched(ctx,
+				A1::NameTypedReducerHandler(std::bind([](EnvironmentGuard&){
 				return ReductionStatus::Neutral;
-			}, ystdex::guard<EnvironmentSwitcher>(rctx,
-				rctx.SwitchEnvironment(rwenv.Lock()))), "guard-load"));
+			}, EnvironmentGuard(rctx, rctx.SwitchEnvironment(rwenv.Lock()))),
+				"guard-load"));
 			return A1::RelayToLoadExternal(ctx, term, context);
 		});
 	else
@@ -550,8 +550,7 @@ LoadFunctions(Interpreter& intp)
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 
-			const ystdex::guard<EnvironmentSwitcher> gd(ctx,
-				ctx.SwitchEnvironment(rwenv.Lock()));
+			const EnvironmentGuard gd(ctx, ctx.SwitchEnvironment(rwenv.Lock()));
 
 			return A1::ReduceToLoadExternal(term, ctx, context);
 		});
@@ -592,7 +591,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.1 b918"
+#define NPLC_VER "V1.1 b920"
 #define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
