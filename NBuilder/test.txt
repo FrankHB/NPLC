@@ -349,6 +349,13 @@ $defl! test (&i)
 			display (rest& (first& q-li4));
 			display q-li4
 		);
+		subinfo "list-push-front!";
+		$let ()
+		(
+			$def! li list 2 3;
+			list-push-front! li 1;
+			$expect (list 1 2 3) li
+		);
 		subinfo "regression for list* and list*%; fixed since b897";
 		$expect () list* ();
 		$expect () list*% ()
