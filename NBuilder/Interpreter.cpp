@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2354
+\version r2355
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-07-06 01:12 +0800
+	2021-07-06 01:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -773,7 +773,7 @@ Interpreter::ExecuteOnce(string_view unit, ContextNode& ctx)
 	// TODO: Blocked. Use C++14 lambda initializers to simplify the
 	//	implementation.
 	ctx.HandleException = std::bind([&](std::exception_ptr p,
-		const ContextNode::ReducerSequence::const_iterator& i) ynothrow{
+		const ContextNode::ReducerSequence::const_iterator& i){
 		ctx.TailAction = nullptr;
 		ctx.Shift(Backtrace, i);
 		HandleREPLException(std::move(p), ctx.Trace);
