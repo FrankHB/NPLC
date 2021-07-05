@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2020 FrankHB.
+	© 2013-2021 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r368
+\version r372
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2020-09-12 17:29 +0800
+	2021-07-05 12:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -63,7 +63,7 @@ using namespace ystdex::pmr;
 /*!
 \brief 共享池资源。
 
-类似 ystdex::pool_resource 的池资源，但内置预分配策略和不同的初始区块容量。
+类似 ystdex::pmr::pool_resource 的池资源，但内置预分配策略和不同的初始区块容量。
 预分配策略决定对小于内部阈值的分配和去配，忽略池选项，总是使用初始化时预分配的池；
 	这种池中的区块称为快速区块。
 设快速区块的大小上限 max_fast_block_size ，若不忽略池选项，这相当于假定：
@@ -201,9 +201,9 @@ public:
 	HandleREPLException(std::exception_ptr, Logger&);
 
 private:
-	//! \since YSLib build 895
+	//! \since YSLib build 921
 	ReductionStatus
-	Perform(string_view, ContextNode&);
+	ExecuteOnce(string_view, ContextNode&);
 
 public:
 	//! \since YSLib build 892

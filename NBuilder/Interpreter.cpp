@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2350
+\version r2354
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-01-27 01:30 +0800
+	2021-07-06 01:12 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -744,6 +744,7 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 	catch(SSignal e)
 	{
 		if(e == SSignal::Exit)
+			// XXX: Assume the current context is %Context.Root.
 			Context.Root.UnwindCurrent();
 		else
 		{
@@ -766,7 +767,7 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 }
 
 ReductionStatus
-Interpreter::Perform(string_view unit, ContextNode& ctx)
+Interpreter::ExecuteOnce(string_view unit, ContextNode& ctx)
 {
 	ctx.SaveExceptionHandler();
 	// TODO: Blocked. Use C++14 lambda initializers to simplify the
@@ -804,7 +805,7 @@ Interpreter::RunLine(string_view unit)
 		Context.ShareCurrentSource("*STDIN*");
 		Context.Root.Rewrite(
 			NPL::ToReducer(Context.Allocator, [&](ContextNode& ctx){
-			return Perform(unit, A1::ContextState::Access(ctx));
+			return ExecuteOnce(unit, ctx);
 		}));
 	}
 }
@@ -818,7 +819,7 @@ Interpreter::RunLoop(ContextNode& ctx)
 		Context.ShareCurrentSource("*STDIN*");
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
-		return !line.empty() ? Perform(line, A1::ContextState::Access(ctx))
+		return !line.empty() ? ExecuteOnce(line, ctx)
 			: ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;
