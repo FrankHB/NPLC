@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8237
+\version r8248
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-06-05 19:53 +0800
+	2021-06-06 11:01 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -27,7 +27,7 @@
 
 #include "NBuilder.h" // for istringstream;
 #include <ystdex/base.h> // for ystdex::noncopyable;
-#include <iostream> // for std::cout, std::endl;
+#include <iostream> // for std::clog, std::cout, std::endl;
 #include <ystdex/typeindex.h> // for ystdex::type_index;
 #include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
@@ -92,11 +92,11 @@ ParseStream(std::istream& is)
 		const auto rlst(sess.GetResult(parse));
 		using namespace std;
 
-		cout << "cbuf size:" << cbuf.size() << endl
+		clog << "cbuf size:" << cbuf.size() << endl
 			<< "token list size:" << rlst.size() << endl;
 		for(const auto& str : rlst)
-			cout << str << endl << "* u8 length: " << str.size() << endl;
-		cout << rlst.size() << " token(s) parsed." <<endl;
+			clog << str << endl << "* u8 length: " << str.size() << endl;
+		clog << rlst.size() << " token(s) parsed." <<endl;
 		is.clear();
 		is.seekg(0);
 	}
@@ -281,7 +281,7 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Context builtins.
 	renv.DefineChecked("REPL-context", ValueObject(context, OwnershipTag<>()));
 	renv.DefineChecked("root-context", ValueObject(rctx, OwnershipTag<>()));
-	// XXX: Temporarily unfrezz the environment to allow the external
+	// XXX: Temporarily unfreeze the environment to allow the external
 	//	definitions in the ground environment.
 	renv.Frozen = {};
 
@@ -591,7 +591,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.1 b920"
+#define NPLC_VER "V1.2 b921+"
 #define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
@@ -637,19 +637,19 @@ main(int argc, char* argv[])
 
 			Interpreter intp{};
 
-			intp.UpdateTextColor(TitleColor);
-			cout << title << endl << "Initializing...";
+			intp.UpdateTextColor(TitleColor, true);
+			clog << title << endl << "Initializing...";
 			{
 				using namespace chrono;
 				const auto d(ytest::timing::once(
 					YSLib::Timers::HighResolutionClock::now,
 					LoadFunctions, std::ref(intp)));
 
-				cout << "NPLC initialization finished in " << d.count() / 1e9
+				clog << "NPLC initialization finished in " << d.count() / 1e9
 					<< " second(s)." << endl;
 			}
-			intp.UpdateTextColor(InfoColor);
-			cout << "Type \"exit\" to exit,"
+			intp.UpdateTextColor(InfoColor, true);
+			clog << "Type \"exit\" to exit,"
 				" \"cls\" to clear screen, \"help\", \"about\", or \"license\""
 				" for more information." << endl << endl;
 			intp.Run();

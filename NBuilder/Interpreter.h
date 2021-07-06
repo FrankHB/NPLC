@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r372
+\version r377
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-07-05 12:50 +0800
+	2021-07-06 10:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -171,6 +171,8 @@ class Interpreter
 private:
 	//! \since YSLib build 755
 	platform_ex::Terminal terminal;
+	//! \since YSLib build 922
+	platform_ex::Terminal terminal_err;
 	//! \since YSLib build 867
 	shared_pool_resource pool_rsrc;
 	//! \since YSLib build 674
@@ -230,9 +232,9 @@ public:
 	std::istream&
 	WaitForLine(std::istream&, std::ostream&);
 
-	//! \since YSLib build 885
-	PDefH(void, UpdateTextColor, Color c)
-		ImplExpr(terminal.UpdateForeColor(c))
+	//! \since YSLib build 922
+	PDefH(void, UpdateTextColor, Color c, bool err = {})
+		ImplExpr((err ? terminal_err : terminal).UpdateForeColor(c))
 };
 
 } // namespace NPL;

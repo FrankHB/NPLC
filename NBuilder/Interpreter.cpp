@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2355
+\version r2366
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-07-06 01:13 +0800
+	2021-07-06 10:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -35,7 +35,7 @@
 #include YFM_YSLib_Service_TextFile
 #include YFM_NPL_NPLA1Forms // for TraceException, A1::TraceBacktrace;
 #include <cstring> // for std::strcmp, std::strstr;
-#include <cstdio> // for std::fprintf;
+#include <cstdio> // for std::fprintf, stderr;
 #include <iostream> // for std::cin, std::cout;
 
 #if YCL_Linux
@@ -667,8 +667,8 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 } // unnamed namespace;
 
 Interpreter::Interpreter()
-	: terminal(), pool_rsrc(&GetUpstreamResourceRef()), line(),
-	Context(NPLC_Impl_MemoryResourceName)
+	: terminal(), terminal_err(stderr), pool_rsrc(&GetUpstreamResourceRef()),
+	line(), Context(NPLC_Impl_MemoryResourceName)
 {
 	using namespace std;
 
@@ -756,7 +756,7 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 	{
 		using namespace YSLib;
 
-		UpdateTextColor(ErrorColor);
+		UpdateTextColor(ErrorColor, true);
 		TraceException(e, trace);
 		trace.TraceFormat(Notice, "Location: %s.", Context.CurrentSource
 			? Context.CurrentSource->c_str() : "<unknown>");
@@ -779,14 +779,15 @@ Interpreter::ExecuteOnce(string_view unit, ContextNode& ctx)
 		HandleREPLException(std::move(p), ctx.Trace);
 	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
 	RelaySwitched(ctx, A1::NameTypedReducerHandler([&]{
-	//	UpdateTextColor(InfoColor);
-	//	cout << "Unrecognized reduced token list:" << endl;
-		UpdateTextColor(ReducedColor);
+	//	UpdateTextColor(InfoColor, true);
+	//	clog << "Unrecognized reduced token list:" << endl;
+		UpdateTextColor(ReducedColor, true);
 		LogTermValue(Term);
 		return ReductionStatus::Neutral;
 	}, "repl-print"));
 	Term = Context.ReadFrom(unit);
-	UpdateTextColor(SideEffectColor);
+	UpdateTextColor(SideEffectColor),
+	UpdateTextColor(SideEffectColor, true);
 	return A1::ReduceOnce(Term, ctx);
 }
 
@@ -850,7 +851,8 @@ Interpreter::WaitForLine(std::istream& is, std::ostream& os)
 {
 	UpdateTextColor(PromptColor);
 	os << prompt;
-	UpdateTextColor(DefaultColor);
+	UpdateTextColor(DefaultColor),
+	UpdateTextColor(DefaultColor, true);
 	YSLib::IO::StreamGet(is, line);
 	return is;
 }
