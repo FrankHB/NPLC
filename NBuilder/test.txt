@@ -775,7 +775,7 @@ $defl! test (&i)
 		info "eval-string and eval-unit";
 		$let ()
 		(
-			$import! std.environments eval-string eval-unit get-current-repl;
+			$import! std.system eval-string eval-unit get-current-repl;
 			eval-string "1" (() get-current-environment);
 			eval-unit "1;" (() get-current-repl)
 		)
