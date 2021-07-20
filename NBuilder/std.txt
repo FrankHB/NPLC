@@ -73,11 +73,9 @@ $defv%! $letrec*% (&bindings .&body) d
 		(list $letrec% (list% (first bindings))
 		(list*% $letrec*% (rest% bindings) body))) d;
 $defv! $let-safe (&bindings .&body) d
-	eval% (list* () $let/e
-		(() make-standard-environment) bindings body) d;
+	eval% (list* () $let/e (() make-standard-environment) bindings body) d;
 $defv! $let-safe% (&bindings .&body) d
-	eval% (list* () $let/e%
-		(() make-standard-environment) bindings body) d;
+	eval% (list* () $let/e% (() make-standard-environment) bindings body) d;
 $defv! $remote-eval (&o &e) d eval o (eval e d);
 $defv%! $remote-eval% (&o &e) d eval% o (eval e d);
 "NOTE", "Definitions of $bindings/p->environment, $bindings->environment,",
@@ -98,15 +96,13 @@ $defw! for-each-rtl &ls env $sequence (apply map ls env) #inert;
 	" %YFramework.NPL.Dependency.";
 
 "NOTE", "Environments library.";
-"NOTE", "Definitions of lock-current-environment, bound?, value-of is in",
+"NOTE", "Definitions of lock-current-environment, $binds1? is in",
 	" %YFramework.NPL.Dependency.";
 "NOTE", "Only '$binds?' is like in Kernel.";
-$defw! environment-bound? (&e &str) d
-	eval (list bound? str) (eval e d);
+$defw! environment-bound? (&e &str) d eval (list bound? str) (eval e d);
 "NOTE", "Definitions of $binds1? is in module std.environments in",
 	" %YFramework.NPL.Dependency.";
-$defv/e! $binds? (make-environment (() get-current-environment)
-	std.environments) (&e .&ss) d $let ((&senv eval e d))
+$defv! $binds? (&e .&ss) d $let ((&senv eval e d))
 	foldl1 $and? #t (map1 ($lambda (s) (wrap $binds1?) senv s) ss);
 
 "NOTE", "Type operation library.";
