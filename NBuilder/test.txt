@@ -6,10 +6,9 @@
 
 $import! std.strings ++ string<- string-empty? string->symbol;
 $import! std.io puts putss iput;
-$import! env_SHBuild_ SHBuild_RaiseError_;
 
 $def! SS_TestOpts_QuickFail #t;
-$def! report-failure $if SS_TestOpts_QuickFail SHBuild_RaiseError_ puts;
+$def! report-failure $if SS_TestOpts_QuickFail raise-error puts;
 $defl! pass (.) puts "PASS.";
 $defl! fail-on-check (&expr &res) $sequence
 	(puts "FAIL: Check failed, with the expression:")
@@ -301,7 +300,7 @@ $defl! test (&i)
 			" fixed derivation since b898");
 		$expect "should not be evaluated"
 			first (rest% (forward-first% idv (idv (list%
-				(list% SHBuild_RaiseError_ "should not be evaluated") 1))));
+				(list% raise-error "should not be evaluated") 1))));
 		$expect 1 (first-test (list 1 2));
 		subinfo "list lvalue elements read and move";
 		$expect 2 first (id a);
