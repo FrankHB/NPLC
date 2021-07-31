@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8248
+\version r8252
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-06-06 11:01 +0800
+	2021-08-01 03:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -394,10 +394,10 @@ LoadFunctions(Interpreter& intp)
 		terminate();
 	});
 	RegisterUnary<Strict, const string>(rctx, "trace", [&](const string& cmd){
-		const auto set_t_lv([&](const string& s) -> Logger::Level{
-			if(s == "on")
+		const auto set_t_lv([&](const string& str) -> Logger::Level{
+			if(str == "on")
 				return Logger::Level::Debug;
-			else if(s == "off")
+			else if(str == "off")
 				return Logger::Level::Informative;
 			else
 				throw std::invalid_argument(
@@ -591,7 +591,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.2 b921+"
+#define NPLC_VER "V1.2 b922+"
 #define NPLC_PLATFORM "[MinGW32]"
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
