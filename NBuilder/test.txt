@@ -886,7 +886,40 @@ $defl! test (&i)
 		$defl! pipes (fs x) (reduce fs |> idv) x;
 		$expect 42 pipes (list double double increment double) 5
 	))
-	((eqv? i 20) (
+	((eqv? i 21) (
+		info "strings";
+		subinfo "strings and symbols";
+		$let ()
+		(
+			$import! std.strings string->symbol symbol->string;
+
+			$expect "a" (symbol->string ($quote a)),
+			$expect "a" (symbol->string (string->symbol "a"))
+		);
+		subinfo "string split";
+		$let ()
+		(
+			$import! std.strings string-split;
+
+			$expect (list "a" "b" "c") string-split "a;b;c" ";",
+			$expect (list "a" "b" "" "c") string-split "a.b..c" "."
+		);
+		subinfo "regular expressions";
+		$let ()
+		(
+			$import! std.strings string->regex regex-match? regex-replace;
+
+			$let ((pattern string->regex "\?"))
+			(
+				$expect #f regex-match? "xxxxx" pattern,
+				$expect #f regex-match? "xx?xx" pattern,
+				$expect #t regex-match? "xx?xx" (string->regex "xx\?xx"),
+				$expect #t regex-match? "xx?xx" (string->regex ".+\?x+"),
+				$expect "1111" regex-replace "????" pattern "1"
+			)
+		)
+	))
+	((eqv? i 22) (
 		info "arithmetic operations";
 		$rem (
 			"The following Kernel code conforms to PTC.";
@@ -1174,7 +1207,7 @@ $let ()
 	eval (list ($lambda x () ($lambda x $if)) 1) (() make-environment)
 );
 
-$def! test-case-num 20;
+$def! test-case-num 21;
 $def! teste-case-list list 1;
 $defl! test-in (&l) for-each-ltr test l;
 $defl! test-range (first last) test-in (iota-range first last);
