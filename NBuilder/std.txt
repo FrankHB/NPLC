@@ -76,8 +76,6 @@ $defv! $let-safe (&bindings .&body) d
 	eval% (list* () $let/e (() make-standard-environment) bindings body) d;
 $defv! $let-safe% (&bindings .&body) d
 	eval% (list* () $let/e% (() make-standard-environment) bindings body) d;
-$defv! $remote-eval (&o &e) d eval o (eval e d);
-$defv%! $remote-eval% (&o &e) d eval% o (eval e d);
 "NOTE", "Definitions of $bindings/p->environment, $bindings->environment,",
 	" $provide!, $import!, nonfoldable?, list-extract-first,",
 	" list-extract-rest%, list-push-front! are in %YFramework.NPL.Dependency.";
