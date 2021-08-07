@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8252
+\version r8260
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-08-01 03:36 +0800
+	2021-08-07 18:47 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -591,8 +591,14 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.2 b922+"
-#define NPLC_PLATFORM "[MinGW32]"
+#define NPLC_VER "V1.2 b923"
+#if YCL_Win32
+#	define NPLC_PLATFORM "[MinGW32]"
+#elif YCL_Linux
+#	define NPLC_PLATFORM "[Linux]"
+#else
+#	define NPLC_PLATFORM "[unspecified platform]"
+#endif
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
 
