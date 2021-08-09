@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8260
+\version r8274
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-08-07 18:47 +0800
+	2021-08-09 18:07 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -297,8 +297,8 @@ LoadFunctions(Interpreter& intp)
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Definition of $if is in %YFramework.NPL.Dependency.
 	RegisterUnary<Strict, const string>(rctx, "symbol-string?", IsSymbol);
-	RegisterUnary<>(rctx, "list?", ComposeReferencedTermOp(IsList));
-	RegisterUnary<>(rctx, "listv?", IsList);
+	RegisterUnary(rctx, "list?", ComposeReferencedTermOp(IsList));
+	RegisterUnary(rctx, "listv?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
 	// NOTE: Definitions of null?, nullv?, reference?, bound-lvalue?,
 	//	uncollapsed?, unique?, move!, transfer!, deshare, as-const, expire are
@@ -315,7 +315,7 @@ LoadFunctions(Interpreter& intp)
 	//	eval, eval%, copy-environment, lock-current-environment,
 	//	lock-environment, make-environment, weaken-environment are in
 	//	%YFramework.NPL.Dependency.
-	RegisterUnary<>(rctx, "resolve-environment", [](TermNode& term){
+	RegisterUnary(rctx, "resolve-environment", [](TermNode& term){
 		return ResolveEnvironment(term).first;
 	});
 	// NOTE: Environment mutation is optional in Kernel and supported here.
@@ -341,17 +341,17 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
 #endif
 	// NOTE: NPLA value transferring.
-	RegisterUnary<>(rctx, "vcopy", [](const TermNode& node){
+	RegisterUnary(rctx, "vcopy", [](const TermNode& node){
 		return node.Value.MakeCopy();
 	});
-	RegisterUnary<>(rctx, "vcopymove", [](TermNode& node){
+	RegisterUnary(rctx, "vcopymove", [](TermNode& node){
 		// NOTE: Shallow copy or move.
 		return node.Value.CopyMove();
 	});
-	RegisterUnary<>(rctx, "vmove", [](const TermNode& node){
+	RegisterUnary(rctx, "vmove", [](const TermNode& node){
 		return node.Value.MakeMove();
 	});
-	RegisterUnary<>(rctx, "vmovecopy", [](const TermNode& node){
+	RegisterUnary(rctx, "vmovecopy", [](const TermNode& node){
 		return node.Value.MakeMoveCopy();
 	});
 	RegisterStrict(rctx, "lcopy", [](TermNode& term){
@@ -380,7 +380,7 @@ LoadFunctions(Interpreter& intp)
 	});
 	// XXX: For test or debug only.
 #if NPLC_Impl_DebugAction
-	RegisterUnary<>(rctx, "tt", DefaultDebugAction);
+	RegisterUnary(rctx, "tt", DefaultDebugAction);
 	RegisterUnary<Strict, const string>(rctx, "dbg", [](const string& cmd){
 		if(cmd == "on")
 			use_debug = true;
@@ -420,7 +420,7 @@ LoadFunctions(Interpreter& intp)
 		return string(ti.name());
 	});
 	// NOTE: Type operation library.
-	RegisterUnary<>(rctx, "typeid", [](const TermNode& term){
+	RegisterUnary(rctx, "typeid", [](const TermNode& term){
 		return ystdex::type_index(ReferenceTerm(term).Value.type());
 	});
 	// TODO: Copy of operand cannot be used for move-only types.
@@ -452,11 +452,11 @@ LoadFunctions(Interpreter& intp)
 	});
 	// NOTE: List library.
 	// TODO: Check list type?
-	RegisterUnary<>(rctx, "list-length",
+	RegisterUnary(rctx, "list-length",
 		ComposeReferencedTermOp(FetchListLength));
-	RegisterUnary<>(rctx, "listv-length", FetchListLength);
-	RegisterUnary<>(rctx, "leaf?", ComposeReferencedTermOp(IsLeaf));
-	RegisterUnary<>(rctx, "leafv?", IsLeaf);
+	RegisterUnary(rctx, "listv-length", FetchListLength);
+	RegisterUnary(rctx, "leaf?", ComposeReferencedTermOp(IsLeaf));
+	RegisterUnary(rctx, "leafv?", IsLeaf);
 	// NOTE: Encapsulations library is in %YFramework.NPL.Dependency.
 	// NOTE: String library.
 	// NOTE: Definitions of ++, string-empty?, string<- are in
@@ -591,7 +591,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.2 b923"
+#define NPLC_VER "V1.2 b923+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
