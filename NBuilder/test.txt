@@ -822,7 +822,7 @@ $defl! test (&i)
 	))
 	((eqv? i 18) (
 		info "promises";
-		$import! std.promises promise? memoize $lazy $lazy/e force;
+		$import! std.promises promise? memoize $lazy $lazy/d force;
 		subinfo "test #1 (as RnRK)";
 		$let ()
 		(
@@ -860,7 +860,7 @@ $defl! test (&i)
 			$def! maxn 3;
 			$defl! stream-filter (p? s)
 			(
-				$lazy/e (() lock-current-environment) $let ((v (force s)))
+				$lazy/d (() lock-current-environment) $let ((v (force s)))
 				(
 					$if (null? v) v
 					(
@@ -870,7 +870,7 @@ $defl! test (&i)
 				)
 			);
 			$defl! from (n)
-				$lazy/e (() lock-current-environment) list n (from (+ n 1));
+				$lazy/d (() lock-current-environment) list n (from (+ n 1));
 			force (stream-filter ($lambda (n) eqv? n maxn) (from 0))
 		)
 	))
@@ -1155,14 +1155,14 @@ $defl! testptc (i)
 		"PTC promises", "as klisp #3, with less n value, fixed @ b862 as $let";
 		$let ()
 		(
-			$import! std.promises $lazy/e force;
-			$defl! stream-filter (p? s) ($lazy/e (() lock-current-environment)
+			$import! std.promises $lazy/d force;
+			$defl! stream-filter (p? s) ($lazy/d (() lock-current-environment)
 				$let ((v (force s)))
 					($if (null? v) v
 						($let ((s stream-filter p? (first (rest& v))))
 							$if (p? (first& v)) (list (first v) s) s)));
 			$defl! from (n)
-				$lazy/e (() lock-current-environment) list n (from (+ n 1));
+				$lazy/d (() lock-current-environment) list n (from (+ n 1));
 			force (stream-filter ($lambda (n) eqv? n 1000) (from 0))
 		)
 	))
