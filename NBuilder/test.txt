@@ -872,6 +872,15 @@ $defl! test (&i)
 			$defl! from (n)
 				$lazy/d (() lock-current-environment) list n (from (+ n 1));
 			force (stream-filter ($lambda (n) eqv? n maxn) (from 0))
+		);
+		subinfo "regression for self-modifying promises; fixed since b924";
+		$let ()
+		(
+			"Regression:",
+				"This is incapable in RnRK without first-class references.";
+			puts "expect output: single line of \"#\"";
+			$def! p1 $lazy $sequence (puts "*") (assign! p1 ($lazy (puts "#")));
+			force p1
 		)
 	))
 	((eqv? i 19) (
