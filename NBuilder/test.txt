@@ -822,7 +822,8 @@ $defl! test (&i)
 	))
 	((eqv? i 18) (
 		info "promises";
-		$import! std.promises promise? memoize $lazy $lazy/d force;
+		$import! std.promises
+			promise? memoize $lazy $lazy% $lazy/d $lazy/d% force;
 		subinfo "lifting safety";
 		$let ()
 		(
@@ -832,7 +833,9 @@ $defl! test (&i)
 				$set! e x 42;
 				e
 			);
-			$expect 42 (force ($lazy/d (() me) x))
+			$expect 42 (force ($lazy/d (() me) x));
+			$expect 42 (force ($lazy% $lazy/d (() me) x));
+			$expect 42 (force ($lazy $lazy/d% (() me) x))
 		);
 		subinfo "test #1 (as RnRK)";
 		$let ()
