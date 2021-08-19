@@ -518,7 +518,7 @@ $defl! test (&i)
 		$expect "cd"
 			$let/e (derive-environment std.strings std.io) ((d "d"))
 				(puts (++ "a" "b"); (++ "c" d));
-		subinfo "regression for binding noncopy objects; fixed since b914";
+		subinfo "regression for binding noncopyable objects; fixed since b914";
 		$let ()
 		(
 			$defl! test-let-case ($let &x can-copy)
@@ -550,7 +550,7 @@ $defl! test (&i)
 			for-each-ltr test-let
 				(list $let $let% $let* $let*% $letrec $letrec%)
 		);
-		subinfo (++ "regression for binding noncopy objects on new"
+		subinfo (++ "regression for binding noncopyable objects on new"
 			" environment; fixed since b918");
 		$let ()
 		(
@@ -895,7 +895,10 @@ $defl! test (&i)
 			puts "expect output: single line of \"#\"";
 			$def! p1 $lazy $sequence (puts "*") (assign! p1 ($lazy (puts "#")));
 			force p1
-		)
+		);
+		subinfo "regression for binding noncopyable objects; fixed since b924";
+		$expect 42 force (eval (list $lazy $sequence (() make-nocopy) 42)
+			(() get-current-environment))
 	))
 	((eqv? i 19) (
 		info "reduce";
