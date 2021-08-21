@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2366
+\version r2370
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-07-06 10:59 +0800
+	2021-08-22 01:29 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -36,6 +36,7 @@
 #include YFM_NPL_NPLA1Forms // for TraceException, A1::TraceBacktrace;
 #include <cstring> // for std::strcmp, std::strstr;
 #include <cstdio> // for std::fprintf, stderr;
+#include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include <iostream> // for std::cin, std::cout;
 
 #if YCL_Linux
@@ -755,6 +756,9 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 	catch(std::exception& e)
 	{
 		using namespace YSLib;
+		const auto gd(ystdex::make_guard([&]() ynothrowv{
+			Backtrace.clear();
+		}));
 
 		UpdateTextColor(ErrorColor, true);
 		TraceException(e, trace);
