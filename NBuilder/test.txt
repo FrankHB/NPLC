@@ -794,7 +794,7 @@ $defl! test (&i)
 			$expect 42 a;
 			$expect 42 b
 		);
-		subinfo "$import and $import&";
+		subinfo "$import! and $import&!";
 		$let ()
 		(
 			$import&! std.strings ++;
@@ -804,7 +804,8 @@ $defl! test (&i)
 			$import! std.strings &++;
 			$expect #f modifiable? ++
 		);
-		subinfo "regression of $provide for trailing symbols; fixed since b920";
+		subinfo
+			"regression of $provide! for trailing symbols; fixed since b920";
 		$let ()
 		(
 			$def! e $provide! (.a .b)
@@ -814,7 +815,7 @@ $defl! test (&i)
 			);
 			list .a .b
 		);
-		subinfo "regression of $import for trailing symbols; fixed since b920";
+		subinfo "regression of $import! for trailing symbols; fixed since b920";
 		$let ()
 		(
 			$def! e () make-environment;
