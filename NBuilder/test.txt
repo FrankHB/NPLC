@@ -902,7 +902,17 @@ $defl! test (&i)
 		);
 		subinfo "regression for binding noncopyable objects; fixed since b924";
 		$expect 42 force (eval (list $lazy $sequence (() make-nocopy) 42)
-			(() get-current-environment))
+			(() get-current-environment));
+		subinfo (++ "regression for resolved referencing shared state move;"
+			" fixed since b925");
+		$let ()
+		(
+			$def! p1 $lazy unit;
+			$def! p2 $lazy% p1;
+			force p2;
+			force (move! p2);
+			$expect unit force p1
+		)
 	))
 	((eqv? i 19) (
 		info "reduce";
