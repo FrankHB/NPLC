@@ -7,6 +7,10 @@
 $import! std.strings ++ string<- string-empty? string->symbol;
 $import! std.io puts putss iput;
 
+"XXX", "Assume moved-after states are not the unit value,",
+	"otherwise the expectations on equality to the value is false negative.";
+$def! unit (first (() make-encapsulation-type)) #inert;
+
 $def! SS_TestOpts_QuickFail #t;
 $def! report-failure $if SS_TestOpts_QuickFail raise-error puts;
 $defl! pass (.) puts "PASS.";
