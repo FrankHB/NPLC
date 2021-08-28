@@ -775,6 +775,7 @@ $defl! test (&i)
 	))
 	((eqv? i 15) (
 		info "make-encapsulation-type";
+		subinfo "encapsulation values";
 		$let ()
 		(
 			$def! (e p? d) () make-encapsulation-type;
@@ -786,6 +787,20 @@ $defl! test (&i)
 			$expect 2 d (e 2);
 			$expect #t eqv? (e (list 1 2)) (e (list 1 2));
 			$expect #f eqv? (e (list 1 2)) (e (list 3 4))
+		);
+		subinfo "encapsulation temporary values";
+		$let ((u unit) (&lt unit) (&t (idv unit)))
+		(
+			$def! (e% #ignore d) () make-encapsulation-type;
+			$def! o e% u;
+			forward! (d o);
+			$expect unit d o;
+			$def! o e% lt;
+			forward! (d o);
+			$expect unit d o;
+			$def! o e% t;
+			forward! (d o);
+			$expect-moved d o
 		)
 	))
 	((eqv? i 16) (
