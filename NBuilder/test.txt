@@ -7,6 +7,9 @@
 $import! std.strings ++ string<- string-empty? string->symbol;
 $import! std.io puts putss iput;
 
+"XXX", "Assume the move-after state is deterministic of a stable value,",
+	" which is the empty list at current.";
+$def! moved? null?;
 "XXX", "Assume moved-after states are not the unit value,",
 	"otherwise the expectations on equality to the value is false negative.";
 $def! unit (first (() make-encapsulation-type)) #inert;
@@ -35,6 +38,9 @@ $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
 		$if (equal? res expected) (pass res)
 			(fail-on-expect expr (forward! res) (forward! expected));
+$defv! $expect-moved (.&expr) d
+	$let ((&res eval expr d))
+		$if (moved? res) (pass res) (fail-on-expect expr (forward! res) ());
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
 $defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
 
@@ -322,7 +328,7 @@ $defl! test (&i)
 			($let ((li q-li2)) (restv (expire (as-const li)); li));
 		$expect 1 list-length
 			($let ((li q-li2)) (restv (expire li); li));
-		$expect () first a;
+		$expect-moved first a;
 		subinfo "list access";
 		list% q-li q-li2
 			(idv (first q-li)) (restv q-li)
