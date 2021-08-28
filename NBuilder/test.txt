@@ -110,7 +110,7 @@ $defl! test (&i)
 		info "recursive function calls";
 		subinfo "Fibonacci";
 		$defl! fib (&n) $if (<=? n 1) 1 (+ (fib (- n 1)) (fib (- n 2)));
-		$expect 8 (fib 5);
+		$expect 8 fib 5;
 		subinfo "Hofstadter Female and Male sequences";
 		$def! (F M) (list ($lambda (&n) $if (=? n 0) 1 (- n (M (F (- n 1)))))
 			($lambda (&n) $if (=? n 0) 0 (- n (F (M (- n 1))))));
@@ -142,10 +142,10 @@ $defl! test (&i)
 		subinfo "expecting different results for 'first&' and 'first@'";
 		$expect #f eq? (first& li) (first@ li);
 		subinfo "collapsing test";
-		$expect #t (reference? (first@ li));
-		$expect #t (uncollapsed? (first@ li));
-		$expect #t (reference? (idv (first@ li)));
-		$expect #f (uncollapsed? (idv (first@ li)));
+		$expect #t reference? (first@ li);
+		$expect #t uncollapsed? (first@ li);
+		$expect #t reference? (idv (first@ li));
+		$expect #f uncollapsed? (idv (first@ li));
 		subinfo "expecting prvalue for reference to reference";
 		$expect 1 idv (idv (first@ li));
 		$expect 1 idv (idv ((wrap ($vau% (%x) #ignore x)) (first@ li)));
@@ -305,7 +305,7 @@ $defl! test (&i)
 		$expect "should not be evaluated"
 			first (rest% (forward-first% idv (idv (list%
 				(list% raise-error "should not be evaluated") 1))));
-		$expect 1 (first-test (list 1 2));
+		$expect 1 first-test (list 1 2);
 		subinfo "list lvalue elements read and move";
 		$expect 2 first (id a);
 		$expect 2 first a;
@@ -840,9 +840,9 @@ $defl! test (&i)
 				$set! e x 42;
 				e
 			);
-			$expect 42 (force ($lazy/d (() me) x));
-			$expect 42 (force ($lazy% $lazy/d (() me) x));
-			$expect 42 (force ($lazy $lazy/d% (() me) x))
+			$expect 42 force ($lazy/d (() me) x);
+			$expect 42 force ($lazy% $lazy/d (() me) x);
+			$expect 42 force ($lazy $lazy/d% (() me) x)
 		);
 		subinfo "test #1 (as RnRK)";
 		$let ()
@@ -862,9 +862,9 @@ $defl! test (&i)
 					)
 				))
 				($def! pb box% p);
-			$expect 5 (() get-count);
-			$expect 0 (force (unbox pb));
-			$expect 10 (() get-count);
+			$expect 5 () get-count;
+			$expect 0 force (unbox pb);
+			$expect 10 () get-count;
 		);
 		subinfo "test #2 (as RnRK)";
 		$let ()
@@ -937,8 +937,8 @@ $defl! test (&i)
 		(
 			$import! std.strings string->symbol symbol->string;
 
-			$expect "a" (symbol->string ($quote a)),
-			$expect "a" (symbol->string (string->symbol "a"))
+			$expect "a" symbol->string ($quote a),
+			$expect "a" symbol->string (string->symbol "a")
 		);
 		subinfo "string split";
 		$let ()
@@ -976,7 +976,7 @@ $defl! test (&i)
 			$if ($and? (=? (/ x 1000) (% (/ x 100) 10))
 				(=? (/ (% x 100) 10) (% x 10)))
 			x (solve (+ n 1));
-		$expect 7744 (solve 80)
+		$expect 7744 solve 80
 	))
 	(#t "No case found.")
 );
