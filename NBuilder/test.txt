@@ -217,7 +217,28 @@ $defl! test (&i)
 		$def! b 2;
 		$def! li list% a 2;
 		assign@! b (first@ li);
-		$expect #f uncollapsed? (move! b)
+		$expect #f uncollapsed? (move! b);
+		subinfo "regression for preventing non-first-class temporary objects;"
+			" fixed since b925";
+		$let ()
+		(
+			$defl! test-nt (&f)
+				$let ((&t (idv unit)) (&u (idv unit)) (&v (idv unit)))
+				(
+					$def! x f t;
+					forward! x;
+					$expect unit x;
+					assign@! x (f u);
+					forward! x;
+					$expect unit x;
+					assign%! x (f v);
+					forward! x;
+					$expect unit x
+				);
+			test-nt move!;
+			test-nt transfer!;
+			test-nt forward!
+		)
 	))
 	((eqv? i 6) (
 		info "combiner operations";
