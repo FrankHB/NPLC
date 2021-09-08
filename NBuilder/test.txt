@@ -880,6 +880,14 @@ $defl! test (&i)
 		info "promises";
 		$import! std.promises
 			promise? memoize $lazy $lazy% $lazy/d $lazy/d% force;
+		subinfo "value category preservation";
+		$let ((p1 $lazy% idv unit))
+		(
+			$expect unit force unit;
+			$expect unit force ($lazy p1);
+			force (expire p1);
+			$expect-moved force ($lazy p1)
+		);
 		subinfo "lifting safety";
 		$let ()
 		(
