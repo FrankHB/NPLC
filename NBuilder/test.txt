@@ -97,7 +97,8 @@ $defl! test (&i)
 		$defv! $gg fm #ignore eval (list* - fm) (() get-current-environment);
 		$expect (- 0 1) gg 2 3;
 		$expect (- 0 1) $gg 3 4;
-		subinfo "regression for tail calls;" " fixed since b856";
+		subinfo "combiner rvalue calls: regression for tail calls;"
+			" fixed since b856";
 		$expect () ($lambda (x) forward x) ();
 		$expect () ($lambda (x) ($lambda (y) idv y) x) ();
 		$expect () ($lambda (x) ($lambda (y) id y) x) ();
@@ -314,6 +315,10 @@ $defl! test (&i)
 	))
 	((eqv? i 8) (
 		info "list operations";
+		subinfo "empty list calls: regression for list* and list*%;"
+			" fixed since b897";
+		$expect () list* ();
+		$expect () list*% ();
 		$def! a list 2 3;
 		subinfo "sanity test of forward-first%";
 		$rem
@@ -392,10 +397,7 @@ $defl! test (&i)
 			$def! li list 2 3;
 			list-push-front! li 1;
 			$expect (list 1 2 3) li
-		);
-		subinfo "regression for list* and list*%;" " fixed since b897";
-		$expect () list* ();
-		$expect () list*% ()
+		)
 	))
 	((eqv? i 9) (
 		info "list utility tests";
