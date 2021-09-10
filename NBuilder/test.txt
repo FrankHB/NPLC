@@ -890,6 +890,12 @@ $defl! test (&i)
 			force (expire p1);
 			$expect-moved force ($lazy p1)
 		);
+		subinfo "force idempotence";
+		$let ((a unit))
+		(
+			$def! p $lazy a;
+			$expect (force p) force p;
+		);
 		subinfo "lifting safety";
 		$let ()
 		(
