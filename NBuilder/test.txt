@@ -965,8 +965,11 @@ $defl! test (&i)
 			"Regression:",
 				"This is incapable in RnRK without first-class references.";
 			puts "expect output: single line of \"#\"";
-			$def! p1 $lazy $sequence (puts "*") (assign! p1 ($lazy (puts "#")));
-			force p1
+			"NOTE", "This tests the memoization clause set the correct place.",
+				"Instead of reusing the old one, the decapsulated object",
+				" should be accessed immediately.";
+			$def! p $lazy $sequence (puts "*") (assign! p ($lazy (puts "#")));
+			force p
 		);
 		subinfo "regression for binding noncopyable objects;"
 			" fixed since b924";
