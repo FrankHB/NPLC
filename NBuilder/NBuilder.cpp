@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8321
+\version r8333
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-09-16 05:06 +0800
+	2021-09-16 05:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -627,6 +627,7 @@ main(int argc, char* argv[])
 		if(xargc > 1)
 		{
 			vector<string> args;
+			bool opt_trans(true);
 			bool requires_eval = {};
 			vector<string> eval_strs;
 
@@ -634,10 +635,18 @@ main(int argc, char* argv[])
 			{
 				string arg(xargv[i]);
 
-				if(arg == "-e")
+				if(opt_trans)
 				{
-					requires_eval = true;
-					continue;
+					if(YB_UNLIKELY(arg == "--"))
+					{
+						opt_trans = {};
+						continue;
+					}
+					else if(arg == "-e")
+					{
+						requires_eval = true;
+						continue;
+					}
 				}
 				if(requires_eval)
 				{
