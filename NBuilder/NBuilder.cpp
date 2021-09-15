@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8274
+\version r8321
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-08-09 18:07 +0800
+	2021-09-16 05:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -25,7 +25,8 @@
 */
 
 
-#include "NBuilder.h" // for istringstream;
+#include "NBuilder.h" // for istringstream, FilterExceptions, EXIT_FAILURE,
+//	EXIT_SUCCESS;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <iostream> // for std::clog, std::cout, std::endl;
 #include <ystdex/typeindex.h> // for ystdex::type_index;
@@ -591,7 +592,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.2 b923+"
+#define NPLC_VER "V1.2 b926+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
@@ -609,8 +610,6 @@ yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 int
 main(int argc, char* argv[])
 {
-	using namespace std;
-
 	// XXX: Windows 10 rs2_prerelease may have some bugs for MBCS console
 	//	output. String from 'std::putc' or iostream with stdio buffer (unless
 	//	set with '_IONBF') seems to use wrong width of characters, resulting
@@ -619,26 +618,68 @@ main(int argc, char* argv[])
 	//	disturb prompt color setting.
 	ystdex::setnbuf(stdout);
 	return FilterExceptions([&]{
-		if(argc > 1)
-		{
-			if(std::strcmp(argv[1], "-e") == 0)
-			{
-				if(argc == 3)
-				{
-					Interpreter intp{};
+		// NOTE: Allocators are specified in the interpreter instance, not here.
+		//	This also makes it easier to prevent the invalid resource used as it
+		//	in %Tools.SHBuild.Main in YSLib.
+		const YSLib::CommandArguments xargv(argc, argv);
+		const auto xargc(xargv.size());
 
-					intp.UpdateTextColor(TitleColor);
-					LoadFunctions(intp);
-					intp.RunLine(argv[2]);
+		if(xargc > 1)
+		{
+			vector<string> args;
+			bool requires_eval = {};
+			vector<string> eval_strs;
+
+			for(size_t i(1); i < xargc; ++i)
+			{
+				string arg(xargv[i]);
+
+				if(arg == "-e")
+				{
+					requires_eval = true;
+					continue;
+				}
+				if(requires_eval)
+				{
+					eval_strs.push_back(std::move(arg));
+					requires_eval = {};
 				}
 				else
-					throw LoggedEvent("Option '-e' expect exact one argument.");
+					args.push_back(std::move(arg));
 			}
-			else
-				throw LoggedEvent("Too many arguments.");
+			if(!args.empty())
+			{
+				const auto src(std::move(args.front()));
+
+				args.erase(args.begin());
+
+				const auto p_cmd_args(YSLib::LockCommandArguments());
+
+				p_cmd_args->Arguments = std::move(args);
+
+				Interpreter intp{};
+
+				intp.UpdateTextColor(TitleColor);
+				LoadFunctions(intp);
+				// NOTE: Different strings are evaluated separatly in order.
+				//	This is simlilar to klisp.
+				for(const auto& str : eval_strs)
+					intp.RunLine(str);
+			}
+			else if(!eval_strs.empty())
+			{
+				Interpreter intp{};
+
+				intp.UpdateTextColor(TitleColor);
+				LoadFunctions(intp);
+				for(const auto& str : eval_strs)
+					intp.RunLine(str);
+			}
 		}
-		else if(argc == 1)
+		else if(xargc == 1)
 		{
+			using namespace std;
+
 			Deref(LockCommandArguments()).Reset(argc, argv);
 
 			Interpreter intp{};
