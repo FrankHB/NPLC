@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2370
+\version r2373
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-08-22 01:29 +0800
+	2021-09-18 01:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -771,7 +771,7 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 }
 
 ReductionStatus
-Interpreter::ExecuteOnce(string_view unit, ContextNode& ctx)
+Interpreter::ExecuteString(string_view unit, ContextNode& ctx)
 {
 	ctx.SaveExceptionHandler();
 	// TODO: Blocked. Use C++14 lambda initializers to simplify the
@@ -810,7 +810,7 @@ Interpreter::RunLine(string_view unit)
 		Context.ShareCurrentSource("*STDIN*");
 		Context.Root.Rewrite(
 			NPL::ToReducer(Context.Allocator, [&](ContextNode& ctx){
-			return ExecuteOnce(unit, ctx);
+			return ExecuteString(unit, ctx);
 		}));
 	}
 }
@@ -824,7 +824,7 @@ Interpreter::RunLoop(ContextNode& ctx)
 		Context.ShareCurrentSource("*STDIN*");
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
-		return !line.empty() ? ExecuteOnce(line, ctx)
+		return !line.empty() ? ExecuteString(line, ctx)
 			: ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;

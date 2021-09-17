@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r377
+\version r379
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-07-06 10:57 +0800
+	2021-09-18 01:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -203,9 +203,9 @@ public:
 	HandleREPLException(std::exception_ptr, Logger&);
 
 private:
-	//! \since YSLib build 921
+	//! \since YSLib build 926
 	ReductionStatus
-	ExecuteOnce(string_view, ContextNode&);
+	ExecuteString(string_view, ContextNode&);
 
 public:
 	//! \since YSLib build 892
