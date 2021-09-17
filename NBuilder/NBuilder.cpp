@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8335
+\version r8428
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-09-18 02:37 +0800
+	2021-09-18 03:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -591,6 +591,103 @@ LoadFunctions(Interpreter& intp)
 #endif
 }
 
+//! \since YSLib build 926
+//@{
+template<class _tString>
+auto
+Quote(_tString&& str) -> decltype(quote(yforward(str), '\''))
+{
+	return ystdex::quote(yforward(str), '\'');
+}
+
+
+const struct Option
+{
+	const char *prefix, *option_arg;
+	vector<const char*> option_details;
+
+	Option(const char* pfx, const char* opt_arg,
+		std::initializer_list<const char*> il)
+		: prefix(pfx), option_arg(opt_arg), option_details(il)
+	{}
+} OptionsTable[]{
+	// NOTE: Alphabatical as %Tools.SHBuild.Main in YSLib.
+	{"-h, --help", "", {"Print this message."}},
+	{"-e", " [STRING]", {"Evaluate a string if the following argument exists."
+		" This option can occur more than once and combined with SRCPATH.\n"
+		"\tEach instance of this option (with its optional argument) will be"
+		" evaluated in order before evaluate the script specified by SRCPATH"
+		" (if any)."}}
+};
+
+const array<const char*, 3> DeEnvs[]{
+	// NOTE: The NPLA1 environment variables are from %NPL implemenations.
+	{{"NPLA1_PATH", "", "NPLA1 loader path template string."}},
+	// NOTE: NBuilder environment variables are specified by this
+	//	implementation.
+	{{"NBUILDER_TRACE", "", "Use debug tracing if set."}}
+};
+
+
+void
+PrintHelpMessage(const string& prog)
+{
+	using IO::StreamPut;
+	using ystdex::sfmt;
+	auto& os(std::cout);
+
+	StreamPut(os, sfmt("Usage: \"%s\" [OPTIONS ...] SRCPATH"
+		" [OPTIONS ... [-- [ARGS...]]]\n"
+		"  or:  \"%s\" [OPTIONS ... [-- [[SRCPATH] ARGS...]]]\n"
+		"\tThis program is an interpreter of NPLA1.\n"
+		"\tThere are two execution modes, scripting mode and interactive mode,"
+		" exclusively. In scripting mode, a script file specified in the"
+		" command line arguments is run. Otherwise, the program runs in the"
+		" interactive mode and the REPL (read-eval-print loop) is entered,"
+		" see below for details.\n"
+		"\tThere are no checks on the values. Any behaviors depending"
+		" on the locale-specific values are unspecified.\n"
+		"\tCurrently accepted environment variable are:\n\n",
+		prog.c_str(), prog.c_str()).c_str());
+	for(const auto& env : DeEnvs)
+		StreamPut(os, sfmt("  %s\n\t%s Default value is %s.\n\n", env[0],
+			env[2], env[1][0] == '\0' ? "empty"
+			: Quote(string(env[1])).c_str()).c_str());
+	ystdex::write_literal(os,
+		"SRCPATH\n"
+		"\tThe source path. It is handled if and only if this program runs in"
+		" scripting mode. In this case, SRCPATH is the 1st command line"
+		" argument not recognized as an option (see below). Otherwise, the"
+		" command line argument is treated as an option.\n"
+		"\tSRCPATH shall specify a path to a source file. The source specified"
+		" by SRCPATH shall have NPLA1 source tokens, which are to be read and"
+		" evaluated in the initial environment of the interpreter. Otherwise,"
+		" errors are raise to reject the source.\n\n"
+		"OPTIONS ...\nOPTIONS ... -- [[SRCPATH] ARGS ...]\n"
+		"\tThe options and arguments for the program execution. After '--',"
+		" options parsing is turned off and every remained command line"
+		" argument (if any) is interpreted as an argument, except that the"
+		" 1st command line argument is treated as SRCPATH (implying scripting"
+		" mode) when there is no SRCPATH before '--'.\n"
+		"\tRecognized options are handled in this program, and the remained"
+		" arguments will be passed to the NPLA1 user program (in the script or"
+		" in the interactive environment) which can access the arguments via"
+		" appropriate API.\n\t"
+		"The recognized options are:\n\n");
+	for(const auto& opt : OptionsTable)
+	{
+		StreamPut(os,
+			sfmt("  %s%s\n", opt.prefix, opt.option_arg).c_str());
+		for(const auto& des : opt.option_details)
+			StreamPut(os, sfmt("\t%s\n", des).c_str());
+		os << '\n';
+	}
+	ystdex::write_literal(os,
+		"The exit status is 0 on success and 1 otherwise.\n");
+}
+//@}
+
+
 #define NPLC_NAME "NPL console"
 #define NPLC_VER "V1.2 b926+"
 #if YCL_Win32
@@ -641,6 +738,11 @@ main(int argc, char* argv[])
 					{
 						opt_trans = {};
 						continue;
+					}
+					if(arg == "-h" || arg == "--help")
+					{
+						PrintHelpMessage(xargv[0]);
+						return;
 					}
 					else if(arg == "-e")
 					{
