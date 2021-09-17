@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8428
+\version r8440
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-09-18 03:53 +0800
+	2021-09-18 04:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -659,10 +659,11 @@ PrintHelpMessage(const string& prog)
 		" scripting mode. In this case, SRCPATH is the 1st command line"
 		" argument not recognized as an option (see below). Otherwise, the"
 		" command line argument is treated as an option.\n"
-		"\tSRCPATH shall specify a path to a source file. The source specified"
-		" by SRCPATH shall have NPLA1 source tokens, which are to be read and"
-		" evaluated in the initial environment of the interpreter. Otherwise,"
-		" errors are raise to reject the source.\n\n"
+		"\tSRCPATH shall specify a path to a source file, or"
+		" the special value '-' which indicates the standard input. The source"
+		" specified by SRCPATH shall have NPLA1 source tokens, which are to be"
+		" read and evaluated in the initial environment of the interpreter."
+		" Otherwise, errors are raise to reject the source.\n\n"
 		"OPTIONS ...\nOPTIONS ... -- [[SRCPATH] ARGS ...]\n"
 		"\tThe options and arguments for the program execution. After '--',"
 		" options parsing is turned off and every remained command line"
@@ -734,6 +735,10 @@ main(int argc, char* argv[])
 
 				if(opt_trans)
 				{
+					// NOTE: This conforms to POSIX.1-2017 utility convention,
+					//	Guideline 10, see https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html.
+					//	Also note '-' is not treated as a delimeter, which is
+					//	different to some other utilities like klisp.
 					if(YB_UNLIKELY(arg == "--"))
 					{
 						opt_trans = {};
@@ -776,7 +781,9 @@ main(int argc, char* argv[])
 				//	This is simlilar to klisp.
 				for(const auto& str : eval_strs)
 					intp.RunLine(str);
-				intp.RunFile(std::move(src));
+				// NOTE: The special name '-' is handled here. This conforms to
+				//	POSIX.1-2017 utility convention, Guideline 13.
+				intp.RunScript(std::move(src));
 			}
 			else if(!eval_strs.empty())
 			{

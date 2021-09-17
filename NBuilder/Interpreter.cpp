@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2407
+\version r2431
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-09-18 02:30 +0800
+	2021-09-18 04:13 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -771,15 +771,6 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 }
 
 ReductionStatus
-Interpreter::ExecuteFile(string filename, ContextNode& ctx)
-{
-	PrepareExecution(ctx);
-	// NOTE: As %A1::ReduceToLoadExternal.
-	Term = Context.Load(Context, ctx, std::move(filename));
-	return ExecuteOnce(ctx);
-}
-
-ReductionStatus
 Interpreter::ExecuteOnce(ContextNode& ctx)
 {
 	UpdateTextColor(SideEffectColor),
@@ -824,14 +815,27 @@ Interpreter::Run()
 }
 
 void
-Interpreter::RunFile(string filename)
+Interpreter::RunScript(string filename)
 {
-	if(!filename.empty())
+	if(filename == "-")
+	{
+		Context.ShareCurrentSource("*STDIN*");
+		Context.Root.Rewrite(
+			NPL::ToReducer(Context.Allocator, [&](ContextNode& ctx){
+			PrepareExecution(ctx);
+			Term = Context.ReadFrom(std::cin, ctx);
+			return ExecuteOnce(ctx);
+		}));
+	}
+	else if(!filename.empty())
 	{
 		Context.ShareCurrentSource(filename);
 		Context.Root.Rewrite(
 			NPL::ToReducer(Context.Allocator, [&](ContextNode& ctx){
-			return ExecuteFile(std::move(filename), ctx);
+			PrepareExecution(ctx);
+			// NOTE: As %A1::ReduceToLoadExternal.
+			Term = Context.Load(Context, ctx, std::move(filename));
+			return ExecuteOnce(ctx);
 		}));
 	}
 }
