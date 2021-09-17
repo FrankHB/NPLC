@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r379
+\version r390
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-09-18 01:41 +0800
+	2021-09-18 02:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -204,13 +204,28 @@ public:
 
 private:
 	//! \since YSLib build 926
+	//@{
+	ReductionStatus
+	ExecuteFile(string, ContextNode&);
+
+	ReductionStatus
+	ExecuteOnce(ContextNode&);
+
 	ReductionStatus
 	ExecuteString(string_view, ContextNode&);
+
+	void
+	PrepareExecution(ContextNode&);
+	//@}
 
 public:
 	//! \since YSLib build 892
 	void
 	Run();
+
+	//! \since YSLib build 926
+	void
+	RunFile(string);
 
 	//! \since YSLib build 894
 	void
