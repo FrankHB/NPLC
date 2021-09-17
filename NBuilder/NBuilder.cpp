@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8333
+\version r8335
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-09-16 05:15 +0800
+	2021-09-18 02:37 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -658,7 +658,7 @@ main(int argc, char* argv[])
 			}
 			if(!args.empty())
 			{
-				const auto src(std::move(args.front()));
+				auto src(std::move(args.front()));
 
 				args.erase(args.begin());
 
@@ -674,6 +674,7 @@ main(int argc, char* argv[])
 				//	This is simlilar to klisp.
 				for(const auto& str : eval_strs)
 					intp.RunLine(str);
+				intp.RunFile(std::move(src));
 			}
 			else if(!eval_strs.empty())
 			{
