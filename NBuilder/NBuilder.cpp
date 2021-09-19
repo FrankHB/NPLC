@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8440
+\version r8441
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-09-18 04:13 +0800
+	2021-09-20 05:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -271,7 +271,6 @@ LoadFunctions(Interpreter& intp)
 				os.put('"') << std::endl;
 		})));
 	});
-	intp.EnableExtendedLiterals();
 	// NOTE: Literal builtins.
 	RegisterLiteralSignal(rctx, "exit", SSignal::Exit);
 	RegisterLiteralSignal(rctx, "cls", SSignal::ClearScreen);

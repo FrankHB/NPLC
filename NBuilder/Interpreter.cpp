@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2431
+\version r2451
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-09-18 04:13 +0800
+	2021-09-20 05:42 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -567,7 +567,7 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 
 			YAssert(IsLeaf(term),
 				"Unexpected irregular representation of term found.");
-			if(A1::HandleCheckedExtendedLiteral(term, id))
+			if(!id.empty())
 				// XXX: Assume the call does not rely on %term and it does not
 				//	change the stored name on throwing.
 #	if NPLC_Impl_UseSourceInfo
@@ -669,7 +669,22 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 
 Interpreter::Interpreter()
 	: terminal(), terminal_err(stderr), pool_rsrc(&GetUpstreamResourceRef()),
-	line(), Context(NPLC_Impl_MemoryResourceName)
+	line(), Context([this](const A1::GParsedValue<ByteParser>& str){
+		TermNode term(Context.Allocator);
+		const auto id(YSLib::make_string_view(str));
+
+		if(!id.empty() && A1::HandleCheckedExtendedLiteral(term, id))
+			A1::ParseLeaf(term, id);
+		return term;
+	}, [this](const A1::GParsedValue<SourcedByteParser>& val){
+		TermNode term(Context.Allocator);
+		const auto id(YSLib::make_string_view(val.second));
+
+		if(!id.empty() && A1::HandleCheckedExtendedLiteral(term, id))
+			A1::ParseLeafWithSourceInformation(term, id, Context.CurrentSource,
+				val.first);
+		return term;
+	}, NPLC_Impl_MemoryResourceName)
 {
 	using namespace std;
 
@@ -704,12 +719,6 @@ Interpreter::Interpreter()
 	passes += A1::ReduceCombined;
 	Context.Root.EvaluateList = std::move(passes);
 #endif
-}
-
-void
-Interpreter::EnableExtendedLiterals()
-{
-	Context.Root.EvaluateLiteral += A1::FetchExtendedLiteralPass();
 }
 
 void

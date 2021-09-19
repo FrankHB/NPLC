@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2017, 2020 FrankHB.
+	© 2012-2017, 2020-2021 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NPLContext.h
 \ingroup NPL
 \brief NPL 上下文。
-\version r1519
+\version r1523
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-08-03 19:55:41 +0800
 \par 修改时间:
-	2020-04-11 12:21 +0800
+	2021-09-20 05:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -41,10 +41,6 @@ namespace A1
 //! \since YSLib build 883
 bool
 HandleCheckedExtendedLiteral(TermNode&, string_view);
-
-//! \since YSLib build 805
-LiteralPasses::HandlerType
-FetchExtendedLiteralPass();
 
 } // namespace A1;
 
