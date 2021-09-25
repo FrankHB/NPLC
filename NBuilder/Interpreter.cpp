@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2451
+\version r2469
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-09-20 05:42 +0800
+	2021-09-26 05:05 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -33,7 +33,8 @@
 #include YFM_YSLib_Core_YException // for FilterExceptions,
 //	YSLib::IO::StreamGet;
 #include YFM_YSLib_Service_TextFile
-#include YFM_NPL_NPLA1Forms // for TraceException, A1::TraceBacktrace;
+#include YFM_NPL_NPLA1Forms // for TraceException, A1::TraceBacktrace,
+//	any_ops::trivial_swap;
 #include <cstring> // for std::strcmp, std::strstr;
 #include <cstdio> // for std::fprintf, stderr;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
@@ -653,10 +654,13 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 		}, [&](TermNode& sub){
 			term.Value = std::move(sub.Value);
 		}, [&](TermNode& sub, ContextNode& ctx){
+			// XXX: %any_ops::trivial_swap is not used here to avoid worse
+			//	inlining.
 			RelaySwitched(ctx, A1::NameTypedReducerHandler([&](ContextNode& c){
 				return A1::ReduceCombinedBranch(term, c);
 			}, "eval-combine-operands"));
-			return RelaySwitched(ctx, [&](ContextNode& c){
+			return
+				RelaySwitched(ctx, any_ops::trivial_swap, [&](ContextNode& c){
 				return ReduceFastBranch(sub, A1::ContextState::Access(c));
 			});
 		});
@@ -807,7 +811,7 @@ Interpreter::PrepareExecution(ContextNode& ctx)
 		ctx.Shift(Backtrace, i);
 		HandleREPLException(std::move(p), ctx.Trace);
 	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
-	RelaySwitched(ctx, A1::NameTypedReducerHandler([&]{
+	RelaySwitched(ctx, any_ops::trivial_swap, A1::NameTypedReducerHandler([&]{
 	//	UpdateTextColor(InfoColor, true);
 	//	clog << "Unrecognized reduced token list:" << endl;
 		UpdateTextColor(ReducedColor, true);
@@ -819,8 +823,9 @@ Interpreter::PrepareExecution(ContextNode& ctx)
 void
 Interpreter::Run()
 {
-	Context.Root.Rewrite(NPL::ToReducer(Context.Allocator, std::bind(
-		&Interpreter::RunLoop, std::ref(*this), std::placeholders::_1)));
+	Context.Root.Rewrite(NPL::ToReducer(Context.Allocator,
+		any_ops::trivial_swap, std::bind(&Interpreter::RunLoop, std::ref(*this),
+		std::placeholders::_1)));
 }
 
 void
@@ -829,8 +834,8 @@ Interpreter::RunScript(string filename)
 	if(filename == "-")
 	{
 		Context.ShareCurrentSource("*STDIN*");
-		Context.Root.Rewrite(
-			NPL::ToReducer(Context.Allocator, [&](ContextNode& ctx){
+		Context.Root.Rewrite(NPL::ToReducer(Context.Allocator,
+			any_ops::trivial_swap, [&](ContextNode& ctx){
 			PrepareExecution(ctx);
 			Term = Context.ReadFrom(std::cin, ctx);
 			return ExecuteOnce(ctx);
@@ -839,8 +844,8 @@ Interpreter::RunScript(string filename)
 	else if(!filename.empty())
 	{
 		Context.ShareCurrentSource(filename);
-		Context.Root.Rewrite(
-			NPL::ToReducer(Context.Allocator, [&](ContextNode& ctx){
+		Context.Root.Rewrite(NPL::ToReducer(Context.Allocator,
+			any_ops::trivial_swap, [&](ContextNode& ctx){
 			PrepareExecution(ctx);
 			// NOTE: As %A1::ReduceToLoadExternal.
 			Term = Context.Load(Context, ctx, std::move(filename));
@@ -855,8 +860,8 @@ Interpreter::RunLine(string_view unit)
 	if(!unit.empty())
 	{
 		Context.ShareCurrentSource("*STDIN*");
-		Context.Root.Rewrite(
-			NPL::ToReducer(Context.Allocator, [&](ContextNode& ctx){
+		Context.Root.Rewrite(NPL::ToReducer(Context.Allocator,
+			any_ops::trivial_swap, [&](ContextNode& ctx){
 			return ExecuteString(unit, ctx);
 		}));
 	}
@@ -869,7 +874,8 @@ Interpreter::RunLoop(ContextNode& ctx)
 	if(WaitForLine())
 	{
 		Context.ShareCurrentSource("*STDIN*");
-		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
+		RelaySwitched(ctx, any_ops::trivial_swap,
+			std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
 		return !line.empty() ? ExecuteString(line, ctx)
 			: ReductionStatus::Partial;
