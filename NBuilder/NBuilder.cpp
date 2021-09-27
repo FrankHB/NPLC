@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8441
+\version r8457
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-09-20 05:43 +0800
+	2021-09-28 07:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -58,8 +58,9 @@ namespace A1
 void
 RegisterLiteralSignal(ContextNode& ctx, const string& name, SSignal sig)
 {
-	NPL::EmplaceLeaf<LiteralHandler>(ctx, name, [=] YB_LAMBDA_ANNOTATE(
-		(const ContextNode&), , noreturn) -> ReductionStatus{
+	NPL::EmplaceLeaf<LiteralHandler>(ctx, name, any_ops::trivial_swap,
+		[=] YB_LAMBDA_ANNOTATE((const ContextNode&), , noreturn)
+		-> ReductionStatus{
 		throw sig;
 	});
 }
@@ -289,7 +290,8 @@ LoadFunctions(Interpreter& intp)
 
 	// NOTE: Literal expression forms.
 	RegisterForm(rctx, "$retain", Retain);
-	RegisterForm(rctx, "$retain1", ystdex::bind1(RetainN, 1));
+	RegisterForm(rctx, "$retain1", any_ops::trivial_swap,
+		ystdex::bind1(RetainN, 1));
 #if true
 	// NOTE: Primitive features, listed as RnRK, except mentioned above. See
 	//	%YFramework.NPL.Dependency.
@@ -393,7 +395,8 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(rctx, "$crash", []{
 		terminate();
 	});
-	RegisterUnary<Strict, const string>(rctx, "trace", [&](const string& cmd){
+	RegisterUnary<Strict, const string>(rctx, "trace", any_ops::trivial_swap,
+		[&](const string& cmd){
 		const auto set_t_lv([&](const string& str) -> Logger::Level{
 			if(str == "on")
 				return Logger::Level::Debug;
@@ -425,7 +428,7 @@ LoadFunctions(Interpreter& intp)
 	});
 	// TODO: Copy of operand cannot be used for move-only types.
 	RegisterUnary<Strict, const string>(rctx, "get-typeid",
-		[&](const string& str) -> ystdex::type_index{
+		[](const string& str) -> ystdex::type_index{
 		if(str == "bool")
 			return ystdex::type_id<bool>();
 		if(str == "symbol")
@@ -445,7 +448,7 @@ LoadFunctions(Interpreter& intp)
 	});
 	RegisterUnary<Strict, const ContextHandler>(rctx, "get-wrapping-count",
 		// FIXME: Unsigned count shall be used.
-		[&](const ContextHandler& h) -> int{
+		[](const ContextHandler& h) -> int{
 		if(const auto p = h.target<FormContextHandler>())
 			return int(p->Wrapping);
 		return 0;
@@ -525,16 +528,17 @@ LoadFunctions(Interpreter& intp)
 		std::getline(std::cin, line);
 		term.Value = line;
 	});
-	RegisterStrict(rctx, "display", [&](TermNode& term){
+	RegisterStrict(rctx, "display", [](TermNode& term){
 		RetainN(term);
 		LiftOther(term, NPL::Deref(std::next(term.begin())));
 		LogTermValue(term, Notice);
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "logv", ystdex::bind1(LogTermValue, Notice));
+	RegisterStrict(rctx, "logv", any_ops::trivial_swap,
+		ystdex::bind1(LogTermValue, Notice));
 	RegisterUnary<Strict, const string>(rctx, "echo", Echo);
 	if(context.IsAsynchronous())
-		RegisterStrict(rctx, "load-at-root",
+		RegisterStrict(rctx, "load-at-root", any_ops::trivial_swap,
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 			// NOTE: This does not support PTC.
@@ -546,7 +550,7 @@ LoadFunctions(Interpreter& intp)
 			return A1::RelayToLoadExternal(ctx, term, context);
 		});
 	else
-		RegisterStrict(rctx, "load-at-root",
+		RegisterStrict(rctx, "load-at-root", any_ops::trivial_swap,
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 
@@ -554,18 +558,18 @@ LoadFunctions(Interpreter& intp)
 
 			return A1::ReduceToLoadExternal(term, ctx, context);
 		});
-	RegisterUnary<Strict, const string>(rctx, "ofs", [&](const string& path){
+	RegisterUnary<Strict, const string>(rctx, "ofs", [](const string& path){
 		if(ifstream ifs{path})
 			return ifs;
 		throw LoggedEvent(
 			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
 	});
-	RegisterUnary<Strict, const string>(rctx, "oss", [&](const string& str){
+	RegisterUnary<Strict, const string>(rctx, "oss", [](const string& str){
 		return istringstream(str);
 	});
 	RegisterUnary<Strict, ifstream>(rctx, "parse-f", ParseStream);
 	RegisterUnary<Strict, std::istringstream>(rctx, "parse-s", ParseStream);
-	RegisterUnary<Strict, const string>(rctx, "put", [&](const string& str){
+	RegisterUnary<Strict, const string>(rctx, "put", [](const string& str){
 		std::cout << str;
 		return ValueToken::Unspecified;
 	});
