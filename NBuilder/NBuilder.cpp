@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8457
+\version r8458
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-09-28 07:15 +0800
+	2021-09-28 07:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -598,7 +598,7 @@ LoadFunctions(Interpreter& intp)
 //@{
 template<class _tString>
 auto
-Quote(_tString&& str) -> decltype(quote(yforward(str), '\''))
+Quote(_tString&& str) -> decltype(ystdex::quote(yforward(str), '\''))
 {
 	return ystdex::quote(yforward(str), '\'');
 }
