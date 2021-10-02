@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2469
+\version r2474
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-09-26 05:05 +0800
+	2021-10-02 10:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -348,9 +348,8 @@ std::pair<shared_pool_resource::pools_t::iterator, size_t>
 shared_pool_resource::find_pool(size_t lb_size) ynothrow
 {
 	return {ystdex::lower_bound_n(pools.begin(),
-		pools_t::difference_type(pools.size()),
-		lb_size, [](const resource_pool& a, size_t lb)
-		YB_ATTR_LAMBDA_QUAL(ynothrow, YB_PURE){
+		pools_t::difference_type(pools.size()), lb_size, []		
+		YB_LAMBDA_ANNOTATE((const resource_pool& a, size_t lb), ynothrow, pure){
 		return a.get_extra_data() < lb;
 	}), lb_size};
 }
@@ -704,9 +703,9 @@ Interpreter::Interpreter()
 		// XXX: Only safe and meaningful for asynchrnous implementations.
 		Context.Root.ReduceOnce.Handler = [&](TermNode& term, ContextNode& ctx){
 			return ReduceFastTmpl(term, A1::ContextState::Access(ctx),
-				[](TermNode&) YB_ATTR_LAMBDA_QUAL(ynothrow, YB_STATELESS){
+				[] YB_LAMBDA_ANNOTATE((TermNode&), ynothrow, const){
 				return ReductionStatus::Neutral;
-			}, []() YB_ATTR_LAMBDA_QUAL(ynothrow, YB_STATELESS){
+			}, [] YB_LAMBDA_ANNOTATE((), ynothrow, const){
 				return ReductionStatus::Retained;
 			}, [](TermNode&) ynothrow{}, ReduceFastBranch);
 		};
