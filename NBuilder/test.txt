@@ -632,7 +632,11 @@ $defl! test (&i)
 				test-b-case $b (() make-nocopy) #f
 			);
 			for-each-ltr test-bp (list $bindings/p->environment $bp-seq $bp-let)
-		)
+		);
+		subinfo "regression for of empty lvalues bindings environment;"
+			" fixed since b927";
+		$let ((el ()))
+			$expect 42 eval% (list% $let el 42) (() get-current-environment)
 	))
 	((eqv? i 12) (
 		info "binding operations";
