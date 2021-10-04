@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8458
+\version r8471
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-09-28 07:24 +0800
+	2021-10-05 04:06 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -317,8 +317,8 @@ LoadFunctions(Interpreter& intp)
 	//	eval, eval%, copy-environment, lock-current-environment,
 	//	lock-environment, make-environment, weaken-environment are in
 	//	%YFramework.NPL.Dependency.
-	RegisterUnary(rctx, "resolve-environment", [](TermNode& term){
-		return ResolveEnvironment(term).first;
+	RegisterUnary(rctx, "resolve-environment", [](TermNode& x){
+		return ResolveEnvironment(x).first;
 	});
 	// NOTE: Environment mutation is optional in Kernel and supported here.
 	// NOTE: Definitions of $deflazy!, $def!, $defrec! are in
@@ -343,18 +343,18 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
 #endif
 	// NOTE: NPLA value transferring.
-	RegisterUnary(rctx, "vcopy", [](const TermNode& node){
-		return node.Value.MakeCopy();
+	RegisterUnary(rctx, "vcopy", [](const TermNode& x){
+		return x.Value.MakeCopy();
 	});
-	RegisterUnary(rctx, "vcopymove", [](TermNode& node){
+	RegisterUnary(rctx, "vcopymove", [](TermNode& x){
 		// NOTE: Shallow copy or move.
-		return node.Value.CopyMove();
+		return x.Value.CopyMove();
 	});
-	RegisterUnary(rctx, "vmove", [](const TermNode& node){
-		return node.Value.MakeMove();
+	RegisterUnary(rctx, "vmove", [](const TermNode& x){
+		return x.Value.MakeMove();
 	});
-	RegisterUnary(rctx, "vmovecopy", [](const TermNode& node){
-		return node.Value.MakeMoveCopy();
+	RegisterUnary(rctx, "vmovecopy", [](const TermNode& x){
+		return x.Value.MakeMoveCopy();
 	});
 	RegisterStrict(rctx, "lcopy", [](TermNode& term){
 		return ListCopyOrMove<const TermNode>(term, &ValueObject::MakeCopy);
@@ -423,8 +423,8 @@ LoadFunctions(Interpreter& intp)
 		return string(ti.name());
 	});
 	// NOTE: Type operation library.
-	RegisterUnary(rctx, "typeid", [](const TermNode& term){
-		return ystdex::type_index(ReferenceTerm(term).Value.type());
+	RegisterUnary(rctx, "typeid", [](const TermNode& x){
+		return ystdex::type_index(ReferenceTerm(x).Value.type());
 	});
 	// TODO: Copy of operand cannot be used for move-only types.
 	RegisterUnary<Strict, const string>(rctx, "get-typeid",
@@ -693,7 +693,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.2 b926+"
+#define NPLC_VER "V1.2 b927+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
