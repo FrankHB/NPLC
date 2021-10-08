@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2474
+\version r2488
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-10-02 10:56 +0800
+	2021-10-08 18:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -25,11 +25,11 @@
 */
 
 
-#include "Interpreter.h" // for YSLib::sfmt, YSLib::ostringstream,
-//	YAssertNonnull, namespace YSLib;
+#include "Interpreter.h" // for type_info, QueryTypeName, IsTyped, YSLib::sfmt,
+//	YSLib::ostringstream, A1::QuerySourceInformation, YAssertNonnull,
+//	namespace YSLib;
 #include <Helper/YModules.h>
-#include YFM_YCLib_YCommon // for ystdex::type_info, ystdex::quote,
-//	ystdex::call_value_or;
+#include YFM_YCLib_YCommon // for ystdex::quote, ystdex::call_value_or;
 #include YFM_YSLib_Core_YException // for FilterExceptions,
 //	YSLib::IO::StreamGet;
 #include YFM_YSLib_Service_TextFile
@@ -120,7 +120,7 @@ PrintTermNode(std::ostream& os, const TermNode& term,
 //! \since YSLib build 889
 //@{
 YB_ATTR_nodiscard YB_ATTR_returns_nonnull YB_PURE const char*
-DecodeTypeName(const ystdex::type_info& ti)
+DecodeTypeName(const type_info& ti)
 {
 	// NOTE: Some well-known types for unreadable objects are simplified.
 	using namespace A1;
@@ -128,14 +128,14 @@ DecodeTypeName(const ystdex::type_info& ti)
 
 	if(tname.data())
 		return tname.data();
-	if(ti == ystdex::type_id<ContextHandler>())
+	if(IsTyped<ContextHandler>(ti))
 		return "ContextHandler";
-	if(ti == ystdex::type_id<LiteralHandler>())
+	if(IsTyped<LiteralHandler>(ti))
 		return "LiteralHandler";
-	if(ti == ystdex::type_id<ContextHandler::FuncType*>())
+	if(IsTyped<ContextHandler::FuncType*>(ti))
 		return "native function pointer";
-	if(ti == ystdex::type_id<ystdex::expanded_caller<ContextHandler::FuncType,
-		ReductionStatus(*)(NPL::TermNode&)>>())
+	if(IsTyped<ystdex::expanded_caller<ContextHandler::FuncType,
+		ReductionStatus(*)(NPL::TermNode&)>>(ti))
 		return "expanded native function pointer";
 
 	const auto name(ti.name());
@@ -211,10 +211,10 @@ StringifyValueObject(const ValueObject& vo)
 		if(const auto p = vo.AccessPtr<double>())
 			return sfmt<string>("[double] %lf", *p);
 
-		const auto& t(vo.type());
+		const auto& ti(vo.type());
 
-		if(t != ystdex::type_id<void>())
-			return ystdex::quote(string(DecodeTypeName(t)), "#[", ']');
+		if(!IsTyped<void>(ti))
+			return ystdex::quote(string(DecodeTypeName(ti)), "#[", ']');
 	}
 	throw ystdex::bad_any_cast();
 }

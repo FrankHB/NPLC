@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8471
+\version r8484
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-10-05 04:06 +0800
+	2021-10-08 18:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,7 +29,7 @@
 //	EXIT_SUCCESS;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <iostream> // for std::clog, std::cout, std::endl;
-#include <ystdex/typeindex.h> // for ystdex::type_index;
+#include YFM_YSLib_Core_YObject // for type_index;
 #include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
@@ -418,33 +418,33 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Object interoperation.
 	// NOTE: Definitions of ref is in %YFramework.NPL.Dependency.
 	// NOTE: Environments library.
-	RegisterUnary<Strict, const ystdex::type_index>(rctx, "nameof",
-		[](const ystdex::type_index& ti){
+	RegisterUnary<Strict, const type_index>(rctx, "nameof",
+		[](const type_index& ti){
 		return string(ti.name());
 	});
 	// NOTE: Type operation library.
 	RegisterUnary(rctx, "typeid", [](const TermNode& x){
-		return ystdex::type_index(ReferenceTerm(x).Value.type());
+		return type_index(ReferenceTerm(x).Value.type());
 	});
 	// TODO: Copy of operand cannot be used for move-only types.
 	RegisterUnary<Strict, const string>(rctx, "get-typeid",
-		[](const string& str) -> ystdex::type_index{
+		[](const string& str) -> type_index{
 		if(str == "bool")
-			return ystdex::type_id<bool>();
+			return type_id<bool>();
 		if(str == "symbol")
-			return ystdex::type_id<TokenValue>();
+			return type_id<TokenValue>();
 		// XXX: The environment type is not unique.
 		if(str == "environment")
-			return ystdex::type_id<EnvironmentReference>();
+			return type_id<EnvironmentReference>();
 		if(str == "environment#owned")
-			return ystdex::type_id<shared_ptr<NPL::Environment>>();
+			return type_id<shared_ptr<NPL::Environment>>();
 		if(str == "int")
-			return ystdex::type_id<int>();
+			return type_id<int>();
 		if(str == "combiner")
-			return ystdex::type_id<ContextHandler>();
+			return type_id<ContextHandler>();
 		if(str == "string")
-			return ystdex::type_id<string>();
-		return ystdex::type_id<void>();
+			return type_id<string>();
+		return type_id<void>();
 	});
 	RegisterUnary<Strict, const ContextHandler>(rctx, "get-wrapping-count",
 		// FIXME: Unsigned count shall be used.
@@ -693,7 +693,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.2 b927+"
+#define NPLC_VER "V1.2 b928+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
