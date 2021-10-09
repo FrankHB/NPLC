@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2488
+\version r2513
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-10-08 18:41 +0800
+	2021-10-09 12:47 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -190,6 +190,8 @@ StringifyValueObject(const ValueObject& vo)
 	{
 		using YSLib::sfmt;
 
+		// XXX: %NPL::TryAccessValue is not used. This ignores the possible
+		//	exception thrown from the value holder.
 		if(const auto p = vo.AccessPtr<string>())
 			return ystdex::quote(EscapeLiteral(*p));
 		if(const auto p = vo.AccessPtr<TokenValue>())
@@ -208,8 +210,30 @@ StringifyValueObject(const ValueObject& vo)
 			return sfmt<string>("%d", *p);
 		if(const auto p = vo.AccessPtr<unsigned>())
 			return sfmt<string>("[uint] %u", *p);
+		if(const auto p = vo.AccessPtr<long long>())
+			return sfmt<string>("[longlong] %lld", *p);
+		if(const auto p = vo.AccessPtr<unsigned long long>())
+			return sfmt<string>("[ulonglong] %llu", *p);
 		if(const auto p = vo.AccessPtr<double>())
-			return sfmt<string>("[double] %lf", *p);
+			return sfmt<string>("[double] %f", *p);
+		if(const auto p = vo.AccessPtr<long>())
+			return sfmt<string>("[long] %ld", *p);
+		if(const auto p = vo.AccessPtr<unsigned long>())
+			return sfmt<string>("[ulong] %lu", *p);
+		if(const auto p = vo.AccessPtr<short>())
+			return sfmt<string>("[short] %hd", *p);
+		if(const auto p = vo.AccessPtr<unsigned short>())
+			return sfmt<string>("[ushort] %hu", *p);
+		if(const auto p = vo.AccessPtr<signed char>())
+			return sfmt<string>("[short] %d", int(*p));
+		if(const auto p = vo.AccessPtr<unsigned char>())
+			return sfmt<string>("[ushort] %u", unsigned(*p));
+		if(const auto p = vo.AccessPtr<float>())
+			// XXX: To eliminate G++ warning [-Wdouble-promotion]. This requires
+			//	to cast away 'const'.
+			return sfmt<string>("[float] %f", double(*p));
+		if(const auto p = vo.AccessPtr<long double>())
+			return sfmt<string>("[longdouble] %Lf", *p);
 
 		const auto& ti(vo.type());
 
