@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8484
+\version r8486
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-10-08 18:41 +0800
+	2021-10-12 04:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -607,7 +607,8 @@ Quote(_tString&& str) -> decltype(ystdex::quote(yforward(str), '\''))
 const struct Option
 {
 	const char *prefix, *option_arg;
-	vector<const char*> option_details;
+	// XXX: Similar to %Tools.SHBuild.Main in YSLib.
+	std::vector<const char*> option_details;
 
 	Option(const char* pfx, const char* opt_arg,
 		std::initializer_list<const char*> il)
