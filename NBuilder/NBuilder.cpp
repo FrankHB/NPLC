@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8489
+\version r8494
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-10-19 02:31 +0800
+	2021-10-19 02:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,7 +29,8 @@
 //	EXIT_SUCCESS;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <iostream> // for std::clog, std::cout, std::endl;
-#include YFM_YSLib_Core_YObject // for type_index;
+#include YFM_YSLib_Core_YObject // for type_index, to_string, make_string_view,
+//	YSLib::to_std_string, std::stoi;
 #include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
@@ -518,6 +519,9 @@ LoadFunctions(Interpreter& intp)
 	});
 	RegisterUnary<Strict, const int>(rctx, "itos", [](int x){
 		return string(make_string_view(to_string(x)));
+	});
+	RegisterUnary<Strict, const string>(rctx, "stoi", [](const string& x){
+		return std::stoi(YSLib::to_std_string(x));
 	});
 	// NOTE: I/O library.
 	RegisterStrict(rctx, "read-line", [](TermNode& term){
