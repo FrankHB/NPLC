@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8486
+\version r8489
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-10-12 04:43 +0800
+	2021-10-19 02:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -466,9 +466,6 @@ LoadFunctions(Interpreter& intp)
 	//	%YFramework.NPL.Dependency.
 	RegisterBinary<Strict, const string, const string>(rctx, "string=?",
 		ystdex::equal_to<>());
-	RegisterUnary<Strict, const int>(rctx, "itos", [](int x){
-		return string(make_string_view(to_string(x)));
-	});
 	RegisterUnary<Strict, const string>(rctx, "string-length",
 		[&](const string& str) ynothrow{
 		return int(str.length());
@@ -518,6 +515,9 @@ LoadFunctions(Interpreter& intp)
 		if(e2 != 0)
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
+	});
+	RegisterUnary<Strict, const int>(rctx, "itos", [](int x){
+		return string(make_string_view(to_string(x)));
 	});
 	// NOTE: I/O library.
 	RegisterStrict(rctx, "read-line", [](TermNode& term){
