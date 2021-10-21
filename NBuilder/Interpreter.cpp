@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2513
+\version r2532
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-10-09 12:47 +0800
+	2021-10-21 12:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -72,6 +72,20 @@ yconstexpr auto prompt("> ");
 namespace
 {
 
+//! \since YSLib build 928
+void
+PrintRefPrefix(std::ostream& os, ResolvedTermReferencePtr p_ref)
+{
+	if(p_ref)
+	{
+		const auto tags(p_ref->GetTags());
+
+		os << "*[" << (bool(tags & TermTags::Unique) ? 'U' : ' ')
+			<< (bool(tags & TermTags::Nonmodifying) ? 'N' : ' ')
+			<< (bool(tags & TermTags::Temporary) ? 'T' : ' ') << ']';
+	}
+}
+
 //! \since YSLib build 897
 template<typename _fTermNodeToString>
 void
@@ -81,14 +95,7 @@ PrintTermNode(std::ostream& os, const TermNode& term,
 	const auto print_node_str([&](const TermNode& subterm){
 		return ResolveTerm([&](const TermNode& tm,
 			ResolvedTermReferencePtr p_ref) -> pair<lref<const TermNode>, bool>{
-			if(p_ref)
-			{
-				const auto tags(p_ref->GetTags());
-
-				os << "*[" << (bool(tags & TermTags::Unique) ? 'U' : ' ')
-					<< (bool(tags & TermTags::Nonmodifying) ? 'N' : ' ')
-					<< (bool(tags & TermTags::Temporary) ? 'T' : ' ') << ']';
-			}
+			PrintRefPrefix(os, p_ref);
 			try
 			{
 				os << term_to_str(tm);
