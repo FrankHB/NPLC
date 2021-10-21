@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8504
+\version r8508
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-10-22 00:01 +0800
+	2021-10-22 00:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -579,10 +579,6 @@ LoadFunctions(Interpreter& intp)
 	});
 	RegisterUnary<Strict, ifstream>(rctx, "parse-f", ParseStream);
 	RegisterUnary<Strict, std::istringstream>(rctx, "parse-s", ParseStream);
-	RegisterUnary<Strict, const string>(rctx, "put", [](const string& str){
-		std::cout << str;
-		return ValueToken::Unspecified;
-	});
 #if NPLC_Impl_TestTemporaryOrder
 	RegisterUnary<Strict, const string>(renv, "mark-guard", [](string str){
 		return MarkGuard(std::move(str));
