@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2532
+\version r2636
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-10-21 12:57 +0800
+	2021-10-21 18:52 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -28,6 +28,7 @@
 #include "Interpreter.h" // for type_info, QueryTypeName, IsTyped, YSLib::sfmt,
 //	YSLib::ostringstream, A1::QuerySourceInformation, YAssertNonnull,
 //	namespace YSLib;
+#include <ystdex/functional.hpp> // for ystdex::expand_proxy;
 #include <Helper/YModules.h>
 #include YFM_YCLib_YCommon // for ystdex::quote, ystdex::call_value_or;
 #include YFM_YSLib_Core_YException // for FilterExceptions,
@@ -87,18 +88,18 @@ PrintRefPrefix(std::ostream& os, ResolvedTermReferencePtr p_ref)
 }
 
 //! \since YSLib build 897
-template<typename _fTermNodeToString>
+template<typename _func>
 void
-PrintTermNode(std::ostream& os, const TermNode& term,
-	_fTermNodeToString term_to_str, size_t depth = 0, size_t idx = 0)
+PrintTermNode(std::ostream& os, const TermNode& term, _func f, size_t depth = 0,
+	size_t idx = 0)
 {
 	const auto print_node_str([&](const TermNode& subterm){
 		return ResolveTerm([&](const TermNode& tm,
 			ResolvedTermReferencePtr p_ref) -> pair<lref<const TermNode>, bool>{
-			PrintRefPrefix(os, p_ref);
 			try
 			{
-				os << term_to_str(tm);
+				ystdex::expand_proxy<void(std::ostream&, const TermNode&,
+					const ResolvedTermReferencePtr&)>::call(f, os, tm, p_ref);
 				return {tm, true};
 			}
 			CatchIgnore(bad_any_cast&)
@@ -118,7 +119,7 @@ PrintTermNode(std::ostream& os, const TermNode& term,
 			size_t i(0);
 
 			TraverseSubnodes([&](const TermNode& nd){
-				PrintTermNode(os, nd, term_to_str, depth + 1, i);
+				PrintTermNode(os, nd, f, depth + 1, i);
 				++i;
 			}, pr.first.get());
 		});
@@ -189,7 +190,6 @@ StringifyContextHandler(const _tHandler& h)
 //@}
 
 //! \since YSLib build 852
-//@{
 YB_ATTR_nodiscard YB_PURE string
 StringifyValueObject(const ValueObject& vo)
 {
@@ -250,17 +250,91 @@ StringifyValueObject(const ValueObject& vo)
 	throw ystdex::bad_any_cast();
 }
 
+//! \since YSLib build 928
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObjectForDisplay(const ValueObject& vo)
+{
+	using YSLib::sfmt;
 
+	// XXX: %Ditto.
+	if(const auto p = vo.AccessPtr<string>())
+		return string(*p, p->get_allocator());
+	if(const auto p = vo.AccessPtr<TokenValue>())
+		return string(*p, p->get_allocator());
+	if(const auto p = vo.AccessPtr<A1::ValueToken>())
+		return sfmt<string>("%s", to_string(*p).c_str());
+	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
+		return StringifyEnvironment(*p, {});
+	if(const auto p = vo.AccessPtr<EnvironmentReference>())
+		return StringifyEnvironment(p->GetPtr().lock(), true);
+	if(const auto p = vo.AccessPtr<A1::ContextHandler>())
+		return "#[" + StringifyContextHandler(*p) + "]";
+	if(const auto p = vo.AccessPtr<bool>())
+		return *p ? "#t" : "#f";
+	if(const auto p = vo.AccessPtr<int>())
+		return sfmt<string>("%d", *p);
+	if(const auto p = vo.AccessPtr<unsigned>())
+		return sfmt<string>("%u", *p);
+	if(const auto p = vo.AccessPtr<long long>())
+		return sfmt<string>("%lld", *p);
+	if(const auto p = vo.AccessPtr<unsigned long long>())
+		return sfmt<string>("%llu", *p);
+	if(const auto p = vo.AccessPtr<double>())
+		return sfmt<string>("%f", *p);
+	if(const auto p = vo.AccessPtr<long>())
+		return sfmt<string>("%ld", *p);
+	if(const auto p = vo.AccessPtr<unsigned long>())
+		return sfmt<string>("%lu", *p);
+	if(const auto p = vo.AccessPtr<short>())
+		return sfmt<string>("%hd", *p);
+	if(const auto p = vo.AccessPtr<unsigned short>())
+		return sfmt<string>("%hu", *p);
+	if(const auto p = vo.AccessPtr<signed char>())
+		return sfmt<string>("%d", int(*p));
+	if(const auto p = vo.AccessPtr<unsigned char>())
+		return sfmt<string>("%u", unsigned(*p));
+	if(const auto p = vo.AccessPtr<float>())
+		// XXX: Ditto.
+		return sfmt<string>("%f", double(*p));
+	if(const auto p = vo.AccessPtr<long double>())
+		return sfmt<string>("%Lf", *p);
+
+	const auto& ti(vo.type());
+
+	if(!IsTyped<void>(ti))
+		return ystdex::quote(string(DecodeTypeName(ti)), "#[", ']');
+	throw ystdex::bad_any_cast();
+}
+
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObjectForWrite(const ValueObject& vo)
+{
+	using YSLib::sfmt;
+
+	// XXX: %Ditto.
+	if(const auto p = vo.AccessPtr<string>())
+		return ystdex::quote(EscapeLiteral(*p));
+	if(const auto p = vo.AccessPtr<TokenValue>())
+		return EscapeLiteral(*p);
+	return StringifyValueObjectForDisplay(vo);
+}
+
+/*!
+\ingroup functors
+\since YSLib build 852
+*/
 struct NodeValueLogger
 {
-	template<class _tNode>
-	YB_ATTR_nodiscard YB_PURE string
-	operator()(const _tNode& node) const
+	//! \since YSLib build 928
+	void
+	operator()(std::ostream& os, const TermNode& nd,
+		ResolvedTermReferencePtr p_ref) const
 	{
-		return StringifyValueObject(node.Value);
+		PrintRefPrefix(os, p_ref);
+		os << StringifyValueObject(nd.Value);
 	}
 };
-//@}
+
 
 //! \since YSLib build 867
 //@{
@@ -387,11 +461,24 @@ shared_pool_resource::find_pool(size_t lb_size) ynothrow
 
 
 void
+DisplayTermValue(std::ostream& os, const TermNode& term)
+{
+	YSLib::stringstream oss(string(term.get_allocator()));
+
+	PrintTermNode(oss, term, [](std::ostream& os0, const TermNode& nd){
+		os0 << StringifyValueObjectForDisplay(nd.Value);
+	});
+	YSLib::IO::StreamPut(os, oss.str().c_str());
+}
+
+void
 LogTree(const ValueNode& node, Logger::Level lv)
 {
 	YSLib::ostringstream oss(string(node.get_allocator()));
 
-	PrintNode(oss, node, NodeValueLogger());
+	PrintNode(oss, node, [](const ValueNode& nd) YB_PURE{
+		return StringifyValueObject(nd.Value);
+	});
 	YTraceDe(lv, "%s", oss.str().c_str());
 }
 
@@ -402,6 +489,17 @@ LogTermValue(const TermNode& term, Logger::Level lv)
 
 	PrintTermNode(oss, term, NodeValueLogger());
 	YTraceDe(lv, "%s", oss.str().c_str());
+}
+
+void
+WriteTermValue(std::ostream& os, const TermNode& term)
+{
+	YSLib::ostringstream oss(string(term.get_allocator()));
+
+	PrintTermNode(oss, term, [](std::ostream& os0, const TermNode& nd){
+		os0 << StringifyValueObjectForWrite(nd.Value);
+	});
+	YSLib::IO::StreamPut(os, oss.str().c_str());
 }
 
 //! \since YSLib build 845

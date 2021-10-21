@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8494
+\version r8504
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-10-19 02:36 +0800
+	2021-10-22 00:01 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -532,11 +532,17 @@ LoadFunctions(Interpreter& intp)
 		std::getline(std::cin, line);
 		term.Value = line;
 	});
-	RegisterStrict(rctx, "display", [](TermNode& term){
-		RetainN(term);
-		LiftOther(term, NPL::Deref(std::next(term.begin())));
+	RegisterUnary(rctx, "write", any_ops::trivial_swap, [&](TermNode& term){
+		WriteTermValue(context.GetOutputStreamRef(), term);
+		return ValueToken::Unspecified;
+	});
+	RegisterUnary(rctx, "display", any_ops::trivial_swap, [&](TermNode& term){
+		DisplayTermValue(context.GetOutputStreamRef(), term);
+		return ValueToken::Unspecified;
+	});
+	RegisterUnary(rctx, "logd", [](TermNode& term){
 		LogTermValue(term, Notice);
-		return ReduceReturnUnspecified(term);
+		return ValueToken::Unspecified;
 	});
 	RegisterStrict(rctx, "logv", any_ops::trivial_swap,
 		ystdex::bind1(LogTermValue, Notice));

@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r396
+\version r402
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-09-20 05:43 +0800
+	2021-10-21 18:10 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -145,6 +145,10 @@ private:
 //@}
 
 
+//! \since YSLib build 928
+void
+DisplayTermValue(std::ostream&, const TermNode&);
+
 //! \since YSLib build 673
 void
 LogTree(const ValueNode&, Logger::Level = YSLib::Debug);
@@ -152,6 +156,10 @@ LogTree(const ValueNode&, Logger::Level = YSLib::Debug);
 //! \since YSLib build 803
 void
 LogTermValue(const TermNode&, Logger::Level = YSLib::Debug);
+
+//! \since YSLib build 928
+void
+WriteTermValue(std::ostream&, const TermNode&);
 
 /*!
 \build 控制台默认颜色。
