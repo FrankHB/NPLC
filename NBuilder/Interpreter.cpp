@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2636
+\version r2660
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-10-21 18:52 +0800
+	2021-10-25 18:34 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -93,26 +93,16 @@ void
 PrintTermNode(std::ostream& os, const TermNode& term, _func f, size_t depth = 0,
 	size_t idx = 0)
 {
-	const auto print_node_str([&](const TermNode& subterm){
-		return ResolveTerm([&](const TermNode& tm,
-			ResolvedTermReferencePtr p_ref) -> pair<lref<const TermNode>, bool>{
-			try
-			{
-				ystdex::expand_proxy<void(std::ostream&, const TermNode&,
-					const ResolvedTermReferencePtr&)>::call(f, os, tm, p_ref);
-				return {tm, true};
-			}
-			CatchIgnore(bad_any_cast&)
-			return {tm, false};
-		}, subterm);
-	});
-
 	if(depth != 0 && idx != 0)
 		os << ' ';
-
-	const auto pr(print_node_str(term));
-
-	if(!pr.second)
+	ResolveTerm([&](const TermNode& tm, ResolvedTermReferencePtr p_ref){
+		try
+		{
+			ystdex::expand_proxy<void(std::ostream&, const TermNode&,
+				const ResolvedTermReferencePtr&)>::call(f, os, tm, p_ref);
+			return;
+		}
+		CatchIgnore(bad_any_cast&)
 		PrintContainedNodes([&](char b){
 			os << b;
 		}, [&]{
@@ -121,8 +111,9 @@ PrintTermNode(std::ostream& os, const TermNode& term, _func f, size_t depth = 0,
 			TraverseSubnodes([&](const TermNode& nd){
 				PrintTermNode(os, nd, f, depth + 1, i);
 				++i;
-			}, pr.first.get());
+			}, tm);
 		});
+	}, term);
 }
 
 //! \since YSLib build 889
