@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2660
+\version r2728
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-10-25 18:34 +0800
+	2021-10-26 00:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -180,65 +180,68 @@ StringifyContextHandler(const _tHandler& h)
 }
 //@}
 
+//! \since YSLib build 929
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObjectDefault(const ValueObject& vo)
+{
+	const auto& ti(vo.type());
+
+	if(const auto p = vo.AccessPtr<bool>())
+		return *p ? "#t" : "#f";
+	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
+		return StringifyEnvironment(*p, {});
+	if(const auto p = vo.AccessPtr<EnvironmentReference>())
+		return StringifyEnvironment(p->GetPtr().lock(), true);
+	if(const auto p = vo.AccessPtr<A1::ContextHandler>())
+		return "#[" + StringifyContextHandler(*p) + "]";
+	if(!IsTyped<void>(ti))
+		return ystdex::quote(string(DecodeTypeName(ti)), "#[", ']');
+	throw ystdex::bad_any_cast();
+}
+
 //! \since YSLib build 852
 YB_ATTR_nodiscard YB_PURE string
 StringifyValueObject(const ValueObject& vo)
 {
-	if(vo != A1::ValueToken::Null)
-	{
-		using YSLib::sfmt;
+	using YSLib::sfmt;
 
-		// XXX: %NPL::TryAccessValue is not used. This ignores the possible
-		//	exception thrown from the value holder.
-		if(const auto p = vo.AccessPtr<string>())
-			return ystdex::quote(EscapeLiteral(*p));
-		if(const auto p = vo.AccessPtr<TokenValue>())
-			return EscapeLiteral(*p);
-		if(const auto p = vo.AccessPtr<A1::ValueToken>())
-			return sfmt<string>("[ValueToken] %s", to_string(*p).c_str());
-		if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
-			return StringifyEnvironment(*p, {});
-		if(const auto p = vo.AccessPtr<EnvironmentReference>())
-			return StringifyEnvironment(p->GetPtr().lock(), true);
-		if(const auto p = vo.AccessPtr<A1::ContextHandler>())
-			return "#[" + StringifyContextHandler(*p) + "]";
-		if(const auto p = vo.AccessPtr<bool>())
-			return *p ? "#t" : "#f";
-		if(const auto p = vo.AccessPtr<int>())
-			return sfmt<string>("%d", *p);
-		if(const auto p = vo.AccessPtr<unsigned>())
-			return sfmt<string>("[uint] %u", *p);
-		if(const auto p = vo.AccessPtr<long long>())
-			return sfmt<string>("[longlong] %lld", *p);
-		if(const auto p = vo.AccessPtr<unsigned long long>())
-			return sfmt<string>("[ulonglong] %llu", *p);
-		if(const auto p = vo.AccessPtr<double>())
-			return sfmt<string>("[double] %f", *p);
-		if(const auto p = vo.AccessPtr<long>())
-			return sfmt<string>("[long] %ld", *p);
-		if(const auto p = vo.AccessPtr<unsigned long>())
-			return sfmt<string>("[ulong] %lu", *p);
-		if(const auto p = vo.AccessPtr<short>())
-			return sfmt<string>("[short] %hd", *p);
-		if(const auto p = vo.AccessPtr<unsigned short>())
-			return sfmt<string>("[ushort] %hu", *p);
-		if(const auto p = vo.AccessPtr<signed char>())
-			return sfmt<string>("[short] %d", int(*p));
-		if(const auto p = vo.AccessPtr<unsigned char>())
-			return sfmt<string>("[ushort] %u", unsigned(*p));
-		if(const auto p = vo.AccessPtr<float>())
-			// XXX: To eliminate G++ warning [-Wdouble-promotion]. This requires
-			//	to cast away 'const'.
-			return sfmt<string>("[float] %f", double(*p));
-		if(const auto p = vo.AccessPtr<long double>())
-			return sfmt<string>("[longdouble] %Lf", *p);
-
-		const auto& ti(vo.type());
-
-		if(!IsTyped<void>(ti))
-			return ystdex::quote(string(DecodeTypeName(ti)), "#[", ']');
-	}
-	throw ystdex::bad_any_cast();
+	// XXX: %NPL::TryAccessValue is not used. This ignores the possible
+	//	exception thrown from the value holder.
+	if(const auto p = vo.AccessPtr<string>())
+		return ystdex::quote(EscapeLiteral(*p));
+	if(const auto p = vo.AccessPtr<TokenValue>())
+		return EscapeLiteral(*p);
+	if(const auto p = vo.AccessPtr<A1::ValueToken>())
+		return sfmt<string>("[ValueToken] %s", to_string(*p).c_str());
+	if(const auto p = vo.AccessPtr<int>())
+		return sfmt<string>("[int] %d", *p);
+	if(const auto p = vo.AccessPtr<unsigned>())
+		return sfmt<string>("[uint] %u", *p);
+	if(const auto p = vo.AccessPtr<long long>())
+		return sfmt<string>("[longlong] %lld", *p);
+	if(const auto p = vo.AccessPtr<unsigned long long>())
+		return sfmt<string>("[ulonglong] %llu", *p);
+	if(const auto p = vo.AccessPtr<double>())
+		return sfmt<string>("[double] %f", *p);
+	if(const auto p = vo.AccessPtr<long>())
+		return sfmt<string>("[long] %ld", *p);
+	if(const auto p = vo.AccessPtr<unsigned long>())
+		return sfmt<string>("[ulong] %lu", *p);
+	if(const auto p = vo.AccessPtr<short>())
+		return sfmt<string>("[short] %hd", *p);
+	if(const auto p = vo.AccessPtr<unsigned short>())
+		return sfmt<string>("[ushort] %hu", *p);
+	if(const auto p = vo.AccessPtr<signed char>())
+		return sfmt<string>("[char] %d", int(*p));
+	if(const auto p = vo.AccessPtr<unsigned char>())
+		return sfmt<string>("[uchar] %u", unsigned(*p));
+	if(const auto p = vo.AccessPtr<float>())
+		// XXX: To eliminate G++ warning [-Wdouble-promotion]. This requires
+		//	to cast away 'const'.
+		return sfmt<string>("[float] %f", double(*p));
+	if(const auto p = vo.AccessPtr<long double>())
+		return sfmt<string>("[longdouble] %Lf", *p);
+	return StringifyValueObjectDefault(vo);
 }
 
 //! \since YSLib build 928
@@ -254,14 +257,6 @@ StringifyValueObjectForDisplay(const ValueObject& vo)
 		return string(*p, p->get_allocator());
 	if(const auto p = vo.AccessPtr<A1::ValueToken>())
 		return sfmt<string>("%s", to_string(*p).c_str());
-	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
-		return StringifyEnvironment(*p, {});
-	if(const auto p = vo.AccessPtr<EnvironmentReference>())
-		return StringifyEnvironment(p->GetPtr().lock(), true);
-	if(const auto p = vo.AccessPtr<A1::ContextHandler>())
-		return "#[" + StringifyContextHandler(*p) + "]";
-	if(const auto p = vo.AccessPtr<bool>())
-		return *p ? "#t" : "#f";
 	if(const auto p = vo.AccessPtr<int>())
 		return sfmt<string>("%d", *p);
 	if(const auto p = vo.AccessPtr<unsigned>())
@@ -289,19 +284,12 @@ StringifyValueObjectForDisplay(const ValueObject& vo)
 		return sfmt<string>("%f", double(*p));
 	if(const auto p = vo.AccessPtr<long double>())
 		return sfmt<string>("%Lf", *p);
-
-	const auto& ti(vo.type());
-
-	if(!IsTyped<void>(ti))
-		return ystdex::quote(string(DecodeTypeName(ti)), "#[", ']');
-	throw ystdex::bad_any_cast();
+	return StringifyValueObjectDefault(vo);
 }
 
 YB_ATTR_nodiscard YB_PURE string
 StringifyValueObjectForWrite(const ValueObject& vo)
 {
-	using YSLib::sfmt;
-
 	// XXX: %Ditto.
 	if(const auto p = vo.AccessPtr<string>())
 		return ystdex::quote(EscapeLiteral(*p));
