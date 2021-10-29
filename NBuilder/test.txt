@@ -4,8 +4,10 @@
 "NOTE", "For the test purpose, this file is deliberatedly kept as UTF-8+BOM",
 	"with LF as the EOL mark.";
 
-$import! std.strings ++ string<- string-empty? string->symbol;
-$import! std.io puts putss iput;
+$import&! std.io newline puts putss iput;
+$import&! std.strings ++ string<- string-empty? string->symbol;
+
+$defl! display/newline (&x) (display (forward! x); () newline);
 
 "XXX", "Assume the move-after state is deterministic of a stable value,",
 	" which is the empty list at current.";
@@ -19,17 +21,17 @@ $def! report-failure $if SS_TestOpts_QuickFail raise-error puts;
 $defl! pass (.) puts "PASS.";
 $defl! fail-on-check (&expr &res) $sequence
 	(puts "FAIL: Check failed, with the expression:")
-	(display expr)
+	(display/newline expr)
 	(puts "  with the result:")
-	(display res)
+	(display/newline res)
 	(report-failure "Test case failed.");
 $defl! fail-on-expect (&expr &res &expected) $sequence
 	(puts "FAIL: Check failed, with the expression:")
-	(display expr)
+	(display/newline expr)
 	(puts "  with the result:")
-	(display (forward! res))
+	(display/newline (forward! res))
 	(puts "  expected result:")
-	(display (forward! expected))
+	(display/newline (forward! expected))
 	(report-failure "Test case failed.");
 $defv! $check (.&expr) d
 	$let ((res eval expr d))
@@ -166,16 +168,16 @@ $defl! test (&i)
 		$expect 1 idv (idv (($lambda% (%x) x) (first@ li)));
 		subinfo "expecting a reference to object";
 		assign%! b (first@ li);
-		display b;
+		display/newline b;
 		subinfo "expecting a reference to object as first element";
 		set-first%! li2 (first@ li);
-		display li2;
+		display/newline li2;
 		subinfo "expecting a reference to reference";
 		assign@! b (first@ li);
-		display b;
+		display/newline b;
 		subinfo "expecting a reference to reference as first element";
 		set-first@! li2 (first@ li);
-		display li2;
+		display/newline li2;
 		$rem "Following shall signal an error.";
 		$rem set-first%! (first@ li);
 		subinfo "id and reference tests";
@@ -386,10 +388,10 @@ $defl! test (&i)
 			set-rest! q-li q-li;
 			set-rest%! q-li q-li2;
 			cons% q-li q-li;
-			display (first& (first& q-li4));
+			display/newline (first& (first& q-li4));
 			set-first! (first& q-li4) (list () 2);
-			display (rest& (first& q-li4));
-			display q-li4
+			display/newline (rest& (first& q-li4));
+			display/newline q-li4
 		);
 		subinfo "list-push-front!";
 		$let ()
@@ -581,7 +583,7 @@ $defl! test (&i)
 				);
 				eval% (list% $let (expire bindings) move! ($quote t))
 					(() get-current-environment);
-				display bindings
+				display/newline bindings
 			);
 			$defl! test-let ($let)
 			(
@@ -623,7 +625,7 @@ $defl! test (&i)
 				);
 				eval% (list*% $b (expire bindings))
 					(() get-current-environment);
-				display bindings
+				display/newline bindings
 			);
 			$defl! test-bp ($bp)
 			(
@@ -1083,7 +1085,7 @@ $defl! teste (i)
 		$let ()
 		(
 			$defl%! foo (&x) x;
-			display (foo 42)
+			display/newline (foo 42)
 		)
 	))
 	((eqv? i 6) (
