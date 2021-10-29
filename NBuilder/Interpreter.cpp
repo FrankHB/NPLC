@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2728
+\version r2762
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-10-26 00:25 +0800
+	2021-10-29 18:05 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -682,40 +682,35 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 				try
 				{
 #	endif
-					if(!IsNPLAExtendedLiteral(id))
+					// XXX: See assumption 2.
+					auto pr(ContextNode::DefaultResolve(cs.GetRecordPtr(), id));
+
+					if(pr.first)
 					{
-						// XXX: See assumption 2.
-						auto pr(ContextNode::DefaultResolve(cs.GetRecordPtr(),
-							id));
+						auto& bound(*pr.first);
+						const auto& p_env(pr.second);
 
-						if(pr.first)
-						{
-							auto& bound(*pr.first);
-							const auto& p_env(pr.second);
-
-							setup_tail_op_name(term);
-							return ResolveTerm([&](TermNode& nd,
-								ResolvedTermReferencePtr p_ref){
-								if(p_ref)
-									term.SetContent(bound.GetContainer(),
-										ValueObject(std::allocator_arg,
-										term.get_allocator(), in_place_type<
-										TermReference>, p_ref->GetTags()
-										& ~TermTags::Unique, *p_ref));
-								else
-									term.Value = ValueObject(std::allocator_arg,
-										term.get_allocator(), in_place_type<
-										TermReference>, NPL::Deref(
-										p_env).MakeTermTags(nd)
-										& ~TermTags::Unique, nd, p_env);
-								// XXX: This is safe, cf. assumption 3.
-								A1::EvaluateLiteralHandler(term, cs, nd);
-								return f(nd);
-							}, bound);
-						}
-						throw BadIdentifier(id);
+						setup_tail_op_name(term);
+						return ResolveTerm([&](TermNode& nd,
+							ResolvedTermReferencePtr p_ref){
+							if(p_ref)
+								term.SetContent(bound.GetContainer(),
+									ValueObject(std::allocator_arg,
+									term.get_allocator(), in_place_type<
+									TermReference>, p_ref->GetTags()
+									& ~TermTags::Unique, *p_ref));
+							else
+								term.Value = ValueObject(std::allocator_arg,
+									term.get_allocator(), in_place_type<
+									TermReference>, NPL::Deref(
+									p_env).MakeTermTags(nd)
+									& ~TermTags::Unique, nd, p_env);
+							// XXX: This is safe, cf. assumption 3.
+							A1::EvaluateLiteralHandler(term, cs, nd);
+							return f(nd);
+						}, bound);
 					}
-					A1::ThrowUnsupportedLiteralError(id);
+					throw BadIdentifier(id);
 #	if NPLC_Impl_UseSourceInfo
 				}
 				catch(BadIdentifier& e)
