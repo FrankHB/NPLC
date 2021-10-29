@@ -515,8 +515,8 @@ $defl! test (&i)
 			foldr ($lambda (&x &y) list (+ x (first y)) x) (list% 0 a0 0)
 				(list a1 2 3);
 		$expect (list 16 1)
-			foldr ($lambda (&x &y &s) list (+ x y (first s)) x) (list% 0 a0 0)
-				(list% a1 2 3) (list% 4 5 a1);
+			foldr ($lambda (&x &y &s) list (+ (+ x y) (first s)) x)
+				(list% 0 a0 0) (list% a1 2 3) (list% 4 5 a1);
 		info "well-formed list function definitions";
 		$defl! fold* (&kons &head .&tail) $if (null? tail) head
 			(kons head (apply fold* (cons kons tail)));
