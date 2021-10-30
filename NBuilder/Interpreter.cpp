@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2762
+\version r2803
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-10-29 18:05 +0800
+	2021-10-30 17:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -675,50 +675,47 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 
 			YAssert(IsLeaf(term),
 				"Unexpected irregular representation of term found.");
-			if(!id.empty())
-				// XXX: Assume the call does not rely on %term and it does not
-				//	change the stored name on throwing.
+			// XXX: Assume the call does not rely on %term and it does not
+			//	change the stored name on throwing.
 #	if NPLC_Impl_UseSourceInfo
-				try
-				{
+			try
+			{
 #	endif
-					// XXX: See assumption 2.
-					auto pr(ContextNode::DefaultResolve(cs.GetRecordPtr(), id));
+				// XXX: See assumption 2.
+				auto pr(ContextNode::DefaultResolve(cs.GetRecordPtr(), id));
 
-					if(pr.first)
-					{
-						auto& bound(*pr.first);
-						const auto& p_env(pr.second);
-
-						setup_tail_op_name(term);
-						return ResolveTerm([&](TermNode& nd,
-							ResolvedTermReferencePtr p_ref){
-							if(p_ref)
-								term.SetContent(bound.GetContainer(),
-									ValueObject(std::allocator_arg,
-									term.get_allocator(), in_place_type<
-									TermReference>, p_ref->GetTags()
-									& ~TermTags::Unique, *p_ref));
-							else
-								term.Value = ValueObject(std::allocator_arg,
-									term.get_allocator(), in_place_type<
-									TermReference>, NPL::Deref(
-									p_env).MakeTermTags(nd)
-									& ~TermTags::Unique, nd, p_env);
-							// XXX: This is safe, cf. assumption 3.
-							A1::EvaluateLiteralHandler(term, cs, nd);
-							return f(nd);
-						}, bound);
-					}
-					throw BadIdentifier(id);
-#	if NPLC_Impl_UseSourceInfo
-				}
-				catch(BadIdentifier& e)
+				if(pr.first)
 				{
-					if(const auto p_si = A1::QuerySourceInformation(term.Value))
-						e.Source = *p_si;
-					throw;
+					auto& bound(*pr.first);
+					const auto& p_env(pr.second);
+
+					setup_tail_op_name(term);
+					return ResolveTerm([&](TermNode& nd,
+						ResolvedTermReferencePtr p_ref){
+						if(p_ref)
+							term.SetContent(bound.GetContainer(), ValueObject(
+								std::allocator_arg, term.get_allocator(),
+								in_place_type<TermReference>, p_ref->GetTags()
+								& ~TermTags::Unique, *p_ref));
+						else
+							term.Value = ValueObject(std::allocator_arg,
+								term.get_allocator(), in_place_type<
+								TermReference>, NPL::Deref(p_env).MakeTermTags(
+								nd) & ~TermTags::Unique, nd, p_env);
+						// XXX: This is safe, cf. assumption 3.
+						A1::EvaluateLiteralHandler(term, cs, nd);
+						return f(nd);
+					}, bound);
 				}
+				throw BadIdentifier(id);
+#	if NPLC_Impl_UseSourceInfo
+			}
+			catch(BadIdentifier& e)
+			{
+				if(const auto p_si = A1::QuerySourceInformation(term.Value))
+					e.Source = *p_si;
+				throw;
+			}
 #	endif
 		}
 		return f2();
@@ -779,14 +776,14 @@ Interpreter::Interpreter()
 		TermNode term(Context.Allocator);
 		const auto id(YSLib::make_string_view(str));
 
-		if(!id.empty() && A1::HandleCheckedExtendedLiteral(term, id))
+		if(A1::HandleCheckedExtendedLiteral(term, id))
 			A1::ParseLeaf(term, id);
 		return term;
 	}, [this](const A1::GParsedValue<SourcedByteParser>& val){
 		TermNode term(Context.Allocator);
 		const auto id(YSLib::make_string_view(val.second));
 
-		if(!id.empty() && A1::HandleCheckedExtendedLiteral(term, id))
+		if(A1::HandleCheckedExtendedLiteral(term, id))
 			A1::ParseLeafWithSourceInformation(term, id, Context.CurrentSource,
 				val.first);
 		return term;

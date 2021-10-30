@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2419
+\version r2421
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2021-09-20 05:46 +0800
+	2021-10-30 17:40 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -46,12 +46,11 @@ bool
 HandleCheckedExtendedLiteral(TermNode& term, string_view id)
 {
 	YAssertNonnull(id.data());
-	YAssert(!id.empty(), "Invalid leaf token found.");
 
 	const char f(id.front());
 
 	// NOTE: Handling extended literals.
-	if(IsNPLAExtendedLiteralNonDigitPrefix(f) && id.size() > 1)
+	if(!id.empty() && IsNPLAExtendedLiteralNonDigitPrefix(f) && id.size() > 1)
 	{
 		// TODO: Support numeric literal evaluation passes.
 		if(id == "+inf.0")
