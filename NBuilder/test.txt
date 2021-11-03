@@ -1043,7 +1043,54 @@ $defl! test (&i)
 		)
 	))
 	((eqv? i 22) (
-		info "arithmetic operations";
+		info "math operations";
+		subinfo "number predicates";
+		$let ()
+		(
+			$import&! std.math
+				number? complex? real? rational? integer? exact-integer?;
+
+			$expect #t number? 123;
+			$expect #f number? "123";
+			$expect #t complex? 3;
+			$expect #t real? 3;
+			$expect #t real? (- 0 2);
+			$expect #t real? +inf.0;
+			$expect #t real? +nan.0;
+			$expect #f rational? -inf.0;
+			$expect #t rational? (- 0 3);
+			$expect #t integer? 3;
+			$expect #t exact-integer? 32;
+			$expect #f exact-integer? ""
+		);
+		subinfo "arithmetic operations";
+		$let ()
+		(
+			$import&! std.math
+				>=? zero? positive? negative? odd? even? max min abs;
+
+			$expect #t =? 2 2;
+			$expect #t <? 1 2;
+			$expect #t <? 1 +inf.0;
+			$expect #f <? 2 1;
+			$expect #f <? 1 -nan.0;
+			$expect #f >? 2 2;
+			$expect #t >=? 2 2;
+			$expect #f <=? 2 1;
+			$expect #t zero? 0;
+			$expect #f zero? 1;
+			$expect #t positive? 1;
+			$expect #f positive? 0;
+			$expect #f negative? 1;
+			$expect #f negative? 0;
+			$expect #t odd? 1;
+			$expect #t odd? (- 0 1);
+			$expect #t even? 0;
+			$expect #f even? (- 0 1);
+			$expect 2 max 1 2;
+			$expect -inf.0 min -inf.0 2;
+			$expect 0 abs 0
+		);
 		$rem (
 			"The following Kernel code conforms to PTC.";
 			($define! solve ($lambda (n) ($let ((x (* n n)))
@@ -1051,11 +1098,14 @@ $defl! test (&i)
 				(=? (div (mod x 100) 10) (mod x 10))) x (solve (+ n 1))))))
 			(solve 80)
 		);
+		$rem (
+		"The following code requires trucating quotient and remainder.";
 		$defl! solve (n) $let ((x * n n))
 			$if ($and? (=? (/ x 1000) (% (/ x 100) 10))
 				(=? (/ (% x 100) 10) (% x 10)))
 			x (solve (+ n 1));
 		$expect 7744 solve 80
+		)
 	))
 	(#t "No case found.")
 );
@@ -1330,7 +1380,7 @@ $let ()
 	eval (list ($lambda x () ($lambda x $if)) 1) (() make-environment)
 );
 
-$def! test-case-num 21;
+$def! test-case-num 22;
 $def! teste-case-list list 1;
 $defl! test-in (&l) for-each-ltr test l;
 $defl! test-range (first last) test-in (iota-range first last);
