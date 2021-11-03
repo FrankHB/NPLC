@@ -17,7 +17,9 @@ $defl! teste-all () (() load-test; for-each-ltr teste teste-case-list);
 $rem "Performance tests.";
 $defl! pt ()
 (
-	$defl! fib (&n) ($if (<=? n 1) n (+ (fib (- n 1)) (fib (- n 2))));
+	$import&! std.math <=? + sub1 -;
+
+	$defl! fib (&n) ($if (<=? n 1) n (+ (fib (sub1 n)) (fib (- n 2))));
 	iput (fib 17);
 	exit
 );
