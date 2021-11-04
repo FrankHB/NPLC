@@ -1,28 +1,28 @@
-﻿# NPLC 项目自述文件
+﻿# 概要
 
-## 概要
-
-　　NPLC 是 NPL 命令行特性的试验项目。
+　　NPLC 是 NPL 命令行特性的试验项目。本文档是 NPLC 项目自述文件。
 
 　　关于 NPL ，参见 [YSLib](https://bitbucket.org/FrankHB/yslib) 的 [Wiki 页面][和 YSLib 中的项目文档 `doc/NPL.txt` 。
 
-## NBuilder
+# NBuilder
 
 　　NBuilder 实现了 NPLA1 的扩展，包含解释器的优化实现和不提供文档的试验性特性（全局函数）。
 
 　　NBuilder 基于 YSLib 中 YFramework 库的 NPL 模块实现。
 
-### 构建
+　　除特定版本经发布注记明确以外的 NBuilder NPLA1 库 API 不保证稳定；当前不提供文档。除非另行指定，所有 NPLA1 库函数可能会被未来版本移至 YSLib 实现。
+
+# 构建
 
 　　NBuilder 支持多种构建方式。
 
-#### 使用 Code::Blocks 构建
+## 使用 Code::Blocks 构建
 
 　　确保已在其中配置 YSLib 库的位置后，选择 `debug` 或 `release` 配置，直接构建。
 
 　　生成的可执行文件在配置名的目录下。
 
-#### 使用 YSLib [Sysroot](https://bitbucket.org/FrankHB/yslib/wiki/Sysroot.zh-CN.md)
+## 使用 YSLib [Sysroot](https://bitbucket.org/FrankHB/yslib/wiki/Sysroot.zh-CN.md)
 
 ```
 bash
@@ -40,21 +40,23 @@ SHBuild_BuildApp . -xj,3
 
 　　生成的可执行文件在 `SHBuild-BuildApp.sh` 指定的配置名对应的带有前缀 `.` 的目录下（默认为 `.release` ）。
 
-#### 使用 YSLib [SHBuild](https://bitbucket.org/FrankHB/yslib/wiki/Tools/SHBuild.zh-CN.md) 工具
+## 使用 YSLib [SHBuild](https://bitbucket.org/FrankHB/yslib/wiki/Tools/SHBuild.zh-CN.md) 工具
 
 　　SHBuild 是 Sysroot 脚本调用的构建工具。具体使用方式详见工具对应的文档。
 
-### 使用
+# 运行
 
 　　运行解释器可执行文件直接进入 REPL ；或使用命令行选项 `-e` ，支持直接求值字符串参数。
 
 　　当前实现支持 `doc/NPL.txt` 中的函数和一些未公开的函数。
 
-#### 运行环境
+## 运行环境
+
+　　构建默认依赖 YSLib 动态库。
 
 　　V0.8 起初始化加载 `test.txt`（可为空）。若没有这个文件，初始化出错。
 
-## 发布注记
+# 发布注记
 
 　　当前所有历史版本都是试验性测试版本，为 PreAlpha 开发阶段。
 
@@ -94,7 +96,7 @@ SHBuild_BuildApp . -xj,3
 	* 添加调试功能。
 * **V0.9** NBuilder 解释实现更新（依赖 YSLib build 839 ）。
 	* 处理主函数异常。
-	* 调整 NPLA1 初始环境。
+	* 调整 NPLA1 初始环境：
 		* 添加若干 NPLA1 函数。
 		* 移除在 YSLib 中实现的 NPLA1 函数。
 		* 调整部分其它 NPLA1 函数。
@@ -104,12 +106,12 @@ SHBuild_BuildApp . -xj,3
 * **V0.10** NBuilder 调整 NPLA1 实现（依赖 YSLib build 861 ）。
 	* 使用资源池和分配器优化实现性能。
 	* 增强调试功能。
-	* 调整 NPLA1 初始环境。
+	* 调整 NPLA1 初始环境：
 		* 添加临时对象销毁顺序测试（默认不启用）。
 		* 添加、移除和重命名若干 NPLA1 函数。
 		* 使用 YSLib 流类型代替 C++ 标准库流。
 * **V0.11** NBuilder 调整 NPLA1 实现（依赖 YSLib build 878 ）。
-	* 调整 NPLA1 初始环境。
+	* 调整 NPLA1 初始环境：
 		* 移除和 std.system 重复的根环境中的定义。
 		* 简化导入模块。
 		* 添加和重命名若干 NPLA1 函数。
@@ -136,6 +138,9 @@ SHBuild_BuildApp . -xj,3
 	* 调整 REPL 输出。
 		* 使用紧凑格式在 REPL 显示列表。
 		* 调整部分数据类型的输出格式。
+	* 标准库扩展：
+		* 移除 YSLib 已实现的函数：
+			* `load`（使用 `std.io` 中的绑定）
 * **V1.2** NBuilder 调整部分实现语义和行为（依赖 YSLib build 907 ）。
 	* 标准库扩展：
 		* 移除 YSLib 已实现的函数：
@@ -150,12 +155,40 @@ SHBuild_BuildApp . -xj,3
 	* 修复初始化时的环境资源泄漏（自 V1.1 ）。
 	* 修复部分诊断输出。
 	* 修复 Win32 环境下编码处理错误依赖当前代码页。
-	
-## 实现注记
+* **1.3** NBuilder 调整部分实现语义和行为（依赖 YSLib build 925 ）。
+	* 解释器实现：
+		* 调整环境值的输出格式。
+		* 标准错误输出支持单独的终端。
+		* 用户界面输出除提示外使用标准错误输出。
+		* 明确 REPL 输出的平台字符串。
+		* 优化字面量处理的实现。
+	* 标准库实现（依赖 YSLib ）：
+		* 部分核心库函数和 `std.promises` 等使用本机实现。
+	* 标准库扩展：
+		* 添加库函数：
+			* `string-contains?`
+			* `iota`（移动自测试脚本）
+			* `iota-range`（移动自测试脚本）
+			* `make-nocopy`
+			* `$while`
+			* `$until`
+		* 移除 YSLib 已实现的函数：
+			* `as-const`
+			* `$remote-eval`
+			* `$remote-eval%`
+	* 拆分初始化和测试脚本。
+	* 添加和修复部分测试用例。 
+	* 增强命令行参数支持：
+		* 支持多个 `-e` 选项求值字符串参数。
+		* 支持参数指定脚本文件（其中 `-` 表示标准输入）。
+		* 支持 `--` 参数后停止解析选项。
+		* 支持以 - 为名的脚本视为标准输出。
+
+# 实现注记
 
 　　NBuilder 优化解释器的快速规约依赖 YSLib NPLA1 实现的异步规约，且不支持其中的可扩展规约定制特性。
 
-### 性能
+## 性能
 
 　　因为语言特性的要求（能捕获一等续延，尽管当前不提供公开 API ）和使用 AST 解释器实现，性能较大多数一般的语言解释器实现低。
 
@@ -182,7 +215,7 @@ klisp -e '(display ($sequence ($define! fib ($lambda (n) ($if (<=? n 1) n (+ (fi
 
 　　（使用较小参数的基准测试内容另见 `test.txt` 中的 `pt` 函数。）
 
-### 元数据
+## 元数据
 
 　　在 NPLA1 元数据的基础上，支持以下续延名称：
 
