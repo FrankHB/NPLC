@@ -9,6 +9,7 @@ $import&! std.strings ++ string<- string-empty? string->symbol;
 $import&! std.math - <=? + =? <? >? *;
 
 $defl! display/newline (&x) (display (forward! x); () newline);
+$defl! write/newline (&x) (write (forward! x); () newline);
 
 "XXX", "Assume the move-after state is deterministic of a stable value,",
 	" which is the empty list at current.";
@@ -22,13 +23,13 @@ $def! report-failure $if SS_TestOpts_QuickFail raise-error puts;
 $defl! pass (.) puts "PASS.";
 $defl! fail-on-check (&expr &res) $sequence
 	(puts "FAIL: Check failed, with the expression:")
-	(display/newline expr)
+	(write/newline expr)
 	(puts "  with the result:")
 	(display/newline res)
 	(report-failure "Test case failed.");
 $defl! fail-on-expect (&expr &res &expected) $sequence
 	(puts "FAIL: Check failed, with the expression:")
-	(display/newline expr)
+	(write/newline expr)
 	(puts "  with the result:")
 	(display/newline (forward! res))
 	(puts "  expected result:")
