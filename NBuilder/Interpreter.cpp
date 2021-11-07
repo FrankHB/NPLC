@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2803
+\version r2809
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-10-30 17:49 +0800
+	2021-11-07 18:48 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -199,6 +199,9 @@ StringifyValueObjectDefault(const ValueObject& vo)
 	throw ystdex::bad_any_cast();
 }
 
+// NOTE: The precisions of the format for flonums are as Racket BC. See
+//	https://github.com/racket/racket/blob/d10b9e083ce3c2068f960ce924af88f34111db26/racket/src/bc/src/numstr.c#L1846-L1873.
+
 //! \since YSLib build 852
 YB_ATTR_nodiscard YB_PURE string
 StringifyValueObject(const ValueObject& vo)
@@ -222,7 +225,7 @@ StringifyValueObject(const ValueObject& vo)
 	if(const auto p = vo.AccessPtr<unsigned long long>())
 		return sfmt<string>("[ulonglong] %llu", *p);
 	if(const auto p = vo.AccessPtr<double>())
-		return sfmt<string>("[double] %f", *p);
+		return sfmt<string>("[double] %.14g", *p);
 	if(const auto p = vo.AccessPtr<long>())
 		return sfmt<string>("[long] %ld", *p);
 	if(const auto p = vo.AccessPtr<unsigned long>())
@@ -238,9 +241,9 @@ StringifyValueObject(const ValueObject& vo)
 	if(const auto p = vo.AccessPtr<float>())
 		// XXX: To eliminate G++ warning [-Wdouble-promotion]. This requires
 		//	to cast away 'const'.
-		return sfmt<string>("[float] %f", double(*p));
+		return sfmt<string>("[float] %.6g", double(*p));
 	if(const auto p = vo.AccessPtr<long double>())
-		return sfmt<string>("[longdouble] %Lf", *p);
+		return sfmt<string>("[longdouble] %.18Lg", *p);
 	return StringifyValueObjectDefault(vo);
 }
 
@@ -266,7 +269,7 @@ StringifyValueObjectForDisplay(const ValueObject& vo)
 	if(const auto p = vo.AccessPtr<unsigned long long>())
 		return sfmt<string>("%llu", *p);
 	if(const auto p = vo.AccessPtr<double>())
-		return sfmt<string>("%f", *p);
+		return sfmt<string>("%.14g", *p);
 	if(const auto p = vo.AccessPtr<long>())
 		return sfmt<string>("%ld", *p);
 	if(const auto p = vo.AccessPtr<unsigned long>())
@@ -281,9 +284,9 @@ StringifyValueObjectForDisplay(const ValueObject& vo)
 		return sfmt<string>("%u", unsigned(*p));
 	if(const auto p = vo.AccessPtr<float>())
 		// XXX: Ditto.
-		return sfmt<string>("%f", double(*p));
+		return sfmt<string>("%.6g", double(*p));
 	if(const auto p = vo.AccessPtr<long double>())
-		return sfmt<string>("%Lf", *p);
+		return sfmt<string>("%.18Lg", *p);
 	return StringifyValueObjectDefault(vo);
 }
 
