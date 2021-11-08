@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2809
+\version r2814
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-11-07 18:48 +0800
+	2021-11-08 08:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -58,6 +58,7 @@
 #define NPLC_Impl_UseBacktrace true
 #define NPLC_Impl_UseDebugMR false
 #define NPLC_Impl_UseMonotonic false
+#define NPLC_Impl_UseCheckedExtendedLiteral false
 #define NPLC_Impl_UsePool true
 #define NPLC_Impl_UseSourceInfo true
 
@@ -779,14 +780,18 @@ Interpreter::Interpreter()
 		TermNode term(Context.Allocator);
 		const auto id(YSLib::make_string_view(str));
 
+#if NPLC_Impl_UseCheckedExtendedLiteral
 		if(A1::HandleCheckedExtendedLiteral(term, id))
+#endif
 			A1::ParseLeaf(term, id);
 		return term;
 	}, [this](const A1::GParsedValue<SourcedByteParser>& val){
 		TermNode term(Context.Allocator);
 		const auto id(YSLib::make_string_view(val.second));
 
+#if NPLC_Impl_UseCheckedExtendedLiteral
 		if(A1::HandleCheckedExtendedLiteral(term, id))
+#endif
 			A1::ParseLeafWithSourceInformation(term, id, Context.CurrentSource,
 				val.first);
 		return term;

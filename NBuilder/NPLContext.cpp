@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2421
+\version r2448
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2021-10-30 17:40 +0800
+	2021-11-08 09:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -53,33 +53,8 @@ HandleCheckedExtendedLiteral(TermNode& term, string_view id)
 	if(!id.empty() && IsNPLAExtendedLiteralNonDigitPrefix(f) && id.size() > 1)
 	{
 		// TODO: Support numeric literal evaluation passes.
-		if(id == "+inf.0")
-			term.Value = std::numeric_limits<double>::infinity();
-		else if(id == "-inf.0")
-			term.Value = -std::numeric_limits<double>::infinity();
-		else if(id == "+inf.f")
-			term.Value = std::numeric_limits<float>::infinity();
-		else if(id == "-inf.f")
-			term.Value = -std::numeric_limits<float>::infinity();
-		else if(id == "+inf.t")
-			term.Value = std::numeric_limits<long double>::infinity();
-		else if(id == "-inf.t")
-			term.Value = -std::numeric_limits<long double>::infinity();
-		else if(id == "+nan.0")
-			term.Value = std::numeric_limits<double>::quiet_NaN();
-		else if(id == "-nan.0")
-			term.Value = -std::numeric_limits<double>::quiet_NaN();
-		else if(id == "+nan.f")
-			term.Value = std::numeric_limits<float>::quiet_NaN();
-		else if(id == "-nan.f")
-			term.Value = -std::numeric_limits<float>::quiet_NaN();
-		else if(id == "+nan.t")
-			term.Value = std::numeric_limits<long double>::quiet_NaN();
-		else if(id == "-nan.t")
-			term.Value = -std::numeric_limits<long double>::quiet_NaN();
-		else
-			return true;
-		return {};
+		yunused(term);
+		return true;
 	}
 	return true;
 }
