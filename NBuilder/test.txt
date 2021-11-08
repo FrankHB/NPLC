@@ -837,6 +837,16 @@ $defl! test (&i)
 			$def! o e% t;
 			forward! (d o);
 			$expect-moved d o
+		);
+		subinfo "encapsulation equality";
+		$let ()
+		(
+			$def! (e #ignore d) () make-encapsulation-type;
+			$def! x e 1;
+			$def! y e 2;
+			$def! z e 2;
+			$expect #f eqv? x y;
+			$expect #t eqv? y z
 		)
 	))
 	((eqv? i 16) (
