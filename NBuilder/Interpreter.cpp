@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2814
+\version r2892
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-11-08 08:57 +0800
+	2021-11-25 04:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -187,6 +187,8 @@ StringifyValueObjectDefault(const ValueObject& vo)
 {
 	const auto& ti(vo.type());
 
+	// XXX: %NPL::TryAccessValue is not used. This ignores the possible
+	//	exception thrown from the value holder.
 	if(const auto p = vo.AccessPtr<bool>())
 		return *p ? "#t" : "#f";
 	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
@@ -200,65 +202,17 @@ StringifyValueObjectDefault(const ValueObject& vo)
 	throw ystdex::bad_any_cast();
 }
 
+//! \since YSLib build 932
+//@{
 // NOTE: The precisions of the format for flonums are as Racket BC. See
 //	https://github.com/racket/racket/blob/d10b9e083ce3c2068f960ce924af88f34111db26/racket/src/bc/src/numstr.c#L1846-L1873.
 
-//! \since YSLib build 852
 YB_ATTR_nodiscard YB_PURE string
-StringifyValueObject(const ValueObject& vo)
+StringifyBasicObject(const ValueObject& vo)
 {
 	using YSLib::sfmt;
 
-	// XXX: %NPL::TryAccessValue is not used. This ignores the possible
-	//	exception thrown from the value holder.
-	if(const auto p = vo.AccessPtr<string>())
-		return ystdex::quote(EscapeLiteral(*p));
-	if(const auto p = vo.AccessPtr<TokenValue>())
-		return EscapeLiteral(*p);
-	if(const auto p = vo.AccessPtr<A1::ValueToken>())
-		return sfmt<string>("[ValueToken] %s", to_string(*p).c_str());
-	if(const auto p = vo.AccessPtr<int>())
-		return sfmt<string>("[int] %d", *p);
-	if(const auto p = vo.AccessPtr<unsigned>())
-		return sfmt<string>("[uint] %u", *p);
-	if(const auto p = vo.AccessPtr<long long>())
-		return sfmt<string>("[longlong] %lld", *p);
-	if(const auto p = vo.AccessPtr<unsigned long long>())
-		return sfmt<string>("[ulonglong] %llu", *p);
-	if(const auto p = vo.AccessPtr<double>())
-		return sfmt<string>("[double] %.14g", *p);
-	if(const auto p = vo.AccessPtr<long>())
-		return sfmt<string>("[long] %ld", *p);
-	if(const auto p = vo.AccessPtr<unsigned long>())
-		return sfmt<string>("[ulong] %lu", *p);
-	if(const auto p = vo.AccessPtr<short>())
-		return sfmt<string>("[short] %hd", *p);
-	if(const auto p = vo.AccessPtr<unsigned short>())
-		return sfmt<string>("[ushort] %hu", *p);
-	if(const auto p = vo.AccessPtr<signed char>())
-		return sfmt<string>("[char] %d", int(*p));
-	if(const auto p = vo.AccessPtr<unsigned char>())
-		return sfmt<string>("[uchar] %u", unsigned(*p));
-	if(const auto p = vo.AccessPtr<float>())
-		// XXX: To eliminate G++ warning [-Wdouble-promotion]. This requires
-		//	to cast away 'const'.
-		return sfmt<string>("[float] %.6g", double(*p));
-	if(const auto p = vo.AccessPtr<long double>())
-		return sfmt<string>("[longdouble] %.18Lg", *p);
-	return StringifyValueObjectDefault(vo);
-}
-
-//! \since YSLib build 928
-YB_ATTR_nodiscard YB_PURE string
-StringifyValueObjectForDisplay(const ValueObject& vo)
-{
-	using YSLib::sfmt;
-
-	// XXX: %Ditto.
-	if(const auto p = vo.AccessPtr<string>())
-		return string(*p, p->get_allocator());
-	if(const auto p = vo.AccessPtr<TokenValue>())
-		return string(*p, p->get_allocator());
+	// XXX: Ditto.
 	if(const auto p = vo.AccessPtr<A1::ValueToken>())
 		return sfmt<string>("%s", to_string(*p).c_str());
 	if(const auto p = vo.AccessPtr<int>())
@@ -284,7 +238,8 @@ StringifyValueObjectForDisplay(const ValueObject& vo)
 	if(const auto p = vo.AccessPtr<unsigned char>())
 		return sfmt<string>("%u", unsigned(*p));
 	if(const auto p = vo.AccessPtr<float>())
-		// XXX: Ditto.
+		// XXX: To eliminate G++ warning [-Wdouble-promotion]. This requires
+		//	to cast away 'const'.
 		return sfmt<string>("%.6g", double(*p));
 	if(const auto p = vo.AccessPtr<long double>())
 		return sfmt<string>("%.18Lg", *p);
@@ -292,14 +247,80 @@ StringifyValueObjectForDisplay(const ValueObject& vo)
 }
 
 YB_ATTR_nodiscard YB_PURE string
-StringifyValueObjectForWrite(const ValueObject& vo)
+StringifyBasicObjectWithTypeTag(const ValueObject& vo)
 {
-	// XXX: %Ditto.
+	using YSLib::sfmt;
+
+	// XXX: Ditto.
+	if(const auto p = vo.AccessPtr<A1::ValueToken>())
+		return sfmt<string>("[ValueToken] %s", to_string(*p).c_str());
+	if(const auto p = vo.AccessPtr<int>())
+		return sfmt<string>("[int] %d", *p);
+	if(const auto p = vo.AccessPtr<unsigned>())
+		return sfmt<string>("[uint] %u", *p);
+	if(const auto p = vo.AccessPtr<long long>())
+		return sfmt<string>("[longlong] %lld", *p);
+	if(const auto p = vo.AccessPtr<unsigned long long>())
+		return sfmt<string>("[ulonglong] %llu", *p);
+	if(const auto p = vo.AccessPtr<double>())
+		return sfmt<string>("[double] %.14g", *p);
+	if(const auto p = vo.AccessPtr<long>())
+		return sfmt<string>("[long] %ld", *p);
+	if(const auto p = vo.AccessPtr<unsigned long>())
+		return sfmt<string>("[ulong] %lu", *p);
+	if(const auto p = vo.AccessPtr<short>())
+		return sfmt<string>("[short] %hd", *p);
+	if(const auto p = vo.AccessPtr<unsigned short>())
+		return sfmt<string>("[ushort] %hu", *p);
+	if(const auto p = vo.AccessPtr<signed char>())
+		return sfmt<string>("[char] %d", int(*p));
+	if(const auto p = vo.AccessPtr<unsigned char>())
+		return sfmt<string>("[uchar] %u", unsigned(*p));
+	if(const auto p = vo.AccessPtr<float>())
+		// XXX: Ditto.
+		return sfmt<string>("[float] %.6g", double(*p));
+	if(const auto p = vo.AccessPtr<long double>())
+		return sfmt<string>("[longdouble] %.18Lg", *p);
+	return StringifyValueObjectDefault(vo);
+}
+
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObjectEscape(const ValueObject& vo,
+	string(&fallback)(const ValueObject&))
+{
+	// XXX: Ditto.
 	if(const auto p = vo.AccessPtr<string>())
 		return ystdex::quote(EscapeLiteral(*p));
 	if(const auto p = vo.AccessPtr<TokenValue>())
 		return EscapeLiteral(*p);
-	return StringifyValueObjectForDisplay(vo);
+	return fallback(vo);
+}
+//@}
+
+//! \since YSLib build 852
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObject(const ValueObject& vo)
+{
+	return StringifyValueObjectEscape(vo, StringifyBasicObjectWithTypeTag);
+}
+
+//! \since YSLib build 928
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObjectForDisplay(const ValueObject& vo)
+{
+	// XXX: Ditto.
+	if(const auto p = vo.AccessPtr<string>())
+		return string(*p, p->get_allocator());
+	if(const auto p = vo.AccessPtr<TokenValue>())
+		return string(*p, p->get_allocator());
+	return StringifyBasicObject(vo);
+}
+
+//! \since YSLib build 928
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObjectForWrite(const ValueObject& vo)
+{
+	return StringifyValueObjectEscape(vo, StringifyBasicObject);
 }
 
 /*!
