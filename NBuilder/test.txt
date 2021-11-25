@@ -116,8 +116,7 @@ $defl! test (&i)
 		$defv! $gg fm #ignore eval (list* - fm) (() get-current-environment);
 		$expect (- 0 1) gg 2 3;
 		$expect (- 0 1) $gg 3 4;
-		subinfo "combiner rvalue calls: regression for tail calls;"
-			" fixed since b856";
+		subinfo "combiner rvalue calls: tail calls;" " fixed since b856";
 		$expect () ($lambda (x) forward x) ();
 		$expect () ($lambda (x) ($lambda (y) idv y) x) ();
 		$expect () ($lambda (x) ($lambda (y) id y) x) ();
@@ -156,7 +155,7 @@ $defl! test (&i)
 		$expect 1 $let () ($defrec! a 1; a);
 		$expect 1 $let () ($defrec! (a a) list 1 1; a);
 		$let () ($defrec! (&a b) list b ($lambda () 1));
-		subinfo "regression for $defrec!;" " fixed since b897";
+		subinfo "$defrec!;" " fixed since b897";
 		$let () ($defrec! (&a b) list b ($lambda () 1));
 		$expect 1 $let () ($defrec! (b &a) list ($lambda () 1) b; () b)
 	))
@@ -176,7 +175,7 @@ $defl! test (&i)
 		$expect #f unique? (collapse (expire (first@ li)));
 		$expect #t unique? (collapse (expire (first@ lie)));
 		$expect #f unique? (collapse (first@ li));
-		subinfo "regression for the collapsed value category;"
+		subinfo "the collapsed value category;"
 			" fixed since b925";
 		$expect #f unique? (collapse (first@ lie));
 		subinfo "expecting prvalue for reference to reference";
@@ -238,7 +237,7 @@ $defl! test (&i)
 		$def! li list% a 2;
 		assign@! b (first@ li);
 		$expect #f uncollapsed? (move! b);
-		subinfo "regression for preventing non-first-class temporary objects;"
+		subinfo "preventing non-first-class temporary objects;"
 			" fixed since b925";
 		$let ()
 		(
@@ -274,7 +273,7 @@ $defl! test (&i)
 		$check eqv? (unwrap (idv idv)) $quote;
 		$check eqv? (unwrap idv) (unwrap (idv idv));
 		$check eqv? (wrap (unwrap idv)) idv;
-		subinfo "regression for wrap/unwrap;" " fixed since b859";
+		subinfo "wrap/unwrap;" " fixed since b859";
 		((unwrap (unwrap (wrap (wrap ($quote)))))) ($quote id);
 		subinfo "sanity on irregular representations;" " fixed since b876";
 		$let ()
@@ -311,7 +310,7 @@ $defl! test (&i)
 	))
 	((eqv? i 7) (
 		info "logical operations";
-		subinfo "regression for not?;" " fixed since b899";
+		subinfo "not?;" " fixed since b899";
 		$expect #t eqv? ($let ((f #f)) not? f) (not? #f);
 		subinfo "non-strict logical operations";
 		$expect #t () $and?;
@@ -321,7 +320,7 @@ $defl! test (&i)
 		$expect 2 $and? 1 2;
 		$expect 1 $or? 1 #f;
 		$expect 2 $or? #f 2 #f 3;
-		subinfo "regression for $or?;" " fixed since b884";
+		subinfo "$or?;" " fixed since b884";
 		$or? #f #f (string->symbol "evaluate-once") #f;
 		subinfo "strict logical operations";
 		$expect #t () and?;
@@ -334,8 +333,7 @@ $defl! test (&i)
 	))
 	((eqv? i 8) (
 		info "list operations";
-		subinfo "empty list calls: regression for list* and list*%;"
-			" fixed since b897";
+		subinfo "empty list calls: list* and list*%;" " fixed since b897";
 		$expect () list* ();
 		$expect () list*% ();
 		$def! a list 2 3;
@@ -358,8 +356,7 @@ $defl! test (&i)
 					$sequence (eval ($quote l0) d) (forward! (forward! x))))
 					(fwd l0))
 			($if (bound-lvalue? ($resolve-identifier l0)) id expire);
-		subinfo "regression for forward-list-first%;"
-			" fixed derivation since b898";
+		subinfo "forward-list-first%;" " fixed derivation since b898";
 		$expect "should not be evaluated"
 			first (rest% (forward-first% idv (idv (list%
 				(list% raise-error "should not be evaluated") 1))));
@@ -540,7 +537,7 @@ $defl! test (&i)
 		$defl! fold* (&kons &head .&tail) $if (null? tail) head
 			(kons head (apply fold* (cons kons tail)));
 		$defl! xlist* (.&xs) apply fold* (cons cons xs);
-		subinfo "regression for tail calls;" " fixed since b856";
+		subinfo "tail calls;" " fixed since b856";
 		$expect #inert for-each-ltr ($lambda .) (list ());
 		$expect (list ()) map-reverse ($lambda .) (list ())
 	))
@@ -560,7 +557,7 @@ $defl! test (&i)
 	))
 	((eqv? i 11) (
 		info "local bindings";
-		subinfo "regression for tail calls;" " fixed since b856";
+		subinfo "tail calls;" " fixed since b856";
 		$expect () $let ();
 		subinfo "$let";
 		$expect 5 $let ((&x 2) (&y 3)) + x y;
@@ -577,13 +574,12 @@ $defl! test (&i)
 		$expect "cd"
 			$let/e (derive-environment std.strings std.io) ((d "d"))
 				(puts (++ "a" "b"); (++ "c" d));
-		subinfo "regression for binding noncopyable objects;"
-			" fixed since b914";
+		subinfo "binding noncopyable objects;" " fixed since b914";
 		$let ()
 		(
 			$defl! test-let-case ($let &x can-copy)
 			(
-				"regression for reference support in parameter trees;",
+				"reference support in parameter trees;",
 					" fixed since b915";
 				$def! n 42;
 				$def! li1 list% ($quote a) n;
@@ -610,8 +606,8 @@ $defl! test (&i)
 			for-each-ltr test-let
 				(list $let $let% $let* $let*% $letrec $letrec%)
 		);
-		subinfo "regression for binding noncopyable objects on new"
-			" environment;" " fixed since b918";
+		subinfo "binding noncopyable objects on new environment;"
+			" fixed since b918";
 		$let ()
 		(
 			$defv! $bp-seq (&parents .&bindings) d $sequence
@@ -652,8 +648,7 @@ $defl! test (&i)
 			);
 			for-each-ltr test-bp (list $bindings/p->environment $bp-seq $bp-let)
 		);
-		subinfo "regression for of empty lvalues bindings environment;"
-			" fixed since b927";
+		subinfo "of empty lvalues bindings environment;" " fixed since b927";
 		$let ((el ()))
 			$expect 42 eval% (list% $let el 42) (() get-current-environment)
 	))
@@ -992,7 +987,7 @@ $defl! test (&i)
 				$lazy/d (() lock-current-environment) list n (from (+ n 1));
 			force (stream-filter ($lambda (n) eqv? n maxn) (from 0))
 		);
-		subinfo "regression for self-modifying promises;" " fixed since b924";
+		subinfo "self-modifying promises;" " fixed since b924";
 		$let ()
 		(
 			"Regression:",
@@ -1004,12 +999,10 @@ $defl! test (&i)
 			$def! p $lazy $sequence (puts "*") (assign! p ($lazy (puts "#")));
 			force p
 		);
-		subinfo "regression for binding noncopyable objects;"
-			" fixed since b924";
+		subinfo "binding noncopyable objects;" " fixed since b924";
 		$expect 42 force (eval (list $lazy $sequence (() make-nocopy) 42)
 			(() get-current-environment));
-		subinfo "regression for resolved referencing shared state move;"
-			" fixed since b925";
+		subinfo "resolved referencing shared state move;" " fixed since b925";
 		$let ()
 		(
 			$def! p1 $lazy unit;
