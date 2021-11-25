@@ -997,7 +997,7 @@ $defl! test (&i)
 		(
 			"Regression:",
 				"This is incapable in RnRK without first-class references.";
-			puts "expect output: single line of \"#\"";
+			puts "expect output: single line of \"*\"";
 			"NOTE", "This tests the memoization clause set the correct place.",
 				"Instead of reusing the old one, the decapsulated object",
 				" should be accessed immediately.";
