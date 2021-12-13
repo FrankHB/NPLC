@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8542
+\version r8544
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-11-04 03:20 +0800
+	2021-12-13 12:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -147,6 +147,7 @@ DefaultDebugAction(TermNode& term, ContextNode& ctx)
 	{
 		YTraceDe(Debug, "List term: %p", ystdex::pvoid(&term));
 		LogTermValue(term);
+		yunused(ctx);
 		YTraceDe(Debug, "Current action type: %s.",
 			ctx.GetCurrentActionType().name());
 		return ProcessDebugCommand();
@@ -162,6 +163,7 @@ DefaultLeafDebugAction(TermNode& term, ContextNode& ctx)
 	{
 		YTraceDe(Debug, "Leaf term: %p", ystdex::pvoid(&term));
 		LogTermValue(term);
+		yunused(ctx);
 		YTraceDe(Debug, "Current action type: %s.",
 			ctx.GetCurrentActionType().name());
 		return ProcessDebugCommand();

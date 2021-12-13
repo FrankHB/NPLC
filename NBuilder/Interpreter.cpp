@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2892
+\version r2894
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-11-25 04:25 +0800
+	2021-12-13 12:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -483,6 +483,7 @@ LogTree(const ValueNode& node, Logger::Level lv)
 	PrintNode(oss, node, [](const ValueNode& nd) YB_PURE{
 		return StringifyValueObject(nd.Value);
 	});
+	yunused(lv);
 	YTraceDe(lv, "%s", oss.str().c_str());
 }
 
@@ -492,6 +493,7 @@ LogTermValue(const TermNode& term, Logger::Level lv)
 	YSLib::ostringstream oss(string(term.get_allocator()));
 
 	PrintTermNode(oss, term, NodeValueLogger());
+	yunused(lv);
 	YTraceDe(lv, "%s", oss.str().c_str());
 }
 
