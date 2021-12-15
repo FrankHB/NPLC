@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2894
+\version r2904
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-12-13 12:30 +0800
+	2021-12-15 23:32 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -37,6 +37,7 @@
 #include YFM_NPL_NPLA1Forms // for TraceException, A1::TraceBacktrace,
 //	any_ops::trivial_swap;
 #include <cstring> // for std::strcmp, std::strstr;
+#include YFM_NPL_NPLAMath // for FPToString;
 #include <cstdio> // for std::fprintf, stderr;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include <iostream> // for std::cin, std::cout;
@@ -224,7 +225,7 @@ StringifyBasicObject(const ValueObject& vo)
 	if(const auto p = vo.AccessPtr<unsigned long long>())
 		return sfmt<string>("%llu", *p);
 	if(const auto p = vo.AccessPtr<double>())
-		return sfmt<string>("%.14g", *p);
+		return FPToString(*p);
 	if(const auto p = vo.AccessPtr<long>())
 		return sfmt<string>("%ld", *p);
 	if(const auto p = vo.AccessPtr<unsigned long>())
@@ -238,11 +239,9 @@ StringifyBasicObject(const ValueObject& vo)
 	if(const auto p = vo.AccessPtr<unsigned char>())
 		return sfmt<string>("%u", unsigned(*p));
 	if(const auto p = vo.AccessPtr<float>())
-		// XXX: To eliminate G++ warning [-Wdouble-promotion]. This requires
-		//	to cast away 'const'.
-		return sfmt<string>("%.6g", double(*p));
+		return FPToString(*p);
 	if(const auto p = vo.AccessPtr<long double>())
-		return sfmt<string>("%.18Lg", *p);
+		return FPToString(*p);
 	return StringifyValueObjectDefault(vo);
 }
 
@@ -263,7 +262,7 @@ StringifyBasicObjectWithTypeTag(const ValueObject& vo)
 	if(const auto p = vo.AccessPtr<unsigned long long>())
 		return sfmt<string>("[ulonglong] %llu", *p);
 	if(const auto p = vo.AccessPtr<double>())
-		return sfmt<string>("[double] %.14g", *p);
+		return "[double] " + FPToString(*p);
 	if(const auto p = vo.AccessPtr<long>())
 		return sfmt<string>("[long] %ld", *p);
 	if(const auto p = vo.AccessPtr<unsigned long>())
@@ -277,10 +276,9 @@ StringifyBasicObjectWithTypeTag(const ValueObject& vo)
 	if(const auto p = vo.AccessPtr<unsigned char>())
 		return sfmt<string>("[uchar] %u", unsigned(*p));
 	if(const auto p = vo.AccessPtr<float>())
-		// XXX: Ditto.
-		return sfmt<string>("[float] %.6g", double(*p));
+		return "[float] " + FPToString(*p);
 	if(const auto p = vo.AccessPtr<long double>())
-		return sfmt<string>("[longdouble] %.18Lg", *p);
+		return "[longdouble] " + FPToString(*p);
 	return StringifyValueObjectDefault(vo);
 }
 
