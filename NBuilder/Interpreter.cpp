@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2904
+\version r2905
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-12-15 23:32 +0800
+	2021-12-23 23:28 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -428,7 +428,7 @@ shared_pool_resource::do_deallocate(void* p, size_t bytes, size_t alignment)
 		yverify([&]() YB_PURE{
 			return pr.first != pools.end();
 		}() && pr.first->get_extra_data() == pr.second);
-		return pr.first->deallocate(p);
+		pr.first->deallocate(p);
 	}
 	else
 		oversized.deallocate(p, bytes, alignment);
