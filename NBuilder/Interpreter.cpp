@@ -342,7 +342,7 @@ struct NodeValueLogger
 //@{
 using ystdex::ceiling_lb;
 yconstexpr const auto min_block_size(resource_pool::adjust_for_block(1, 1));
-yconstexpr const size_t init_pool_num(yimpl(12));
+yconstexpr const size_t init_pool_num(yimpl(19));
 //! \since YSLib build 885
 static_assert(init_pool_num > 1, "Invalid pool configuration found.");
 #if YB_IMPL_GNUCPP >= 30400 || __has_builtin(__builtin_clz)
