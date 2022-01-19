@@ -1,4 +1,4 @@
-﻿"#", "(C) 2017-2021 FrankHB.",
+﻿"#", "(C) 2017-2022 FrankHB.",
 "NPLC basic derivation extension and test module.";
 
 "NOTE", "For the test purpose, this file is deliberatedly kept as UTF-8+BOM",
@@ -313,23 +313,23 @@ $defl! test (&i)
 		subinfo "not?;" " fixed since b899";
 		$expect #t eqv? ($let ((f #f)) not? f) (not? #f);
 		subinfo "non-strict logical operations";
-		$expect #t () $and?;
-		$expect #f () $or?;
-		$expect #f $and? #f #f;
-		$expect #t $or? #f #t;
-		$expect 2 $and? 1 2;
-		$expect 1 $or? 1 #f;
-		$expect 2 $or? #f 2 #f 3;
-		subinfo "$or?;" " fixed since b884";
-		$or? #f #f (string->symbol "evaluate-once") #f;
+		$expect #t () $and;
+		$expect #f () $or;
+		$expect #f $and #f #f;
+		$expect #t $or #f #t;
+		$expect 2 $and 1 2;
+		$expect 1 $or 1 #f;
+		$expect 2 $or #f 2 #f 3;
+		subinfo "$or (previously $or?);" " fixed since b884";
+		$or #f #f (string->symbol "evaluate-once") #f;
 		subinfo "strict logical operations";
-		$expect #t () and?;
-		$expect #f () or?;
-		$expect #f and? #f #f;
-		$expect #t or? #f #t;
-		$expect 2 and? 1 2;
-		$expect 1 or? 1 #f;
-		$expect 3 or? #f 2 #f 3
+		$expect #t () and;
+		$expect #f () or;
+		$expect #f and #f #f;
+		$expect #t or #f #t;
+		$expect 2 and 1 2;
+		$expect 1 or 1 #f;
+		$expect 3 or #f 2 #f 3
 	))
 	((eqv? i 8) (
 		info "list operations";
@@ -430,7 +430,7 @@ $defl! test (&i)
 		);
 		subinfo "sublists eagar logical operations";
 		$expect (list 3 #f 2 #f)
-			list (and? 1 2 3) (and? 1 #f 3) (or? #f 2 #f) (or? #f #f);
+			list (and 1 2 3) (and 1 #f 3) (or #f 2 #f) (or #f #f);
 		subinfo "accr";
 		accr (list (list "2") (list "3")) null? () first rest%
 			($lambda% (&x &y) accr (forward x) null? y first rest% cons%);
@@ -1108,14 +1108,14 @@ $defl! test (&i)
 		$rem (
 			"The following Kernel code conforms to PTC.";
 			($define! solve ($lambda (n) ($let ((x (* n n)))
-				($if ($and? (=? (div x 1000) (mod (div x 100) 10))
+				($if ($and (=? (div x 1000) (mod (div x 100) 10))
 				(=? (div (mod x 100) 10) (mod x 10))) x (solve (+ n 1))))))
 			(solve 80)
 		);
 		$rem (
 		"The following code requires trucating quotient and remainder.";
 		$defl! solve (n) $let ((x * n n))
-			$if ($and? (=? (/ x 1000) (% (/ x 100) 10))
+			$if ($and (=? (/ x 1000) (% (/ x 100) 10))
 				(=? (/ (% x 100) 10) (% x 10)))
 			x (solve (+ n 1));
 		$expect 7744 solve 80
@@ -1314,13 +1314,13 @@ $defl! testptc (i)
 		f f
 	))
 	((eqv? i 11) (
-		"PTC $and?";
-		$defl! f (n) $and? #t (f n);
+		"PTC $and";
+		$defl! f (n) $and #t (f n);
 		f #t
 	))
 	((eqv? i 12) (
-		"PTC $or?";
-		$defl! f (n) $or? #f (f n);
+		"PTC $or";
+		$defl! f (n) $or #f (f n);
 		f #f
 	))
 	((eqv? i 13) (
