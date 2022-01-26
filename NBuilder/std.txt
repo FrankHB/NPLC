@@ -122,7 +122,7 @@ $defl! iota (&x)
 	$if (eqv? x 0) ()
 		(list-concat (iota (($remote-eval% sub1 std.math) x)) (list x));
 $defl! iota-range (first last)
-	$if (<? first last)
+	$if (($remote-eval% <? std.math) first last)
 		(cons first (iota-range (($remote-eval% add1 std.math) first) last)) ();
 
 "NOTE", "String library.";
