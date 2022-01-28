@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2021 FrankHB.
+	© 2013-2022 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2905
+\version r2907
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-12-23 23:28 +0800
+	2022-01-28 23:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -455,7 +455,7 @@ std::pair<shared_pool_resource::pools_t::iterator, size_t>
 shared_pool_resource::find_pool(size_t lb_size) ynothrow
 {
 	return {ystdex::lower_bound_n(pools.begin(),
-		pools_t::difference_type(pools.size()), lb_size, []		
+		pools_t::difference_type(pools.size()), lb_size, []
 		YB_LAMBDA_ANNOTATE((const resource_pool& a, size_t lb), ynothrow, pure){
 		return a.get_extra_data() < lb;
 	}), lb_size};
