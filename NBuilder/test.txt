@@ -1106,20 +1106,26 @@ $defl! test (&i)
 			$expect imin truncate-quotient imin 1;
 			$expect neg-imin truncate-quotient imin -1;
 		);
-		$rem (
-			"The following Kernel code conforms to PTC.";
-			($define! solve ($lambda (n) ($let ((x (* n n)))
-				($if ($and (=? (div x 1000) (mod (div x 100) 10))
-				(=? (div (mod x 100) 10) (mod x 10))) x (solve (+ n 1))))))
-			(solve 80)
-		);
-		$rem (
-		"The following code requires trucating quotient and remainder.";
-		$defl! solve (n) $let ((x * n n))
-			$if ($and (=? (/ x 1000) (% (/ x 100) 10))
-				(=? (/ (% x 100) 10) (% x 10)))
-			x (solve (+ n 1));
-		$expect 7744 solve 80
+		subinfo "AABB square number search";
+		$let ()
+		(
+			$import&! std.math
+				truncate/ truncate-quotient truncate-remainder add1;
+
+			$rem (
+				"The following Kernel code conforms to PTC.";
+				($define! solve ($lambda (n) ($let ((x (* n n)))
+					($if ($and (=? (div x 1000) (mod (div x 100) 10))
+					(=? (div (mod x 100) 10) (mod x 10))) x (solve (+ n 1))))))
+				(solve 80)
+			);
+			"The following code requires trucating quotient and remainder.";
+			$defl! solve (n) $let* ((x * n n) ((xq100 xr100) truncate/ x 100))
+				$if ($and (=? (truncate-quotient x 1000)
+					(truncate-remainder xq100 10))
+					(=? (truncate-quotient xr100 10) (truncate-remainder x 10)))
+				x (solve (add1 n));
+			$expect 7744 solve 80
 		)
 	))
 	((eqv? i 20) (
