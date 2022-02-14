@@ -1,5 +1,5 @@
 ﻿/*
-	© 2011-2021 FrankHB.
+	© 2011-2022 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8544
+\version r8556
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2021-12-13 12:30 +0800
+	2022-02-14 08:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -34,7 +34,7 @@
 #include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
-#include YFM_NPL_NPLA1Forms // for NPL::A1::Forms;
+#include YFM_NPL_NPLA1Forms // for NPL::A1::Forms, trivial_swap;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include YFM_NPL_Dependency // for NPL, NPL::A1, EnvironmentGuard;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
@@ -59,7 +59,7 @@ namespace A1
 void
 RegisterLiteralSignal(ContextNode& ctx, const string& name, SSignal sig)
 {
-	NPL::EmplaceLeaf<LiteralHandler>(ctx, name, any_ops::trivial_swap,
+	NPL::EmplaceLeaf<LiteralHandler>(ctx, name, trivial_swap,
 		[=] YB_LAMBDA_ANNOTATE((const ContextNode&), , noreturn)
 		-> ReductionStatus{
 		throw sig;
@@ -293,8 +293,7 @@ LoadFunctions(Interpreter& intp)
 
 	// NOTE: Literal expression forms.
 	RegisterForm(rctx, "$retain", Retain);
-	RegisterForm(rctx, "$retain1", any_ops::trivial_swap,
-		ystdex::bind1(RetainN, 1));
+	RegisterForm(rctx, "$retain1", trivial_swap, ystdex::bind1(RetainN, 1));
 #if true
 	// NOTE: Primitive features, listed as RnRK, except mentioned above. See
 	//	%YFramework.NPL.Dependency.
@@ -398,7 +397,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(rctx, "$crash", []{
 		terminate();
 	});
-	RegisterUnary<Strict, const string>(rctx, "trace", any_ops::trivial_swap,
+	RegisterUnary<Strict, const string>(rctx, "trace", trivial_swap,
 		[&](const string& cmd){
 		const auto set_t_lv([&](const string& str) -> Logger::Level{
 			if(str == "on")
@@ -503,11 +502,11 @@ LoadFunctions(Interpreter& intp)
 		std::getline(std::cin, line);
 		term.Value = line;
 	});
-	RegisterUnary(rctx, "write", any_ops::trivial_swap, [&](TermNode& term){
+	RegisterUnary(rctx, "write", trivial_swap, [&](TermNode& term){
 		WriteTermValue(context.GetOutputStreamRef(), term);
 		return ValueToken::Unspecified;
 	});
-	RegisterUnary(rctx, "display", any_ops::trivial_swap, [&](TermNode& term){
+	RegisterUnary(rctx, "display", trivial_swap, [&](TermNode& term){
 		DisplayTermValue(context.GetOutputStreamRef(), term);
 		return ValueToken::Unspecified;
 	});
@@ -515,11 +514,11 @@ LoadFunctions(Interpreter& intp)
 		LogTermValue(term, Notice);
 		return ValueToken::Unspecified;
 	});
-	RegisterStrict(rctx, "logv", any_ops::trivial_swap,
+	RegisterStrict(rctx, "logv", trivial_swap,
 		ystdex::bind1(LogTermValue, Notice));
 	RegisterUnary<Strict, const string>(rctx, "echo", Echo);
 	if(context.IsAsynchronous())
-		RegisterStrict(rctx, "load-at-root", any_ops::trivial_swap,
+		RegisterStrict(rctx, "load-at-root", trivial_swap,
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 			// NOTE: This does not support PTC.
@@ -531,7 +530,7 @@ LoadFunctions(Interpreter& intp)
 			return A1::RelayToLoadExternal(ctx, term, context);
 		});
 	else
-		RegisterStrict(rctx, "load-at-root", any_ops::trivial_swap,
+		RegisterStrict(rctx, "load-at-root", trivial_swap,
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 
@@ -671,7 +670,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.2 b930+"
+#define NPLC_VER "V1.3 b939+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
