@@ -579,8 +579,8 @@ $defl! test (&i)
 		$expect (list 3 #f 2 #f)
 			list (and 1 2 3) (and 1 #f 3) (or #f 2 #f) (or #f #f);
 		subinfo "accr";
-		accr (list (list "2") (list "3")) null? () first rest%
-			($lambda% (&x &y) accr (forward x) null? y first rest% cons%);
+		accr (list (list "2") (list "3")) null? () first% rest%
+			($lambda% (&x &y) accr (forward x) null? y first% rest% cons%);
 		subinfo "foldr1";
 		$expect (list "2" "3")
 			foldr1 list-concat () (list (list "2") (list "3"));
@@ -712,8 +712,7 @@ $defl! test (&i)
 		(
 			$defl! test-let-case ($let &x can-copy)
 			(
-				"reference support in parameter trees;",
-					" fixed since b915";
+				"reference support in parameter trees; fixed since b915";
 				$def! n 42;
 				$def! li1 list% ($quote a) n;
 				$def! bindings list% li1 (list% ($quote t) (move! x));
