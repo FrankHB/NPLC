@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2919
+\version r2920
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-02-14 08:56 +0800
+	2022-02-17 08:12 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -28,7 +28,7 @@
 #include "Interpreter.h" // for type_info, QueryTypeName, IsTyped, YSLib::sfmt,
 //	YSLib::ostringstream, A1::QuerySourceInformation, YAssertNonnull,
 //	namespace YSLib;
-#include <ystdex/functional.hpp> // for ystdex::expand_proxy;
+#include <ystdex/expanded_function.hpp> // for ystdex::expand_proxy;
 #include <Helper/YModules.h>
 #include YFM_YCLib_YCommon // for ystdex::quote, ystdex::call_value_or;
 #include YFM_YSLib_Core_YException // for FilterExceptions,
