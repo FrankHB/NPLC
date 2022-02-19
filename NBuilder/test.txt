@@ -699,6 +699,8 @@ $defl! test (&i)
 		$expect 4 $let* ((&x 2) (&y x)) + x y;
 		subinfo "$letrec";
 		$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
+		subinfo "$letrec%; fixed since b939";
+		$check reference? ($letrec% () q-a);
 		subinfo "$letrec*";
 		$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z;
 		subinfo "local bindings with static environments";
