@@ -36,15 +36,16 @@ $defl! fail-on-expect (&expr &res &expected) $sequence
 	(display/newline (forward! expected))
 	(report-failure "Test case failed.");
 $defv! $check (.&expr) d
-	$let ((res eval expr d))
-		$if (res) (pass res) (fail-on-check expr res);
+	$let ((&res eval expr d))
+		$if res (pass (forward! res)) (fail-on-check expr (forward! res));
 $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
-		$if (equal? res expected) (pass res)
+		$if (equal? res expected) (pass (forward! res))
 			(fail-on-expect expr (forward! res) (forward! expected));
 $defv! $expect-moved (.&expr) d
 	$let ((&res eval expr d))
-		$if (moved? res) (pass res) (fail-on-expect expr (forward! res) ());
+		$if (moved? res) (pass (forward! res))
+			(fail-on-expect expr (forward! res) ());
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
 $defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
 
