@@ -496,6 +496,19 @@ $defl! test (&i)
 		$expect 1 list-length
 			($let ((li q-li2)) (restv (expire li); li));
 		$expect-moved first a;
+		subinfo "first forwarding;" " fixed derivation since b939";
+		$let ()
+		(
+			$defl! test (f)
+			(
+				$def! li list% (expire (as-const q-a)) 2;
+				$check not? (modifiable? (f li));
+				$check unique? (f li);
+				$expect 1 f li
+			);
+			test first;
+			test first&
+		);
 		subinfo "list access";
 		list% q-li q-li2
 			(idv (first q-li)) (restv q-li)
