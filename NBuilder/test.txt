@@ -607,6 +607,14 @@ $defl! test (&i)
 		$expect #f reference? (list-concat () q-e);
 		subinfo "append";
 		$expect (list% "2" id) append (list "2") (list% id);
+		subinfo "list-extract-first";
+		$let ()
+		(
+			$def! i 1;
+			$def! l0 list% i 2;
+			$def! li list% (as-const l0) (list 3 4);
+			$check not? (modifiable? (first% (list-extract-first li)))
+		);
 		subinfo "list algorithm safety";
 		$expect (list% (list% 1 2 3) (list% 1 2 3)) list%
 			($let () ($def! li list 1 2 3; map1 id li))
