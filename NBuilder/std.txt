@@ -51,14 +51,14 @@ $defl! filter (&accept? &ls) apply append
 	(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
 $defl! reduce (&ls &bin &id) $cond
 	((null? ls) forward! id)
-	((null? (rest& ls)) first (forward! ls))
-	(#t bin (first (forward ls))
+	((null? (rest& ls)) first% (forward! ls))
+	(#t bin (first% (forward ls))
 		(reduce (rest% (forward ls)) bin (forward! id)));
 "NOTE", "Definition of assv is in %YFramework.NPL.Dependency.";
 $defl! memv? (&x &ls)
 	apply or (map1 ($lambda (&x) eqv? x x) ls);
 $defl%! assq (&x &alist) $cond ((null? alist) ())
-	((eq? x (first& (first& alist))) first alist)
+	((eq? x (first& (first& alist))) first% alist)
 	(#t assq (forward! x) (rest& alist));
 $defl! memq? (&x &ls)
 	apply or (map1 ($lambda (&x) eq? x x) ls);
