@@ -510,6 +510,8 @@ $defl! test (&i)
 			test first;
 			test first&
 		);
+		subinfo "firstv copy elision on xvalues;" " fixed since b939";
+		$let ((li list% (() make-nocopy))) $def! b firstv (expire li);
 		subinfo "list access";
 		list% q-li q-li2
 			(idv (first q-li)) (restv q-li)
