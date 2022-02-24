@@ -481,7 +481,8 @@ $defl! test (&i)
 					$sequence (eval ($quote l0) d) (forward! (forward! x))))
 					(fwd l0))
 			($if (bound-lvalue? ($resolve-identifier l0)) id expire);
-		subinfo "forward-list-first%;" " fixed derivation since b898";
+		subinfo "forward-first% (previously forward-list-first%);"
+			" fixed derivation since b898";
 		$expect "should not be evaluated"
 			first (rest% (forward-first% idv (idv (list%
 				(list% raise-error "should not be evaluated") 1))));
