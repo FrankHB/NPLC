@@ -159,7 +159,14 @@ $defl! test (&i)
 	((eqv? i 4) (
 		info "basic object operations";
 		subinfo "copy elision";
-		$let ((x () make-nocopy)) idv (expire x);
+		$let ()
+		(
+			$defl! test-elision (f) $let ((x () make-nocopy)) f (expire x);
+			test-elision idv;
+			subinfo "collapse copy elision on xvalues;"
+				" fixed derivation since b939";
+			test-elision collapse
+		);
 		subinfo "equal? + fwd?";
 		$let ((fwd? $vau% (&x) d
 			($lambda% (%v) bound-lvalue? ($resolve-identifier v))
@@ -1540,4 +1547,3 @@ $def! teste-case-list list 1;
 $defl! test-in (&l) for-each-ltr test l;
 $defl! test-range (first last) test-in (iota-range first last);
 $defl! test-seq (i) test-in (iota i);
-
