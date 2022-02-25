@@ -145,6 +145,8 @@ $defl! test (&i)
 	))
 	((eqv? i 4) (
 		info "basic object operations";
+		subinfo "copy elision";
+		$let ((x () make-nocopy)) idv (expire x);
 		subinfo "equal? + fwd?";
 		$def! fwd? $vau% (&x) d
 			($lambda% (%v) bound-lvalue? ($resolve-identifier v))
