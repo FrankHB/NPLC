@@ -178,8 +178,9 @@ $defl! test (&i)
 		$expect #f unique? (collapse (expire (first@ li)));
 		$expect #t unique? (collapse (expire (first@ lie)));
 		$expect #f unique? (collapse (first@ li));
-		subinfo "the collapsed value category;"
-			" fixed since b925";
+		subinfo "collapse safety;" " fixed derivation since b939";
+		$let ((a (collapse (() make-nocopy))) (b (collapse 42))) $expect 42 b;
+		subinfo "the collapsed value category;" " fixed since b925";
 		$expect #f unique? (collapse (first@ lie));
 		subinfo "expecting prvalue for reference to reference";
 		$expect 1 idv (idv (first@ li));
