@@ -701,7 +701,6 @@ $defl! test (&i)
 		subinfo "foldr";
 		$def! a0 0;
 		$def! a1 1;
-		$def! li1 list% 4 5 a1;
 		$expect (list 6 1)
 			foldr ($lambda (&x &y) list (+ x (first y)) x) (list% 0 a0 0)
 				(list a1 2 3);
