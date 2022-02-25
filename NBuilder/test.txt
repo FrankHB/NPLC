@@ -38,6 +38,9 @@ $defl! fail-on-expect (&expr &res &expected) $sequence
 $defv! $check (.&expr) d
 	$let ((&res eval expr d))
 		$if res (pass (forward! res)) (fail-on-check expr (forward! res));
+$defv! $check-not (.&expr) d
+	$let ((&res eval expr d))
+		$if res (fail-on-check expr (forward! res)) (pass (forward! res));
 $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
 		$if (equal? res expected) (pass (forward! res))
@@ -177,20 +180,20 @@ $defl! test (&i)
 		$let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 		(
 			subinfo "expecting different results for 'first&' and 'first@'";
-			$expect #f eq? (first& li) (first@ li);
+			$check-not eq? (first& li) (first@ li);
 			subinfo "collapsing test";
-			$expect #t reference? (first@ li);
-			$expect #t uncollapsed? (first@ li);
-			$expect #t reference? (idv (first@ li));
-			$expect #f uncollapsed? (idv (first@ li));
-			$expect #f unique? (collapse (expire (first@ li)));
-			$expect #t unique? (collapse (expire (first@ lie)));
-			$expect #f unique? (collapse (first@ li));
+			$check reference? (first@ li);
+			$check uncollapsed? (first@ li);
+			$check reference? (idv (first@ li));
+			$check-not uncollapsed? (idv (first@ li));
+			$check-not unique? (collapse (expire (first@ li)));
+			$check unique? (collapse (expire (first@ lie)));
+			$check-not unique? (collapse (first@ li));
 			subinfo "collapse safety;" " fixed derivation since b939";
 			$let ((a (collapse (() make-nocopy))) (b (collapse 42)))
 				$expect 42 b;
 			subinfo "the collapsed value category;" " fixed since b925";
-			$expect #f unique? (collapse (first@ lie));
+			$check-not unique? (collapse (first@ lie));
 			subinfo "expecting prvalue for reference to reference";
 			$expect 1 idv (idv (first@ li));
 			$expect 1 idv (idv ((wrap ($vau% (%x) #ignore x)) (first@ li)));
@@ -217,42 +220,42 @@ $defl! test (&i)
 			$def! b 2;
 			$def! li list% a 2;
 			assign@! b (first@ li);
-			$expect #f eqv? (id b) 1;
+			$check-not eqv? (id b) 1;
 			$def! b 2;
 			$def! li list% a 2;
 			assign@! b (first@ li);
-			$expect #t reference? (id b);
+			$check reference? (id b);
 			$def! b 2;
 			$def! li list% a 2;
 			assign@! b (first@ li);
-			$expect #t uncollapsed? (id b);
+			$check uncollapsed? (id b);
 			$def! b 2;
 			$def! li list% a 2;
 			assign@! b (first@ li);
-			$expect #t eqv? (idv (idv (id b))) 1;
+			$check eqv? (idv (idv (id b))) 1;
 			subinfo "idv move! tests";
-			$expect #t eqv? (idv (move! 42)) 42;
+			$check eqv? (idv (move! 42)) 42;
 			$def! b 2;
 			$def! li list% a 2;
 			assign@! b (first@ li);
-			$expect #t eqv? (idv (move! b)) 1;
+			$check eqv? (idv (move! b)) 1;
 			$def! b 2;
 			$def! li list% a 2;
 			assign@! b (first@ li);
-			$expect #f reference? (idv (move! b));
+			$check-not reference? (idv (move! b));
 			subinfo "move! tests";
 			$def! b 2;
 			$def! li list% a 2;
 			assign@! b (first@ li);
-			$expect #t eqv? (move! b) 1;
+			$check eqv? (move! b) 1;
 			$def! b 2;
 			$def! li list% a 2;
 			assign@! b (first@ li);
-			$expect #t reference? (move! b);
+			$check reference? (move! b);
 			$def! b 2;
 			$def! li list% a 2;
 			assign@! b (first@ li);
-			$expect #f uncollapsed? (move! b)
+			$check-not uncollapsed? (move! b)
 		);
 		subinfo "preventing non-first-class temporary objects;"
 			" fixed since b925";
@@ -280,7 +283,7 @@ $defl! test (&i)
 		info "combiner operations";
 		subinfo "combiner equality";
 		$check eqv? (idv idv) idv;
-		$check not? (eqv? (wrap idv) idv);
+		$check-not eqv? (wrap idv) idv;
 		$check eqv? (wrap idv) (wrap idv);
 		$check eqv? (wrap% idv) (wrap idv);
 		$check eqv? (wrap% idv) (wrap% idv);
@@ -371,12 +374,12 @@ $defl! test (&i)
 			$def! (e p? d) () make-encapsulation-type;
 			p? 1;
 			$def! enc e 1;
-			$expect #t p? enc;
-			$expect #f p? "str";
+			$check p? enc;
+			$check-not p? "str";
 			$expect 1 d enc;
 			$expect 2 d (e 2);
-			$expect #t eqv? (e (list 1 2)) (e (list 1 2));
-			$expect #f eqv? (e (list 1 2)) (e (list 3 4))
+			$check eqv? (e (list 1 2)) (e (list 1 2));
+			$check-not eqv? (e (list 1 2)) (e (list 3 4))
 		);
 		subinfo "encapsulation temporary values";
 		$let ((u unit) (&lt unit) (&t (idv unit)))
@@ -399,8 +402,8 @@ $defl! test (&i)
 			$def! x e 1;
 			$def! y e 2;
 			$def! z e 2;
-			$expect #f eqv? x y;
-			$expect #t eqv? y z
+			$check-not eqv? x y;
+			$check eqv? y z
 		)
 	))
 	((eqv? i 10) (
@@ -537,7 +540,7 @@ $defl! test (&i)
 			$defl! test (f)
 			(
 				$def! li list% (expire (as-const q-a)) 2;
-				$check not? (modifiable? (f li));
+				$check-not modifiable? (f li);
 				$check unique? (f li);
 				$expect 1 f li
 			);
@@ -592,22 +595,22 @@ $defl! test (&i)
 	((eqv? i 12) (
 		info "logical operations";
 		subinfo "not?;" " fixed since b899";
-		$expect #t eqv? ($let ((f #f)) not? f) (not? #f);
+		$check eqv? ($let ((f #f)) not? f) (not? #f);
 		subinfo "non-strict logical operations";
-		$expect #t () $and;
-		$expect #f () $or;
-		$expect #f $and #f #f;
-		$expect #t $or #f #t;
+		$check () $and;
+		$check-not () $or;
+		$check-not $and #f #f;
+		$check $or #f #t;
 		$expect 2 $and 1 2;
 		$expect 1 $or 1 #f;
 		$expect 2 $or #f 2 #f 3;
 		subinfo "$or (previously $or?);" " fixed since b884";
 		$or #f #f (string->symbol "evaluate-once") #f;
 		subinfo "strict logical operations";
-		$expect #t () and;
-		$expect #f () or;
-		$expect #f and #f #f;
-		$expect #t or #f #t;
+		$check () and;
+		$check-not () or;
+		$check-not and #f #f;
+		$check or #f #t;
 		$expect 2 and 1 2;
 		$expect 1 or 1 #f;
 		$expect 3 or #f 2 #f 3
@@ -615,14 +618,14 @@ $defl! test (&i)
 	((eqv? i 13) (
 		info "list utility operations";
 		subinfo "first-null?";
-		$expect #f first-null? (list 1 2);
-		$expect #t first-null? (list () 2);
+		$check-not first-null? (list 1 2);
+		$check first-null? (list () 2);
 		$let ()
 		(
 			$def! i 42;
 			$def! el ();
-			$expect #f first-null? (list i 2);
-			$expect #t first-null? (list el 2)
+			$check-not first-null? (list i 2);
+			$check first-null? (list el 2)
 		);
 		subinfo "sublists eagar logical operations";
 		$expect (list 3 #f 2 #f)
@@ -639,7 +642,7 @@ $defl! test (&i)
 			map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
 		subinfo "list-concat";
 		$expect (list "2" "3") list-concat (list "2") (list "3");
-		$expect #f reference? (list-concat () q-e);
+		$check-not reference? (list-concat () q-e);
 		subinfo "append";
 		$expect (list% "2" id) append (list "2") (list% id);
 		subinfo "list-extract-first";
@@ -648,7 +651,7 @@ $defl! test (&i)
 			$def! i 1;
 			$def! l0 list% i 2;
 			$def! li list% (as-const l0) (list 3 4);
-			$check not? (modifiable? (first% (list-extract-first li)))
+			$check-not modifiable? (first% (list-extract-first li))
 		);
 		subinfo "list algorithm safety";
 		$expect (list% (list% 1 2 3) (list% 1 2 3)) list%
@@ -948,11 +951,11 @@ $defl! test (&i)
 		$let ()
 		(
 			$import&! std.strings ++;
-			$expect #f modifiable? ++;
+			$check-not modifiable? ++;
 			$import! std.strings ++;
-			$expect #t modifiable? ++;
+			$check modifiable? ++;
 			$import! std.strings &++;
-			$expect #f modifiable? ++
+			$check-not modifiable? ++
 		);
 		subinfo "$provide! for trailing symbols;" " fixed since b920";
 		$let ()
@@ -1087,18 +1090,18 @@ $defl! test (&i)
 			$import&! std.math
 				number? complex? real? rational? integer? exact-integer?;
 
-			$expect #t number? 123;
-			$expect #f number? "123";
-			$expect #t complex? 3;
-			$expect #t real? 3;
-			$expect #t real? (- 0 2);
-			$expect #t real? +inf.0;
-			$expect #t real? +nan.0;
-			$expect #f rational? -inf.0;
-			$expect #t rational? (- 0 3);
-			$expect #t integer? 3;
-			$expect #t exact-integer? 32;
-			$expect #f exact-integer? ""
+			$check number? 123;
+			$check-not number? "123";
+			$check complex? 3;
+			$check real? 3;
+			$check real? (- 0 2);
+			$check real? +inf.0;
+			$check real? +nan.0;
+			$check-not rational? -inf.0;
+			$check rational? (- 0 3);
+			$check integer? 3;
+			$check exact-integer? 32;
+			$check-not exact-integer? ""
 		);
 		subinfo "arithmetic operations";
 		$let ()
@@ -1106,29 +1109,29 @@ $defl! test (&i)
 			$import&! std.math
 				>=? zero? positive? negative? odd? even? max min abs;
 
-			$expect #t =? 2 2;
-			$expect #t <? 1 2;
-			$expect #t <? 1 +inf.0;
-			$expect #f <? 2 1;
-			$expect #f <? 1 -nan.0;
-			$expect #f >? 2 2;
-			$expect #t >=? 2 2;
-			$expect #f <=? 2 1;
-			$expect #t zero? 0;
-			$expect #f zero? 1;
-			$expect #t positive? 1;
-			$expect #f positive? 0;
-			$expect #f negative? 1;
-			$expect #f negative? 0;
-			$expect #t odd? 1;
-			$expect #t odd? (- 0 1);
-			$expect #t even? 0;
-			$expect #f even? (- 0 1);
+			$check =? 2 2;
+			$check <? 1 2;
+			$check <? 1 +inf.0;
+			$check-not <? 2 1;
+			$check-not <? 1 -nan.0;
+			$check-not >? 2 2;
+			$check >=? 2 2;
+			$check-not <=? 2 1;
+			$check zero? 0;
+			$check-not zero? 1;
+			$check positive? 1;
+			$check-not positive? 0;
+			$check-not negative? 1;
+			$check-not negative? 0;
+			$check odd? 1;
+			$check odd? (- 0 1);
+			$check even? 0;
+			$check-not even? (- 0 1);
 			$expect 2 max 1 2;
 			$expect -inf.0 min -inf.0 2;
 			$expect 0 abs 0;
 			subinfo "odd? for negative odd flonums;" " fixed since b937";
-			$expect #t odd? -1.0
+			$check odd? -1.0
 		);
 		$let ()
 		(
@@ -1220,10 +1223,10 @@ $defl! test (&i)
 
 			$let ((pattern string->regex "\?"))
 			(
-				$expect #f regex-match? "xxxxx" pattern,
-				$expect #f regex-match? "xx?xx" pattern,
-				$expect #t regex-match? "xx?xx" (string->regex "xx\?xx"),
-				$expect #t regex-match? "xx?xx" (string->regex ".+\?x+"),
+				$check-not regex-match? "xxxxx" pattern,
+				$check-not regex-match? "xx?xx" pattern,
+				$check regex-match? "xx?xx" (string->regex "xx\?xx"),
+				$check regex-match? "xx?xx" (string->regex ".+\?x+"),
 				$expect "1111" regex-replace "????" pattern "1"
 			)
 		)
