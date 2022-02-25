@@ -198,6 +198,9 @@ $defl! test (&i)
 				subinfo "collapse safety;" " fixed derivation since b939";
 				$let ((a (collapse (() make-nocopy))) (b (collapse 42)))
 					$expect 42 b;
+				subinfo "collapsed nonmodifying values;"
+					" fixed derivation since b939";
+				$check-not modifiable? (collapse (as-const (first@ li)));
 				subinfo "collapsed value category;" " fixed since b925";
 				$check-not unique? (collapse (first@ lie))
 			);
