@@ -182,18 +182,25 @@ $defl! test (&i)
 			subinfo "expecting different results for 'first&' and 'first@'";
 			$check-not eq? (first& li) (first@ li);
 			subinfo "collapsing test";
-			$check reference? (first@ li);
-			$check uncollapsed? (first@ li);
-			$check reference? (idv (first@ li));
-			$check-not uncollapsed? (idv (first@ li));
-			$check-not unique? (collapse (expire (first@ li)));
-			$check unique? (collapse (expire (first@ lie)));
-			$check-not unique? (collapse (first@ li));
-			subinfo "collapse safety;" " fixed derivation since b939";
-			$let ((a (collapse (() make-nocopy))) (b (collapse 42)))
-				$expect 42 b;
-			subinfo "the collapsed value category;" " fixed since b925";
-			$check-not unique? (collapse (first@ lie));
+			$let ((lic list% (as-const a) 2))
+			(
+				$check reference? (first@ li);
+				$check uncollapsed? (first@ li);
+				$check reference? (idv (first@ li));
+				$check-not uncollapsed? (idv (first@ li));
+				$check-not unique? (collapse (first@ li));
+				$check-not unique? (collapse (first@ lie));
+				$check-not unique? (collapse (expire (first@ li)));
+				$check unique? (collapse (expire (first@ lie)));
+				$check modifiable? (collapse (first@ li));
+				$check-not modifiable? (collapse (first@ lic));
+				$check-not modifiable? (collapse (as-const (first@ lic)));
+				subinfo "collapse safety;" " fixed derivation since b939";
+				$let ((a (collapse (() make-nocopy))) (b (collapse 42)))
+					$expect 42 b;
+				subinfo "collapsed value category;" " fixed since b925";
+				$check-not unique? (collapse (first@ lie))
+			);
 			subinfo "expecting prvalue for reference to reference";
 			$expect 1 idv (idv (first@ li));
 			$expect 1 idv (idv ((wrap ($vau% (%x) #ignore x)) (first@ li)));
