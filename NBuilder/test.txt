@@ -82,16 +82,15 @@ $defw! map-fromn (&appv .&ls) d
 $defw! map-strict (&appv .&ls) d
 	apply mapn (list* (maxlens ls) appv (move! ls)) d;
 
-$def! q-a 1;
-$def! q-b 4;
-$def! q-e;
-$def! q-li list% q-a 2;
-$def! q-li2 list% 3 q-a;
-$def! q-li3 list q-li 2;
-$def! q-li4 list q-li2 3 4 5;
-
 $defl! test (&i)
 (
+	$def! q-a 1;
+	$def! q-b 4;
+	$def! q-e;
+	$def! q-li list% q-a 2;
+	$def! q-li2 list% 3 q-a;
+	$def! q-li3 list q-li 2;
+	$def! q-li4 list q-li2 3 4 5;
 	putss "Test case " (itos i) ":";
 	$cond
 	((eqv? i 1) (
