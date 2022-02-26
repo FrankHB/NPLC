@@ -512,7 +512,7 @@ $defl! test (&i)
 		subinfo "sanity test of forward-first%";
 		$rem
 		(
-			"NOTE: ", "The following implementations are not conforming.";
+			"NOTE:", " The following implementations are not conforming.";
 			$defl%! forward-first% (&list-appv &appv &l)
 				($lambda% ((&x .)) (forward! appv) ($move-resolved! x)) l;
 			$defl%! forward-first% (&list-appv &appv &l)
@@ -542,6 +542,8 @@ $defl! test (&i)
 			subinfo "list lvalue elements read and move";
 			$expect 2 first (id a);
 			$expect 2 first a;
+			$check reference? (first a);
+			$check reference? (first% (list% q-a 2));
 			$expect 2 first (as-const (expire a));
 			$expect 2 first (expire a);
 			$expect 2 list-length
