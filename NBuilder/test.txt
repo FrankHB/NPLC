@@ -544,6 +544,8 @@ $defl! test (&i)
 			$expect 2 first a;
 			$check reference? (first a);
 			$check reference? (first% (list% q-a 2));
+			subinfo "first return value conversion;" " fixed since b939";
+			$check-not reference? (first (list% q-a 2));
 			subinfo "list xvalue elements accesses";
 			$expect 2 first (as-const (expire a));
 			$expect 2 first (expire a);
