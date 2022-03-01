@@ -661,6 +661,11 @@ $defl! test (&i)
 		$expect (list% id 2 3) map1 id (list% id 2 3);
 		$expect (list "afx" "bfx" "cfx")
 			map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
+		$let* ((&x 1) (li list% x))
+		(
+			$expect (list 1) (map1 forward! li);
+			$expect-moved first li
+		);
 		subinfo "list-concat";
 		$expect (list "2" "3") list-concat (list "2") (list "3");
 		$check-not reference? (list-concat () q-e);
