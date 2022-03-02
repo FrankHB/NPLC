@@ -671,21 +671,13 @@ $defl! test (&i)
 		$check-not reference? (list-concat () q-e);
 		subinfo "append";
 		$expect (list% "2" id) append (list "2") (list% id);
-		subinfo "list-extract-first";
-		$let ()
-		(
-			$def! i 1;
-			$def! l0 list% i 2;
-			$def! li list% (as-const l0) (list 3 4);
-			$check-not modifiable? (first% (list-extract-first li))
-		);
 		subinfo "list algorithm safety";
 		$expect (list% (list% 1 2 3) (list% 1 2 3)) list%
 			($let () ($def! li list 1 2 3; map1 id li))
 			($let () ($def! li list 1 2 3; append li));
+		subinfo "list extraction";
 		$let (($list unwrap list))
 		(
-			subinfo "list extraction";
 			$defl! test-lextr (list-extract%)
 			(
 				$defl%! list-extract-first! (&l)
@@ -706,7 +698,7 @@ $defl! test (&i)
 				$expect ($list x y z) list-extract-first (() make-test-list);
 				subinfo "list-extract-rest%";
 				$expect ($list (+ 1 2) (idv) (id id))
-					list-extract-rest% (() make-test-list);
+					list-extract-rest% (() make-test-list)
 			);
 			subinfo "list extraction #1";
 			$defw%! list-extract% (&l &extr) d
@@ -725,6 +717,9 @@ $defl! test (&i)
 			$defl! list-extract% (&l &extr) map1 extr (forward! l);
 			test-lextr list-extract%;
 		);
+		subinfo "list-extract-first value";
+		$let* ((i 1) (l0 list% i 2) (li list% (as-const l0) (list 3 4)))
+			$check-not modifiable? (first% (list-extract-first li));
 		$let ((a list "2" "3"))
 		(
 			subinfo "mapn";
@@ -818,7 +813,7 @@ $defl! test (&i)
 					$expect bindings backup;
 					eval% (list% $let bindings move! ($quote t))
 						(() get-current-environment);
-					$expect bindings backup
+					$expect bindings (id backup)
 				);
 				eval% (list% $let (expire bindings) move! ($quote t))
 					(() get-current-environment);
