@@ -118,7 +118,8 @@ $defl! test (&i)
 		$let ()
 		(
 			$defl! gg fm apply - fm;
-			$defv! $gg fm #ignore eval (list* - fm) (() get-current-environment);
+			$defv! $gg fm #ignore
+				eval (list* - fm) (() get-current-environment);
 			$expect (- 0 1) gg 2 3;
 			$expect (- 0 1) $gg 3 4
 		);
@@ -133,7 +134,8 @@ $defl! test (&i)
 		$expect () ($lambda (x) ($lambda (y) y) x) ();
 		$expect () ($lambda (x) ($lambda (y) (idv y)) x) ();
 		$expect ()
-			$let () ($def! foo $lambda (z) z; ($lambda (x) ($lambda (y) foo y) x) ());
+			$let () ($def! foo $lambda (z) z;
+				($lambda (x) ($lambda (y) foo y) x) ());
 		$expect () ($lambda (x) ($lambda (y) ($lambda (z) z) y) x) ();
 		$expect () $let () ($def! l list (); ($lambda ((&x .)) x) l)
 	))
@@ -483,8 +485,9 @@ $defl! test (&i)
 							($if (null? exprseq) #inert
 								(eval% (cons% $aux exprseq) d)))
 					))
-					($vau (head second) d (wrap
-						($vau #ignore #ignore (eval% second d))) (eval% head d));
+					($vau (head second) d
+						(wrap ($vau #ignore #ignore (eval% second d)))
+							(eval% head d));
 				test-sequence $sequence
 			)
 		);
@@ -533,8 +536,8 @@ $defl! test (&i)
 			subinfo "forward-first% (previously forward-list-first%);"
 				" fixed derivation since b898";
 			$expect "should not be evaluated"
-				first (rest% (forward-first% idv (idv (list%
-					(list% raise-error "should not be evaluated") 1))));
+				first (rest% (forward-first% idv (idv
+					(list% (list% raise-error "should not be evaluated") 1))));
 			$expect 1 first-test (list 1 2)
 		);
 		$let ((a list 2 3))
@@ -1427,7 +1430,8 @@ $defl! testptc (i)
 		$defl! f (n) ($vau (x) d eval x d) (f n); f 1;
 		$defl! f (n) ($vau (x y) d eval (list $sequence x y) d) n (f n); f 1;
 		$defl! f (n)
-			($vau (x y) d eval (list $sequence x y) (lock-environment d)) n (f n);
+			($vau (x y) d eval (list $sequence x y) (lock-environment d)) n
+				(f n);
 		f 1;
 		subinfo "PTC combiner with saved recursive function prvalues",
 			"since b861r0c", "cf. $2019-06 @ YSLib %Documentation::Workflow";
