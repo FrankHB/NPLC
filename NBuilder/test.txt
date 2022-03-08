@@ -1358,14 +1358,14 @@ $defl! test-nested ()
 	$expect 1 list-length (make-list () 50000);
 );
 
-$defl! testptc (i)
+$defl! test-ptc (i)
 (
 	"The following cases are for PTC.",
 		" Unless otherwise specified, the execution of the case will not stop",
 		" with constant memory consumption.";
 	$cond
 	((eqv? i 1) (
-		"PTC $if";
+		info "PTC $if";
 		$let ()
 		(
 			$defl! f (n) $if #t (f n);
@@ -1388,7 +1388,7 @@ $defl! testptc (i)
 		)
 	))
 	((eqv? i 2) (
-		"PTC eval";
+		info "PTC eval";
 		$let ()
 		(
 			$def! l list (string->symbol "f") (string->symbol "x");
