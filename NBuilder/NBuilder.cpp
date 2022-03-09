@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8556
+\version r8558
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-02-14 08:56 +0800
+	2022-03-10 03:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -60,6 +60,7 @@ void
 RegisterLiteralSignal(ContextNode& ctx, const string& name, SSignal sig)
 {
 	NPL::EmplaceLeaf<LiteralHandler>(ctx, name, trivial_swap,
+		std::allocator_arg, ctx.get_allocator(),
 		[=] YB_LAMBDA_ANNOTATE((const ContextNode&), , noreturn)
 		-> ReductionStatus{
 		throw sig;
@@ -670,7 +671,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.3 b939+"
+#define NPLC_VER "V1.3 b941+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
