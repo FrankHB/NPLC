@@ -138,7 +138,6 @@ $def! std.strings make-environment ($as-environment ($provide/let! (
 
 "NOTE", "I/O library.";
 $def! std.io make-environment ($as-environment ($provide/let! (
-	get-module
 	bput
 	bputs
 	iput
@@ -146,10 +145,6 @@ $def! std.io make-environment ($as-environment ($provide/let! (
 )
 ((mods derive-current-environment std.strings std.io))
 (
-	$defl/e! get-module mods (&filename .&opt)
-		$let ((&env () make-standard-environment)) $sequence
-			($unless (null? opt) ($set! env module-parameters (first& opt)))
-			(eval (list ($remote-eval% load std.io) filename) env) env;
 	$defl/e! bput mods (&b) put (b2str b);
 	$defl/e! bputs mods (&b) puts (b2str b);
 	$defl/e! iput mods (&x) puts (itos x);
