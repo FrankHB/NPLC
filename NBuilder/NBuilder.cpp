@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8558
+\version r8561
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-03-10 03:22 +0800
+	2022-03-26 02:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -526,7 +526,7 @@ LoadFunctions(Interpreter& intp)
 			RelaySwitched(ctx,
 				A1::NameTypedReducerHandler(std::bind([](EnvironmentGuard&){
 				return ReductionStatus::Neutral;
-			}, EnvironmentGuard(rctx, rctx.SwitchEnvironment(rwenv.Lock()))),
+			}, EnvironmentGuard(ctx, ctx.SwitchEnvironment(rwenv.Lock()))),
 				"guard-load"));
 			return A1::RelayToLoadExternal(ctx, term, context);
 		});
@@ -671,7 +671,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.3 b941+"
+#define NPLC_VER "V1.3 b942+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
