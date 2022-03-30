@@ -25,12 +25,12 @@ $defv%! $until (&test .&exprseq) d
 		(eval% (list* () $until (move! test) (move! exprseq)) d);
 $defl%! and &x $sequence
 	($defl%! and-aux (&h &l) $if (null? l) (forward! h)
-		(and-aux ($if h (first (forward l)) #f) (rest% (forward l))))
+		(and-aux ($if h (forward! (first% l)) #f) (forward! (rest% l))))
 	(and-aux #t (forward! x));
 $defl%! or &x $sequence
 	($defl%! or-aux (&h &l) $if (null? l) (forward! h)
-		($sequence ($def! &c first (forward l)) (or-aux (forward! ($if c c h))
-			(rest% (forward l)))))
+		($let% ((&c forward! (first% l)))
+			or-aux (forward! ($if c c h)) (forward! (rest% l))))
 	(or-aux #f (forward! x));
 "NOTE", "Definitions of $and, $or, first-null?, accl, accr are in",
 	" %YFramework.NPL.Dependency.";
