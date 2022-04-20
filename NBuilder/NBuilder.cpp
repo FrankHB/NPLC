@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8570
+\version r8572
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-03-29 18:31 +0800
+	2022-04-20 19:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -35,7 +35,7 @@
 #include <Helper/YModules.h>
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
 #include YFM_NPL_NPLA1Forms // for NPL, NPL::A1, NPL::A1::Forms, trivial_swap,
-//	A1::MakeKeptGuard;
+//	A1::MoveKeptGuard;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include YFM_NPL_Dependency // for EnvironmentGuard, A1::RelayToLoadExternal;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
@@ -524,7 +524,7 @@ LoadFunctions(Interpreter& intp)
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 			// NOTE: This does not support PTC.
-			RelaySwitched(ctx, A1::MakeKeptGuard(
+			RelaySwitched(ctx, A1::MoveKeptGuard(
 				EnvironmentGuard(ctx, ctx.SwitchEnvironment(rwenv.Lock()))));
 			return A1::RelayToLoadExternal(ctx, term, context);
 		});
