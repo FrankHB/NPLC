@@ -1029,6 +1029,20 @@ $defl! test (&i)
 		)
 	))
 	((eqv? i 18) (
+		info "std.continuations";
+		$let ()
+		(
+			$import&! std.continuations call/1cc continuation->applicative;
+
+			$expect 42 call/1cc ($lambda . 42);
+			$let ((a 43)) $expect 43 call/1cc ($lambda . a);
+			$expect (list 44) call/1cc ($lambda (&k) (
+				(continuation->applicative (move! k))
+					($sequence (display/newline "ready to call k") 44);
+				raise-error "Failed to skip."))
+		)
+	))
+	((eqv? i 19) (
 		info "std.promises";
 		$import! std.promises
 			promise? memoize $lazy $lazy% $lazy/d $lazy/d% force;
@@ -1133,7 +1147,7 @@ $defl! test (&i)
 				$expect (list unit unit unit unit) list a b c (force p1)
 		)
 	))
-	((eqv? i 19) (
+	((eqv? i 20) (
 		info "std.math";
 		subinfo "number predicates";
 		$let ()
@@ -1249,7 +1263,7 @@ $defl! test (&i)
 			$expect 7744 solve 80
 		)
 	))
-	((eqv? i 20) (
+	((eqv? i 21) (
 		info "std.strings";
 		subinfo "strings and symbols";
 		$let ()
@@ -1282,7 +1296,7 @@ $defl! test (&i)
 			)
 		)
 	))
-	((eqv? i 21) (
+	((eqv? i 22) (
 		info "std.system";
 		subinfo "eval-string and eval-unit";
 		$let ()
@@ -1577,7 +1591,7 @@ $let ()
 	eval (list ($lambda x () ($lambda x $if)) 1) (() make-environment)
 );
 
-$def! test-case-num 21;
+$def! test-case-num 22;
 $def! teste-case-list list 1;
 $defl! test-in (&l) for-each-ltr test l;
 $defl! test-range (first last) test-in (iota-range first last);
