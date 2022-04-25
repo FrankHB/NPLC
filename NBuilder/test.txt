@@ -1535,6 +1535,17 @@ $defl! test-ptc (i)
 		f ()
 	))
 	((eqv? i 16) (
+		info "PTC call/1cc";
+		subinfo "case translated from DOI:10.1145/93548.93554";
+		$let ()
+		(
+			$import&! std.continuations call/1cc;
+
+			$defl! looper () call/1cc ($lambda (k) () looper);
+			() looper		
+		)
+	))
+	((eqv? i 17) (
 		info "PTC promises as klisp #3, with less n value;"
 			" fixed @ b862 as $let";
 		$let ()
@@ -1550,7 +1561,7 @@ $defl! test-ptc (i)
 			force (stream-filter ($lambda (n) eqv? n 1000) (from 0))
 		)
 	))
-	((eqv? i 17) (
+	((eqv? i 18) (
 		"PTC example", "klisp failed",
 			"see https://bitbucket.org/AndresNavarro/klisp/issues/12";
 		$let ()
@@ -1560,7 +1571,7 @@ $defl! test-ptc (i)
 				n (f n))))) (f 1)
 		)
 	))
-	((eqv? i 18) (
+	((eqv? i 19) (
 		info "This case can terminate.";
 		subinfo "TCO from ECMAScript compat-table."
 			" Value 1e6 shrinked to 100000 to reduce execution time."
