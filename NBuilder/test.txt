@@ -6,7 +6,7 @@
 
 $import&! std.io newline puts putss iput;
 $import&! std.strings ++ string<- string-empty? string->symbol;
-$import&! std.math - <=? + =? <? >? *;
+$import&! std.math - <=? + =? <? >? * max min add1;
 
 $defl! display/newline (&x) (display (forward! x); () newline);
 $defl! write/newline (&x) (write (forward! x); () newline);
@@ -55,9 +55,6 @@ $defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
 $def! __make-stdenv copy-environment;
 $defl! list-restv (&x) list (restv x);
 $defu! for-each for-each-rtl for-each-ltr;
-$defl! add1 (&z) + z 1;
-$defl! max (&x &y) $if (>? x y) x y;
-$defl! min (&x &y) $if (<? x y) x y;
 $defl! first-length (&l) list-length (first l);
 $defl! maxlens (&l) accr l null? (first-length l) first-length rest& max;
 $defl! minlens (&l) accr l null? (first-length l) first-length rest& min;
