@@ -1364,11 +1364,15 @@ $defl! teste (i)
 
 $defl! test-nested ()
 (
-	"The following case test the hosted nested call safety.";
-	"Regression:", "fixed @ b916";
+	info "The following case test the hosted nested call safety.";
+	subinfo "term destroy;" " fixed since b916";
 	$defl! make-list (l n)
 		$unless (eqv? n 0) (list% (make-list (move! l) (- n 1)));
 	$expect 1 list-length (make-list () 50000);
+	subinfo "term copy;" " fixed since b944";
+	$def! x make-list () 200000;
+	$def! y x;
+	$expect 1 list-length y
 );
 
 $defl! test-ptc (i)
