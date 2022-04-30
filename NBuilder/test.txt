@@ -134,7 +134,9 @@ $defl! test (&i)
 			$let () ($def! foo $lambda (z) z;
 				($lambda (x) ($lambda (y) foo y) x) ());
 		$expect () ($lambda (x) ($lambda (y) ($lambda (z) z) y) x) ();
-		$expect () $let () ($def! l list (); ($lambda ((&x .)) x) l)
+		$expect () $let () ($def! l list (); ($lambda ((&x .)) x) l);
+		subinfo "apply nocopy functions;" " fixed since b944";
+		apply (() make-nocopy-fn) ();
 	))
 	((eqv? i 3) (
 		info "recursive function calls";
