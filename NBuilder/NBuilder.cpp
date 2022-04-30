@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8572
+\version r8587
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-04-20 19:25 +0800
+	2022-05-01 02:39 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -207,6 +207,12 @@ FetchListLength(TermNode& term) ynothrow
 	return int(term.size());
 }
 
+
+//! \since YSLib build 945
+struct NoCopy : ystdex::noncopyable
+{};
+
+
 #if NPLC_Impl_TestTemporaryOrder
 //! \since YSLib build 860
 struct MarkGuard
@@ -310,12 +316,18 @@ LoadFunctions(Interpreter& intp)
 	//	uncollapsed?, unique?, move!, transfer!, deshare, as-const, expire are
 	//	in %YFramework.NPL.Dependency.
 	RegisterStrict(rctx, "make-nocopy", [](TermNode& term){
-		struct NoCopy : ystdex::noncopyable
-		{};
-
 		RetainN(term, 0);
 
 		term.Value = NoCopy();
+	});
+	RegisterStrict(rctx, "make-nocopy-fn", [](TermNode& term){
+		RetainN(term, 0);
+		// TODO: Blocked. Use C++14 lambda initializers to simplify the
+		//	implementation.
+		term.Value = A1::MakeForm(term.get_allocator(), std::bind([&](NoCopy&){
+			term.Clear();
+			return ReductionStatus::Regular;
+		}, NoCopy()), Strict);
 	});
 	// NOTE: Definitions of ref&, assign@!, cons, cons%, set-rest!, set-rest%!,
 	//	eval, eval%, copy-environment, lock-current-environment,
@@ -669,7 +681,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.3 b943+"
+#define NPLC_VER "V1.3 b944+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
