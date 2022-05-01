@@ -608,6 +608,22 @@ $defl! test (&i)
 			display/newline (rest& (first& q-li4));
 			display/newline q-li4
 		);
+		subinfo "list modification temporary preservation;" " fixed since b944";
+		$let ()
+		(
+			$defl! test (f)
+			(
+				$let ((&li list 1 2))
+				(
+					set-rest%! li (list 3);
+					$expect (list 1 3) li;
+					forward! li;
+					$expect-moved li
+				)
+			);
+			test set-rest!;
+			test set-rest%!
+		);
 		subinfo "list-push-front!";
 		$let ((li list 2 3))
 		(
