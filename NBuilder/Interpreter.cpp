@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2932
+\version r2980
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-05-06 01:18 +0800
+	2022-05-06 22:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -702,51 +702,48 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 				"Unexpected irregular representation of term found.");
 			// XXX: Assume the call does not rely on %term and it does not
 			//	change the stored name on throwing.
-#	if NPLC_Impl_UseSourceInfo
-			try
+			// XXX: See assumption 2. This is also known not throwing
+			//	%BadIdentifier.
+			auto pr(ContextNode::DefaultResolve(cs.GetRecordPtr(), id));
+
+			if(pr.first)
 			{
-#	endif
-				// XXX: See assumption 2.
-				auto pr(ContextNode::DefaultResolve(cs.GetRecordPtr(), id));
+				auto& bound(*pr.first);
 
-				if(pr.first)
-				{
-					auto& bound(*pr.first);
+				return ResolveTerm([&](TermNode& nd,
+					ResolvedTermReferencePtr p_ref){
+					setup_tail_op_name(term);
 
-					return ResolveTerm([&](TermNode& nd,
-						ResolvedTermReferencePtr p_ref){
-						setup_tail_op_name(term);
+					if(p_ref)
+						term.SetContent(bound.GetContainer(), ValueObject(
+							std::allocator_arg, term.get_allocator(),
+							in_place_type<TermReference>,
+							p_ref->GetTags() & ~TermTags::Unique, *p_ref));
+					else
+					{
+						const auto& p_env(pr.second);
+						auto& env(NPL::Deref(p_env));
 
-						if(p_ref)
-							term.SetContent(bound.GetContainer(), ValueObject(
-								std::allocator_arg, term.get_allocator(),
-								in_place_type<TermReference>, p_ref->GetTags()
-								& ~TermTags::Unique, *p_ref));
-						else
-						{
-							const auto& p_env(pr.second);
-							auto& env(NPL::Deref(p_env));
-
-							term.Value = ValueObject(std::allocator_arg,
-								term.get_allocator(), in_place_type<
-								TermReference>, env.MakeTermTags(nd)
-								& ~TermTags::Unique, nd, EnvironmentReference(
-								p_env, env.GetAnchorPtr()));
-						}
-						// XXX: This is safe, cf. assumption 3.
-						A1::EvaluateLiteralHandler(term, cs, nd);
-						return f(nd);
-					}, bound);
-				}
-				throw BadIdentifier(id);
-#	if NPLC_Impl_UseSourceInfo
+						term.Value = ValueObject(std::allocator_arg,
+							term.get_allocator(), in_place_type<TermReference>,
+							env.MakeTermTags(nd) & ~TermTags::Unique, nd,
+							EnvironmentReference(p_env, env.GetAnchorPtr()));
+					}
+					// XXX: This is safe, cf. assumption 3.
+					A1::EvaluateLiteralHandler(term, cs, nd);
+					return f(nd);
+				}, bound);
 			}
-			catch(BadIdentifier& e)
+#	if NPLC_Impl_UseSourceInfo
 			{
+				BadIdentifier e(id);
+
 				if(const auto p_si = A1::QuerySourceInformation(term.Value))
 					e.Source = *p_si;
-				throw;
+				throw e;
 			}
+#	else
+			throw BadIdentifier(id);
 #	endif
 		}
 		return f2();
