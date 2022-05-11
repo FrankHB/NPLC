@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3019
+\version r3061
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-05-12 00:24 +0800
+	2022-05-12 01:47 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -27,7 +27,8 @@
 
 #include "Interpreter.h" // for type_info, QueryTypeName, IsTyped, YSLib::sfmt,
 //	YSLib::ostringstream, A1::QuerySourceInformation, YAssertNonnull,
-//	namespace YSLib, IsList, AccessFirstSubterm, IsEmpty, RemoveHead;
+//	namespace YSLib, IsList, AccessFirstSubterm, LiftOtherValue, IsEmpty,
+//	RemoveHead;
 #include <ystdex/expanded_function.hpp> // for ystdex::expand_proxy,
 //	ystdex::retry_on_cond;
 #include <Helper/YModules.h>
@@ -680,7 +681,7 @@ GetMonotonicPoolRef()
 //	1. For the leaf values other than value tokens, the next term is not relied
 //		on.
 //	2. There are no changes on passes and handlers like %ContextNode::Resolve
-//		after the initialization.
+//		and %ContextState::ReduceOnce::Handler after the initialization.
 //	3. No literal handlers rely on the value of the reduced term.
 //! \since YSLib build 896
 template<typename _func, typename _func2, typename _fSetupTailOpName,
@@ -752,23 +753,29 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 	return reduce_branch(term, cs);
 }
 
-//! \since YSLib build 883
-ReductionStatus
-ReduceFastBranch(TermNode& term, A1::ContextState& cs)
+//! \since YSLib build 945
+template<typename _func>
+YB_FLATTEN inline ReductionStatus
+ReduceFastSimple(TermNode& term, A1::ContextState& cs, _func f)
 {
-	if(term.size() == 1)
-	{
-		auto term_ref(ystdex::ref(term));
+	return ReduceFastTmpl(term, cs,
+		[] YB_LAMBDA_ANNOTATE((TermNode&), ynothrow, const){
+		return ReductionStatus::Neutral;
+	}, [] YB_LAMBDA_ANNOTATE((), ynothrow, const){
+		return ReductionStatus::Retained;
+	}, [](TermNode&) ynothrow{}, f);
+}
 
-		ystdex::retry_on_cond([&]{
-			auto& tm(term_ref.get());
+//! \since YSLib build 883
+//@{
+ReductionStatus
+ReduceFastBranch(TermNode&, A1::ContextState&);
 
-			return IsList(tm) && tm.size() == 1;
-		}, [&]{
-			term_ref = AccessFirstSubterm(term_ref);
-		});
-		return A1::ReduceOnceLifted(term, cs, term_ref);
-	}
+//! \since YSLib build 945
+ReductionStatus
+ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
+{
+	YAssert(term.size() != 1, "Invalid node found.");
 	if(IsBranch(term))
 		return [&]() YB_FLATTEN{
 			YAssert(term.size() > 1, "Invalid node found.");
@@ -799,6 +806,27 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 		}();
 	return ReductionStatus::Retained;
 }
+
+ReductionStatus
+ReduceFastBranch(TermNode& term, A1::ContextState& cs)
+{
+	if(term.size() == 1)
+	{
+		auto term_ref(ystdex::ref(term));
+
+		ystdex::retry_on_cond([&]{
+			auto& tm(term_ref.get());
+
+			return IsList(tm) && tm.size() == 1;
+		}, [&]{
+			term_ref = AccessFirstSubterm(term_ref);
+		});
+		LiftOtherValue(term, term_ref);
+		return ReduceFastSimple(term, cs, ReduceFastBranchNotNested);
+	}
+	return ReduceFastBranchNotNested(term, cs);
+}
+//@}
 #endif
 
 } // unnamed namespace;
@@ -840,12 +868,8 @@ Interpreter::Interpreter()
 		// XXX: Only safe and meaningful for asynchrnous implementations.
 		Context.Root.ReduceOnce.Handler
 			= [&](TermNode& term, ContextNode& ctx) YB_FLATTEN{
-			return ReduceFastTmpl(term, A1::ContextState::Access(ctx),
-				[] YB_LAMBDA_ANNOTATE((TermNode&), ynothrow, const){
-				return ReductionStatus::Neutral;
-			}, [] YB_LAMBDA_ANNOTATE((), ynothrow, const){
-				return ReductionStatus::Retained;
-			}, [](TermNode&) ynothrow{}, ReduceFastBranch);
+			return ReduceFastSimple(term, A1::ContextState::Access(ctx),
+				ReduceFastBranch);
 		};
 #elif NPLC_Impl_LogBeforeReduce
 	using namespace placeholders;
