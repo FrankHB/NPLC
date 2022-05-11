@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r2980
+\version r3019
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-05-06 22:17 +0800
+	2022-05-11 23:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -766,32 +766,34 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 		});
 		return A1::ReduceOnceLifted(term, cs, term_ref);
 	}
-	else if(IsBranch(term))
-	{
-		YAssert(term.size() > 1, "Invalid node found.");
-		// XXX: These passes are known safe to synchronize.
-		if(IsEmpty(AccessFirstSubterm(term)))
-			RemoveHead(term);
-		YAssert(IsBranchedList(term), "Invalid node found.");
-		cs.LastStatus = ReductionStatus::Neutral;
-		return ReduceFastTmpl(AccessFirstSubterm(term), cs, [&](TermNode& nd){
-			return ReduceCombinedReferent(term, cs, nd);
-		}, [&]{
-			return ReduceCombinedBranch(term, cs);
-		}, [&](TermNode& sub){
-			term.Value = std::move(sub.Value);
-		}, [&](TermNode& sub, ContextNode& ctx){
-			// XXX: %trivial_swap is not used here to avoid worse
-			//	inlining.
-			RelaySwitched(ctx, A1::NameTypedReducerHandler([&](ContextNode& c){
-				return A1::ReduceCombinedBranch(term, c);
-			}, "eval-combine-operands"));
+	if(IsBranch(term))
+		return [&]() YB_FLATTEN{
+			YAssert(term.size() > 1, "Invalid node found.");
+			// XXX: These passes are known safe to synchronize.
+			if(IsEmpty(AccessFirstSubterm(term)))
+				RemoveHead(term);
+			YAssert(IsBranchedList(term), "Invalid node found.");
+			cs.LastStatus = ReductionStatus::Neutral;
 			return
-				RelaySwitched(ctx, trivial_swap, [&](ContextNode& c){
-				return ReduceFastBranch(sub, A1::ContextState::Access(c));
+				ReduceFastTmpl(AccessFirstSubterm(term), cs, [&](TermNode& nd){
+				return ReduceCombinedReferent(term, cs, nd);
+			}, [&]{
+				return ReduceCombinedBranch(term, cs);
+			}, [&](TermNode& sub){
+				term.Value = std::move(sub.Value);
+			}, [&](TermNode& sub, ContextNode& ctx){
+				// XXX: %trivial_swap is not used here to avoid worse
+				//	inlining.
+				RelaySwitched(ctx,
+					A1::NameTypedReducerHandler([&](ContextNode& c){
+					return A1::ReduceCombinedBranch(term, c);
+				}, "eval-combine-operands"));
+				return
+					RelaySwitched(ctx, trivial_swap, [&](ContextNode& c){
+					return ReduceFastBranch(sub, A1::ContextState::Access(c));
+				});
 			});
-		});
-	}
+		}();
 	return ReductionStatus::Retained;
 }
 #endif
@@ -833,7 +835,8 @@ Interpreter::Interpreter()
 #if NPLC_Impl_FastAsyncReduce
 	if(Context.IsAsynchronous())
 		// XXX: Only safe and meaningful for asynchrnous implementations.
-		Context.Root.ReduceOnce.Handler = [&](TermNode& term, ContextNode& ctx){
+		Context.Root.ReduceOnce.Handler
+			= [&](TermNode& term, ContextNode& ctx) YB_FLATTEN{
 			return ReduceFastTmpl(term, A1::ContextState::Access(ctx),
 				[] YB_LAMBDA_ANNOTATE((TermNode&), ynothrow, const){
 				return ReductionStatus::Neutral;
