@@ -17,7 +17,7 @@
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-05-11 23:11 +0800
+	2022-05-12 00:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -27,8 +27,9 @@
 
 #include "Interpreter.h" // for type_info, QueryTypeName, IsTyped, YSLib::sfmt,
 //	YSLib::ostringstream, A1::QuerySourceInformation, YAssertNonnull,
-//	namespace YSLib;
-#include <ystdex/expanded_function.hpp> // for ystdex::expand_proxy;
+//	namespace YSLib, IsList, AccessFirstSubterm, IsEmpty, RemoveHead;
+#include <ystdex/expanded_function.hpp> // for ystdex::expand_proxy,
+//	ystdex::retry_on_cond;
 #include <Helper/YModules.h>
 #include YFM_YCLib_YCommon // for ystdex::quote, ystdex::call_value_or;
 #include YFM_YSLib_Core_YException // for FilterExceptions,
@@ -760,7 +761,9 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 		auto term_ref(ystdex::ref(term));
 
 		ystdex::retry_on_cond([&]{
-			return term_ref.get().size() == 1;
+			auto& tm(term_ref.get());
+
+			return IsList(tm) && tm.size() == 1;
 		}, [&]{
 			term_ref = AccessFirstSubterm(term_ref);
 		});
