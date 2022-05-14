@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3132
+\version r3140
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-05-14 18:35 +0800
+	2022-05-14 23:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -682,7 +682,10 @@ GetMonotonicPoolRef()
 //		on.
 //	2. There are no changes on passes and handlers like %ContextNode::Resolve
 //		and %ContextState::ReduceOnce::Handler after the initialization.
-//	3. No literal handlers rely on the value of the reduced term.
+//	3. No literal handlers rely on the value of the reduced term or access the
+//		context asnynchrnously.
+//	4. The 1st subterm of the combining term is not relied on in the context
+//		handler calls.
 //! \since YSLib build 945
 //@{
 YB_FLATTEN void
@@ -787,11 +790,12 @@ ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
 			auto& sub(AccessFirstSubterm(term));
 
 			return ReduceFastTmpl(sub, cs,
-				[&](TermNode& bound, const shared_ptr<Environment>& p_env){
+				[&](TermNode& bound, const shared_ptr<Environment>&){
 				return ResolveTerm([&](TermNode& nd,
-					ResolvedTermReferencePtr p_ref){
+					ResolvedTermReferencePtr){
 					term.Value = std::move(sub.Value);
-					EvaluateFastNonListCore(sub, p_env, bound, p_ref);
+					// XXX: Missing setting of the 1st subterm is safe, cf.
+					//	assumption 4.
 					// XXX: This is safe, cf. assumption 3.
 					A1::EvaluateLiteralHandler(sub, cs, nd);
 					return ReduceCombinedReferent(term, cs, nd);
