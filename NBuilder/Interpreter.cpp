@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3061
+\version r3132
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-05-12 01:47 +0800
+	2022-05-14 18:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -683,12 +683,31 @@ GetMonotonicPoolRef()
 //	2. There are no changes on passes and handlers like %ContextNode::Resolve
 //		and %ContextState::ReduceOnce::Handler after the initialization.
 //	3. No literal handlers rely on the value of the reduced term.
-//! \since YSLib build 896
-template<typename _func, typename _func2, typename _fSetupTailOpName,
-	typename _fReduceBranch>
+//! \since YSLib build 945
+//@{
+YB_FLATTEN void
+EvaluateFastNonListCore(TermNode& term, const shared_ptr<Environment>& p_env,
+	TermNode& bound, ResolvedTermReferencePtr p_ref)
+{
+	if(p_ref)
+		term.SetContent(bound.GetContainer(), ValueObject(std::allocator_arg,
+			term.get_allocator(), in_place_type<TermReference>,
+			p_ref->GetTags() & ~TermTags::Unique, *p_ref));
+	else
+	{
+		auto& env(NPL::Deref(p_env));
+
+		term.Value = ValueObject(std::allocator_arg,
+			term.get_allocator(), in_place_type<TermReference>,
+			env.MakeTermTags(bound) & ~TermTags::Unique, bound,
+			EnvironmentReference(p_env, env.GetAnchorPtr()));
+	}
+}
+
+template<typename _func, typename _func2, typename _fReduceBranch>
 YB_FLATTEN inline ReductionStatus
 ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
-	_fSetupTailOpName setup_tail_op_name, _fReduceBranch reduce_branch)
+	_fReduceBranch reduce_branch)
 {
 	if(term.Value)
 	{
@@ -709,33 +728,7 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 			auto pr(ContextNode::DefaultResolve(cs.GetRecordPtr(), id));
 
 			if(pr.first)
-			{
-				auto& bound(*pr.first);
-
-				return ResolveTerm([&](TermNode& nd,
-					ResolvedTermReferencePtr p_ref){
-					setup_tail_op_name(term);
-
-					if(p_ref)
-						term.SetContent(bound.GetContainer(), ValueObject(
-							std::allocator_arg, term.get_allocator(),
-							in_place_type<TermReference>,
-							p_ref->GetTags() & ~TermTags::Unique, *p_ref));
-					else
-					{
-						const auto& p_env(pr.second);
-						auto& env(NPL::Deref(p_env));
-
-						term.Value = ValueObject(std::allocator_arg,
-							term.get_allocator(), in_place_type<TermReference>,
-							env.MakeTermTags(nd) & ~TermTags::Unique, nd,
-							EnvironmentReference(p_env, env.GetAnchorPtr()));
-					}
-					// XXX: This is safe, cf. assumption 3.
-					A1::EvaluateLiteralHandler(term, cs, nd);
-					return f(nd);
-				}, bound);
-			}
+				return f(*pr.first, pr.second);
 #	if NPLC_Impl_UseSourceInfo
 			{
 				BadIdentifier e(id);
@@ -753,18 +746,24 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 	return reduce_branch(term, cs);
 }
 
-//! \since YSLib build 945
 template<typename _func>
 YB_FLATTEN inline ReductionStatus
 ReduceFastSimple(TermNode& term, A1::ContextState& cs, _func f)
 {
 	return ReduceFastTmpl(term, cs,
-		[] YB_LAMBDA_ANNOTATE((TermNode&), ynothrow, const){
-		return ReductionStatus::Neutral;
+		[&](TermNode& bound, const shared_ptr<Environment>& p_env){
+		return ResolveTerm([&](TermNode& nd,
+			ResolvedTermReferencePtr p_ref) YB_FLATTEN{
+			EvaluateFastNonListCore(term, p_env, bound, p_ref);
+			// XXX: This is safe, cf. assumption 3.
+			A1::EvaluateLiteralHandler(term, cs, nd);
+			return ReductionStatus::Neutral;
+		}, bound);
 	}, [] YB_LAMBDA_ANNOTATE((), ynothrow, const){
 		return ReductionStatus::Retained;
-	}, [](TermNode&) ynothrow{}, f);
+	}, f);
 }
+//@}
 
 //! \since YSLib build 883
 //@{
@@ -784,22 +783,30 @@ ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
 				RemoveHead(term);
 			YAssert(IsBranchedList(term), "Invalid node found.");
 			cs.LastStatus = ReductionStatus::Neutral;
-			return
-				ReduceFastTmpl(AccessFirstSubterm(term), cs, [&](TermNode& nd){
-				return ReduceCombinedReferent(term, cs, nd);
+
+			auto& sub(AccessFirstSubterm(term));
+
+			return ReduceFastTmpl(sub, cs,
+				[&](TermNode& bound, const shared_ptr<Environment>& p_env){
+				return ResolveTerm([&](TermNode& nd,
+					ResolvedTermReferencePtr p_ref){
+					term.Value = std::move(sub.Value);
+					EvaluateFastNonListCore(sub, p_env, bound, p_ref);
+					// XXX: This is safe, cf. assumption 3.
+					A1::EvaluateLiteralHandler(sub, cs, nd);
+					return ReduceCombinedReferent(term, cs, nd);
+				}, bound);
 			}, [&]{
 				return ReduceCombinedBranch(term, cs);
-			}, [&](TermNode& sub){
-				term.Value = std::move(sub.Value);
-			}, [&](TermNode& sub, ContextNode& ctx){
+			}, [&](TermNode&, ContextNode& ctx){
 				// XXX: %trivial_swap is not used here to avoid worse
 				//	inlining.
-				RelaySwitched(ctx,
-					A1::NameTypedReducerHandler([&](ContextNode& c){
+				RelaySwitched(ctx, A1::NameTypedReducerHandler(
+					[&](ContextNode& c) YB_ATTR(noinline){
 					return A1::ReduceCombinedBranch(term, c);
 				}, "eval-combine-operands"));
-				return
-					RelaySwitched(ctx, trivial_swap, [&](ContextNode& c){
+				return RelaySwitched(ctx, trivial_swap,
+					[&](ContextNode& c) YB_ATTR(noinline){
 					return ReduceFastBranch(sub, A1::ContextState::Access(c));
 				});
 			});
