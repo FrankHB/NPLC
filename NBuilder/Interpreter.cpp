@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3140
+\version r3271
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-05-14 23:09 +0800
+	2022-05-19 03:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -33,11 +33,9 @@
 //	ystdex::retry_on_cond;
 #include <Helper/YModules.h>
 #include YFM_YCLib_YCommon // for ystdex::quote, ystdex::call_value_or;
-#include YFM_YSLib_Core_YException // for FilterExceptions,
-//	YSLib::IO::StreamGet;
-#include YFM_YSLib_Service_TextFile
-#include YFM_NPL_NPLA1Forms // for TraceException, A1::TraceBacktrace,
-//	trivial_swap;
+#include <ystdex/string.hpp> // for ystdex::begins_with;
+#include YFM_NPL_NPLA1Forms // for trivial_swap, TraceException,
+//	A1::TraceBacktrace, YSLib::IO::StreamGet;
 #include <cstring> // for std::strcmp, std::strstr;
 #include YFM_NPL_NPLAMath // for FPToString;
 #include <cstdio> // for std::fprintf, stderr;
@@ -677,6 +675,123 @@ GetMonotonicPoolRef()
 #endif
 
 #if NPLC_Impl_FastAsyncReduce
+//! \since YSLib build 945
+//@{
+#if NPL_NPLA_CheckParentEnvironment
+YB_ATTR_nodiscard YB_PURE bool
+IsReserved(string_view id) ynothrowv
+{
+	YAssertNonnull(id.data());
+	return ystdex::begins_with(id, "__");
+}
+#endif
+
+shared_ptr<Environment>
+RedirectToShared(string_view id, shared_ptr<Environment> p_env)
+{
+#if NPL_NPLA_CheckParentEnvironment
+	if(p_env)
+#else
+	yunused(id);
+	YAssertNonnull(p_env);
+#endif
+		return p_env;
+#if NPL_NPLA_CheckParentEnvironment
+	throw InvalidReference(ystdex::sfmt("Invalid reference found for%s name"
+		" '%s', probably due to invalid context access by a dangling"
+		" reference.", IsReserved(id) ? " reserved" : "", id.data()));
+#endif
+}
+
+using Redirector
+	= ystdex::unchecked_function<observer_ptr<const ValueObject>()>;
+
+observer_ptr<const ValueObject>
+RedirectEnvironmentList(Environment::allocator_type a, Redirector& cont,
+	EnvironmentList::const_iterator first, EnvironmentList::const_iterator last)
+{
+	if(first != last)
+	{
+		cont = ystdex::make_obj_using_allocator<Redirector>(a, trivial_swap,
+			std::bind(
+			[=, &cont](EnvironmentList::const_iterator i, Redirector& c){
+			cont = std::move(c);
+			return RedirectEnvironmentList(a, cont, i, last);
+		}, std::next(first), std::move(cont)));
+		return NPL::make_observer(&*first);
+	}
+	return {};
+}
+
+
+// XXX: This is essentially same to %ContextNode::DefaultResolve. However, the
+//	optimal implementation here can hardly make %ContextNode::DefaultResolve
+//	perform better (possibly due to inlining).
+YB_FLATTEN Environment::NameResolution
+ResolveDefault(shared_ptr<Environment> p_env, string_view id)
+{
+	YAssertNonnull(p_env);
+
+	auto p_obj(p_env->LookupName(id));
+
+	if(p_obj)
+		return {p_obj, std::move(p_env)};
+
+	Redirector cont;
+	bool redir;
+
+	// XXX: Not using %ystdex::retry_on_cond here for performance.
+	do
+	{
+		lref<const ValueObject> cur(p_env->Parent);
+		shared_ptr<Environment> p_redirected{};
+
+		ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
+			const ValueObject& parent(cur);
+			const auto& ti(parent.type());
+
+			if(IsTyped<EnvironmentReference>(ti))
+			{
+				p_redirected = RedirectToShared(id,
+					parent.GetObject<EnvironmentReference>().Lock());
+				p_env.swap(p_redirected);
+			}
+			else if(IsTyped<shared_ptr<Environment>>(ti))
+			{
+				p_redirected = RedirectToShared(id,
+					parent.GetObject<shared_ptr<Environment>>());
+				p_env.swap(p_redirected);
+			}
+			else
+			{
+				observer_ptr<const ValueObject> p_next{};
+
+				if(IsTyped<EnvironmentList>(ti))
+				{
+					auto& envs(parent.GetObject<EnvironmentList>());
+
+					p_next = RedirectEnvironmentList(
+						p_env->Bindings.get_allocator(), cont,
+						envs.cbegin(), envs.cend());
+				}
+				while(!p_next && bool(cont))
+					p_next = ystdex::exchange(cont, Redirector())();
+				if(p_next)
+				{
+					YAssert(!ystdex::ref_eq<>()(cur.get(), *p_next),
+						"Cyclic parent found.");
+					cur = *p_next;
+					return true;
+				}
+			}
+			redir = bool(p_redirected);
+			return false;
+		});
+	}while(!(p_obj = p_env->LookupName(id)) && redir);
+	return {p_obj, std::move(p_env)};
+}
+//@}
+
 // XXX: There are several fast asynchrnous reduction assumptions from NPLA1.
 //	1. For the leaf values other than value tokens, the next term is not relied
 //		on.
@@ -708,7 +823,11 @@ EvaluateFastNonListCore(TermNode& term, const shared_ptr<Environment>& p_env,
 }
 
 template<typename _func, typename _func2, typename _fReduceBranch>
-YB_FLATTEN inline ReductionStatus
+// XXX: This is less efficient at least on x86_64-pc-linux G++ 12.1.
+#if YB_IMPL_GNUCPP < 120000
+YB_FLATTEN
+#endif
+inline ReductionStatus
 ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 	_fReduceBranch reduce_branch)
 {
@@ -728,7 +847,7 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 			//	change the stored name on throwing.
 			// XXX: See assumption 2. This is also known not throwing
 			//	%BadIdentifier.
-			auto pr(ContextNode::DefaultResolve(cs.GetRecordPtr(), id));
+			auto pr(ResolveDefault(cs.GetRecordPtr(), id));
 
 			if(pr.first)
 				return f(*pr.first, pr.second);
@@ -755,8 +874,12 @@ ReduceFastSimple(TermNode& term, A1::ContextState& cs, _func f)
 {
 	return ReduceFastTmpl(term, cs,
 		[&](TermNode& bound, const shared_ptr<Environment>& p_env){
-		return ResolveTerm([&](TermNode& nd,
-			ResolvedTermReferencePtr p_ref) YB_FLATTEN{
+		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref)
+		// XXX: Ditto.
+#if YB_IMPL_GNUCPP < 120000
+			YB_FLATTEN
+#endif
+		{
 			EvaluateFastNonListCore(term, p_env, bound, p_ref);
 			// XXX: This is safe, cf. assumption 3.
 			A1::EvaluateLiteralHandler(term, cs, nd);
@@ -805,12 +928,19 @@ ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
 			}, [&](TermNode&, ContextNode& ctx){
 				// XXX: %trivial_swap is not used here to avoid worse
 				//	inlining.
-				RelaySwitched(ctx, A1::NameTypedReducerHandler(
-					[&](ContextNode& c) YB_ATTR(noinline){
+				RelaySwitched(ctx,
+					A1::NameTypedReducerHandler([&](ContextNode& c)
+#if YB_IMPL_GNUCPP >= 120000
+					YB_ATTR(noinline)
+#endif
+				{
 					return A1::ReduceCombinedBranch(term, c);
 				}, "eval-combine-operands"));
-				return RelaySwitched(ctx, trivial_swap,
-					[&](ContextNode& c) YB_ATTR(noinline){
+				return RelaySwitched(ctx, trivial_swap, [&](ContextNode& c)
+#if YB_IMPL_GNUCPP >= 120000
+					YB_ATTR(noinline)
+#endif
+				{
 					return ReduceFastBranch(sub, A1::ContextState::Access(c));
 				});
 			});
