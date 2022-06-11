@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3271
+\version r3279
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-05-19 03:50 +0800
+	2022-06-11 16:57 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -399,7 +399,7 @@ shared_pool_resource::do_allocate(size_t bytes, size_t alignment)
 	{
 		auto pr(find_pool(lb_size));
 
-		if(!([&]() YB_PURE{
+		if(!([&] YB_LAMBDA_ANNOTATE((), , pure){
 			return pr.first != pools.end();
 		}() && pr.first->get_extra_data() == pr.second))
 			pr.first = emplace(pr.first, pr.second);
@@ -425,7 +425,7 @@ shared_pool_resource::do_deallocate(void* p, size_t bytes, size_t alignment)
 	{
 		auto pr(find_pool(lb_size));
 
-		yverify([&]() YB_PURE{
+		yverify([&] YB_LAMBDA_ANNOTATE((), , pure){
 			return pr.first != pools.end();
 		}() && pr.first->get_extra_data() == pr.second);
 		pr.first->deallocate(p);
@@ -478,7 +478,7 @@ LogTree(const ValueNode& node, Logger::Level lv)
 {
 	YSLib::ostringstream oss(string(node.get_allocator()));
 
-	PrintNode(oss, node, [](const ValueNode& nd) YB_PURE{
+	PrintNode(oss, node, [] YB_LAMBDA_ANNOTATE((const ValueNode& nd), , pure){
 		return StringifyValueObject(nd.Value);
 	});
 	yunused(lv);
@@ -902,7 +902,7 @@ ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
 {
 	YAssert(term.size() != 1, "Invalid node found.");
 	if(IsBranch(term))
-		return [&]() YB_FLATTEN{
+		return [&] YB_LAMBDA_ANNOTATE((), , flatten){
 			YAssert(term.size() > 1, "Invalid node found.");
 			// XXX: These passes are known safe to synchronize.
 			if(IsEmpty(AccessFirstSubterm(term)))
@@ -914,8 +914,7 @@ ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
 
 			return ReduceFastTmpl(sub, cs,
 				[&](TermNode& bound, const shared_ptr<Environment>&){
-				return ResolveTerm([&](TermNode& nd,
-					ResolvedTermReferencePtr){
+				return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr){
 					term.Value = std::move(sub.Value);
 					// XXX: Missing setting of the 1st subterm is safe, cf.
 					//	assumption 4.
@@ -1007,8 +1006,8 @@ Interpreter::Interpreter()
 #if NPLC_Impl_FastAsyncReduce
 	if(Context.IsAsynchronous())
 		// XXX: Only safe and meaningful for asynchrnous implementations.
-		Context.Root.ReduceOnce.Handler
-			= [&](TermNode& term, ContextNode& ctx) YB_FLATTEN{
+		Context.Root.ReduceOnce.Handler = [&]
+			YB_LAMBDA_ANNOTATE((TermNode& term, ContextNode& ctx), , flatten){
 			return ReduceFastSimple(term, A1::ContextState::Access(ctx),
 				ReduceFastBranch);
 		};
