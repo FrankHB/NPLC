@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3279
+\version r3286
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-06-11 16:57 +0800
+	2022-06-11 20:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -812,14 +812,9 @@ EvaluateFastNonListCore(TermNode& term, const shared_ptr<Environment>& p_env,
 			term.get_allocator(), in_place_type<TermReference>,
 			p_ref->GetTags() & ~TermTags::Unique, *p_ref));
 	else
-	{
-		auto& env(NPL::Deref(p_env));
-
-		term.Value = ValueObject(std::allocator_arg,
-			term.get_allocator(), in_place_type<TermReference>,
-			env.MakeTermTags(bound) & ~TermTags::Unique, bound,
-			EnvironmentReference(p_env, env.GetAnchorPtr()));
-	}
+		term.SetValue(in_place_type<TermReference>,
+			NPL::Deref(p_env).MakeTermTags(bound) & ~TermTags::Unique, bound,
+			EnvironmentReference(p_env, NPL::Deref(p_env).GetAnchorPtr()));
 }
 
 template<typename _func, typename _func2, typename _fReduceBranch>
