@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8588
+\version r8591
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-05-26 08:24 +0800
+	2022-06-11 20:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -511,10 +511,10 @@ LoadFunctions(Interpreter& intp)
 	RegisterStrict(rctx, "read-line", [](TermNode& term){
 		RetainN(term, 0);
 
-		string line;
+		string line(term.get_allocator());
 
 		std::getline(std::cin, line);
-		term.Value = line;
+		term.SetValue(line);
 	});
 	RegisterUnary(rctx, "write", trivial_swap, [&](TermNode& term){
 		WriteTermValue(context.GetOutputStreamRef(), term);
@@ -681,7 +681,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.4 b945"
+#define NPLC_VER "V1.4+ b947"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
