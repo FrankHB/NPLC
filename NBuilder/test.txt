@@ -923,7 +923,7 @@ $defl! test (&i)
 			);
 			for-each-ltr test-bp (list $bindings/p->environment $bp-seq $bp-let)
 		);
-		subinfo "of empty lvalues bindings environment;" " fixed since b927";
+		subinfo "empty lvalues bindings environment;" " fixed since b927";
 		$let ((el ()))
 			$expect 42 eval% (list% $let el 42) (() get-current-environment)
 	))
