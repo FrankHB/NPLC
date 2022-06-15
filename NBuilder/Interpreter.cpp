@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3286
+\version r3287
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-06-11 20:31 +0800
+	2022-06-15 01:58 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -910,7 +910,7 @@ ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
 			return ReduceFastTmpl(sub, cs,
 				[&](TermNode& bound, const shared_ptr<Environment>&){
 				return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr){
-					term.Value = std::move(sub.Value);
+					cs.OperatorName = std::move(sub.Value);
 					// XXX: Missing setting of the 1st subterm is safe, cf.
 					//	assumption 4.
 					// XXX: This is safe, cf. assumption 3.
