@@ -172,6 +172,8 @@ $defl! test (&i)
 		$check-not equal? 1 2;
 		$check-not equal? (list 1 2) 3;
 		$check-not equal? (list 1 2) (list 3 4);
+		subinfo "equal? regular result;" " fixed native since b948";
+		$check equal? #t (equal? (list 1 2) (list 1 2));
 		subinfo "equal? + fwd?";
 		$let ((fwd? $vau% (&x) d
 			($lambda% (%v) bound-lvalue? ($resolve-identifier v))
