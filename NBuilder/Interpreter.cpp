@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3287
+\version r3384
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-06-15 01:58 +0800
+	2022-06-19 00:14 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,13 +29,14 @@
 //	YSLib::ostringstream, A1::QuerySourceInformation, YAssertNonnull,
 //	namespace YSLib, IsList, AccessFirstSubterm, LiftOtherValue, IsEmpty,
 //	RemoveHead;
-#include <ystdex/expanded_function.hpp> // for ystdex::expand_proxy,
-//	ystdex::retry_on_cond;
+#include YFM_NPL_NPLA1Forms // for IsAtom, bad_any_cast, IsPair, type_id,
+//	IsLeaf, trivial_swap, TraceException, A1::TraceBacktrace,
+//	YSLib::IO::StreamGet;
+#include <functional> // for std::bind, std::ref, std::placeholders::_1;
 #include <Helper/YModules.h>
-#include YFM_YCLib_YCommon // for ystdex::quote, ystdex::call_value_or;
+#include YFM_YCLib_YCommon // for ystdex::quote;
+#include <ystdex/expanded_function.hpp> // for ystdex::retry_on_cond;
 #include <ystdex/string.hpp> // for ystdex::begins_with;
-#include YFM_NPL_NPLA1Forms // for trivial_swap, TraceException,
-//	A1::TraceBacktrace, YSLib::IO::StreamGet;
 #include <cstring> // for std::strcmp, std::strstr;
 #include YFM_NPL_NPLAMath // for FPToString;
 #include <cstdio> // for std::fprintf, stderr;
@@ -75,48 +76,102 @@ yconstexpr auto prompt("> ");
 namespace
 {
 
-//! \since YSLib build 928
-void
-PrintRefPrefix(std::ostream& os, ResolvedTermReferencePtr p_ref)
-{
-	if(p_ref)
-	{
-		const auto tags(p_ref->GetTags());
-
-		os << "*[" << (bool(tags & TermTags::Unique) ? 'U' : ' ')
-			<< (bool(tags & TermTags::Nonmodifying) ? 'N' : ' ')
-			<< (bool(tags & TermTags::Temporary) ? 'T' : ' ') << ']';
-	}
-}
-
-//! \since YSLib build 897
+//! \since YSLib build 948
+//@{
 template<typename _func>
 void
-PrintTermNode(std::ostream& os, const TermNode& term, _func f, size_t depth = 0,
-	size_t idx = 0)
+PrintTermNodeCore(std::ostream& os, const TermNode& term, _func f,
+	size_t depth = 0, size_t idx = 0)
 {
 	if(depth != 0 && idx != 0)
 		os << ' ';
-	ResolveTerm([&](const TermNode& tm, ResolvedTermReferencePtr p_ref){
-		try
-		{
-			ystdex::expand_proxy<void(std::ostream&, const TermNode&,
-				const ResolvedTermReferencePtr&)>::call(f, os, tm, p_ref);
-			return;
-		}
-		CatchIgnore(bad_any_cast&)
+
+	const auto non_list(!IsList(term));
+
+	if(non_list && IsAtom(term))
+		f(term);
+	else
 		PrintContainedNodes([&](char b){
 			os << b;
 		}, [&]{
 			size_t i(0);
 
-			TraverseSubnodes([&](const TermNode& nd){
-				PrintTermNode(os, nd, f, depth + 1, i);
+			for(auto& tm : term)
+			{
+				if(!IsSticky(tm.Tags))
+					PrintTermNodeCore(os, tm, f, depth + 1, i);
+				else
+					break;
 				++i;
-			}, tm);
+			}
+			if(non_list)
+			{
+				YAssert(i != 0, "Invalid state found.");
+				os << " . ";
+				f(term);
+			}
 		});
-	}, term);
 }
+
+template<typename _func>
+void
+PrintTermNodeFiltered(std::ostream& os, const TermNode& term, _func f,
+	size_t depth = 0, size_t idx = 0)
+{
+	PrintTermNodeCore(os, term, [&](const TermNode& tm){
+		TryExpr(f(tm))
+		CatchIgnore(bad_any_cast&)
+	}, depth, idx);
+}
+
+template<typename _func>
+void
+PrintTermNode(std::ostream& os, const TermNode& term, _func f, bool pfx = {},
+	size_t depth = 0, size_t idx = 0)
+{
+	PrintTermNodeFiltered(os, term, [&](const TermNode& tm){
+		try
+		{
+			// XXX: As %ResolveTerm, without restriction of being an atom.
+			if(const auto p = TryAccessLeaf<const TermReference>(tm))
+			{
+				auto& nd(p->get());
+
+				if(pfx && p)
+				{
+					const auto tags(p->GetTags());
+
+					os << "*";
+
+					size_t i(0);
+
+					for(const auto& t : tm)
+					{
+						if(IsSticky(t.Tags))
+							break;
+						++i;
+					}
+					i = tm.size() - i;
+					if(i != 0)
+						os << "{" << i << "}";
+					os << "[" << (bool(tags & TermTags::Unique) ? 'U' : ' ')
+						<< (bool(tags & TermTags::Nonmodifying) ? 'N' : ' ')
+						<< (bool(tags & TermTags::Temporary) ? 'T' : ' ')
+						<< ']';
+				}
+				if(IsPair(nd) || nd.Value.type() != type_id<TermReference>())
+					PrintTermNode(os, nd, f, pfx, depth, idx);
+				else
+					PrintTermNodeFiltered(os, nd, std::bind(f, std::ref(os),
+						std::placeholders::_1), depth, idx);
+			}
+			else
+				f(os, tm);
+		}
+		CatchIgnore(bad_any_cast&)
+	}, depth, idx);
+}
+//@}
 
 //! \since YSLib build 889
 //@{
@@ -200,7 +255,7 @@ StringifyValueObjectDefault(const ValueObject& vo)
 		return "#[" + StringifyContextHandler(*p) + "]";
 	if(!IsTyped<void>(ti))
 		return ystdex::quote(string(DecodeTypeName(ti)), "#[", ']');
-	throw ystdex::bad_any_cast();
+	throw bad_any_cast();
 }
 
 //! \since YSLib build 932
@@ -329,10 +384,8 @@ struct NodeValueLogger
 {
 	//! \since YSLib build 928
 	void
-	operator()(std::ostream& os, const TermNode& nd,
-		ResolvedTermReferencePtr p_ref) const
+	operator()(std::ostream& os, const TermNode& nd) const
 	{
-		PrintRefPrefix(os, p_ref);
 		os << StringifyValueObject(nd.Value);
 	}
 };
@@ -490,7 +543,7 @@ LogTermValue(const TermNode& term, Logger::Level lv)
 {
 	YSLib::ostringstream oss(string(term.get_allocator()));
 
-	PrintTermNode(oss, term, NodeValueLogger());
+	PrintTermNode(oss, term, NodeValueLogger(), true);
 	yunused(lv);
 	YTraceDe(lv, "%s", oss.str().c_str());
 }
