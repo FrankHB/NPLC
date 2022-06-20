@@ -83,7 +83,7 @@ $defw%! foldr (&kons &knil .&ls) d
 $defw%! map (&appv .&ls) d
 	accr (move! ls) nonfoldable? () list-extract-first
 		list-extract-rest%
-		($lambda (&x &xs) cons% (apply appv (forward! x) d) xs);
+		($lambda (&x &xs) cons% (apply appv (forward! x) d) (forward! xs));
 $defw! for-each-rtl &ls env $sequence (apply map ls env) #inert;
 "NOTE", "Definitions of map-reverse, for-each-ltr are in",
 	" %YFramework.NPL.Dependency.";
