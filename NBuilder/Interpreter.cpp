@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3384
+\version r3396
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-06-19 00:14 +0800
+	2022-06-30 04:14 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -140,18 +140,9 @@ PrintTermNode(std::ostream& os, const TermNode& term, _func f, bool pfx = {},
 				if(pfx && p)
 				{
 					const auto tags(p->GetTags());
+					const auto i(tm.size() - CountPrefix(tm));
 
 					os << "*";
-
-					size_t i(0);
-
-					for(const auto& t : tm)
-					{
-						if(IsSticky(t.Tags))
-							break;
-						++i;
-					}
-					i = tm.size() - i;
 					if(i != 0)
 						os << "{" << i << "}";
 					os << "[" << (bool(tags & TermTags::Unique) ? 'U' : ' ')
@@ -948,14 +939,14 @@ ReduceFastBranch(TermNode&, A1::ContextState&);
 ReductionStatus
 ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
 {
-	YAssert(term.size() != 1, "Invalid node found.");
+	YAssert(term.size() != 1, "Invalid term found.");
 	if(IsBranch(term))
 		return [&] YB_LAMBDA_ANNOTATE((), , flatten){
-			YAssert(term.size() > 1, "Invalid node found.");
+			YAssert(term.size() > 1, "Invalid term found.");
 			// XXX: These passes are known safe to synchronize.
 			if(IsEmpty(AccessFirstSubterm(term)))
 				RemoveHead(term);
-			YAssert(IsBranchedList(term), "Invalid node found.");
+			YAssert(IsBranchedList(term), "Invalid term found.");
 			cs.LastStatus = ReductionStatus::Neutral;
 
 			auto& sub(AccessFirstSubterm(term));
