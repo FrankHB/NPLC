@@ -349,7 +349,8 @@ $defl! test (&i)
 		);
 		subinfo "self-evaluation on nested one-element list of irregular"
 			" representations;" " fixed since b945";
-		$expect (unwrap id) (eval% (list% (unwrap id)) (() get-current-environment));
+		$expect (unwrap id)
+			eval% (list% (unwrap id)) (() get-current-environment);
 		subinfo "test for ref&, etc.";
 		$let* ((x "xx") (rx ref& x))
 		(
