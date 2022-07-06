@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8591
+\version r8594
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-06-11 20:41 +0800
+	2022-07-07 03:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,6 +29,7 @@
 //	EXIT_SUCCESS;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <iostream> // for std::clog, std::cout, std::endl;
+#include <string> // for getline;
 #include YFM_YSLib_Core_YObject // for type_index, to_string, make_string_view,
 //	YSLib::to_std_string, std::stoi;
 #include <sstream> // for complete istringstream;
@@ -513,7 +514,7 @@ LoadFunctions(Interpreter& intp)
 
 		string line(term.get_allocator());
 
-		std::getline(std::cin, line);
+		getline(std::cin, line);
 		term.SetValue(line);
 	});
 	RegisterUnary(rctx, "write", trivial_swap, [&](TermNode& term){
@@ -681,7 +682,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.4+ b947"
+#define NPLC_VER "V1.4+ b949+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
