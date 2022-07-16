@@ -646,6 +646,13 @@ $defl! test (&i)
 		(
 			list-push-front! li 1;
 			$expect (list 1 2 3) li
+		);
+		subinfo "list-push-front! preserving references;"
+			" fixed derivation since b950";
+		$let ((li list% q-a 3))
+		(
+			list-push-front! li 1;
+			$check (reference? (first% (rest% li)))
 		)
 	))
 	((eqv? i 12) (
