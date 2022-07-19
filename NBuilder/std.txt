@@ -143,6 +143,6 @@ $def! std.io make-environment ($as-environment ($provide/let! (
 	$defl/e! bput mods (&b) put (b2str b);
 	$defl/e! bputs mods (&b) puts (b2str b);
 	$defl/e! iput mods (&x) puts (itos x);
-	$defl/e! putss mods (.&xs) puts (apply ++ xs)
+	$defl/e! putss mods (.&xs) puts (apply ++ (forward! xs))
 ))) std.io;
 
