@@ -168,7 +168,10 @@ $defl! test (&i)
 			test-elision collapse
 		);
 		subinfo "equal?";
+		$check equal? () ();
 		$check equal? 1 1;
+		$check equal? (list 2) (list 2);
+		$check equal? (list% q-a) (list q-a);
 		$check-not equal? 1 2;
 		$check-not equal? (list 1 2) 3;
 		$check-not equal? (list 1 2) (list 3 4);
