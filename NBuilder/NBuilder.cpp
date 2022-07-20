@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8594
+\version r8597
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-07-07 03:23 +0800
+	2022-07-21 03:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -318,7 +318,6 @@ LoadFunctions(Interpreter& intp)
 	//	in %YFramework.NPL.Dependency.
 	RegisterStrict(rctx, "make-nocopy", [](TermNode& term){
 		RetainN(term, 0);
-
 		term.Value = NoCopy();
 	});
 	RegisterStrict(rctx, "make-nocopy-fn", [](TermNode& term){
@@ -326,8 +325,7 @@ LoadFunctions(Interpreter& intp)
 		// TODO: Blocked. Use C++14 lambda initializers to simplify the
 		//	implementation.
 		term.Value = A1::MakeForm(term.get_allocator(), std::bind([&](NoCopy&){
-			term.Clear();
-			return ReductionStatus::Regular;
+			return ReductionStatus::Clean;
 		}, NoCopy()), Strict);
 	});
 	// NOTE: Definitions of ref&, assign@!, cons, cons%, set-rest!, set-rest%!,
