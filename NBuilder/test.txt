@@ -308,6 +308,9 @@ $defl! test (&i)
 	))
 	((eqv? i 6) (
 		info "environment basic operations";
+		subinfo "eval";
+		$expect 42 eval 42 (() get-current-environment);
+		$expect 42 eval% 42 (() get-current-environment);
 		subinfo "test case for freeze-environment!";
 		$let ((e0 make-environment (() get-current-environment)))
 		(
