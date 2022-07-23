@@ -307,6 +307,22 @@ $defl! test (&i)
 		)
 	))
 	((eqv? i 6) (
+		info "environment basic operations";
+		subinfo "test case for freeze-environment!";
+		$let ((e0 make-environment (() get-current-environment)))
+		(
+			$set! e0 q0 0;
+			$def! e1 make-environment e0;
+			$set! e1 q1 1;
+			$set! e1 q2 2;
+			freeze-environment! e0;
+			eval ($quote (
+				$rem assign! q1 1;
+				$rem $def! q2 2
+			)) e1
+		)
+	))
+	((eqv? i 7) (
 		info "combiner operations";
 		subinfo "combiner equality";
 		$check eqv? (idv idv) idv;
@@ -361,22 +377,6 @@ $defl! test (&i)
 				eval (list $sequence (puts x) (assign! x "yy") (puts x)
 					(string<- rx "ee") (puts rx)) env);
 			() $f1
-		)
-	))
-	((eqv? i 7) (
-		info "environment basic operations";
-		subinfo "test case for freeze-environment!";
-		$let ((e0 make-environment (() get-current-environment)))
-		(
-			$set! e0 q0 0;
-			$def! e1 make-environment e0;
-			$set! e1 q1 1;
-			$set! e1 q2 2;
-			freeze-environment! e0;
-			eval ($quote (
-				$rem assign! q1 1;
-				$rem $def! q2 2
-			)) e1
 		)
 	))
 	((eqv? i 8) (
