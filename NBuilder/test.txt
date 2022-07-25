@@ -625,7 +625,7 @@ $defl! test (&i)
 			$expect (list 7 7 2) q-li;
 			set-rest%! q-li q-li2;
 			$expect (list 7 3 1) q-li;
-			$expect (list (list 7 3 1) 7 3 1) cons% q-li q-li;
+			$expect (list (list 7 3 1) 7 3 1) cons% q-li (idv q-li);
 			$expect 3 first& (first& q-li4);
 			set-first! (first& q-li4) (list () 2);
 			$expect (list 1) (rest& (first& q-li4));
