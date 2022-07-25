@@ -610,6 +610,14 @@ $defl! test (&i)
 		apply ($lambda% (&x &y) x) (list% q-li q-li2);
 		subinfo "list algorithms";
 		reduce (list% q-li q-li2 q-li q-li2) ($lambda% (&x &y) x) q-li;
+		subinfo "improper lists";
+		$let ()
+		(
+			$expect (cons (list 1 2) 4) cons (list 1 2) 4;
+			$expect (cons (list 1 2) 4) cons q-li q-b;
+			$expect (cons% 2 3) restv (list*% 1 2 3);
+			$check eq? (rest% (cons% 2 q-a)) q-a
+		);
 		subinfo "list modification";
 		$let ()
 		(
