@@ -114,7 +114,7 @@ $defl! test (&i)
 		subinfo "basic combiner calls";
 		$let ()
 		(
-			$defl! gg fm apply - fm;
+			$defl! gg fm apply - (idv fm);
 			$defv! $gg fm #ignore
 				eval (list* - fm) (() get-current-environment);
 			$expect (- 0 1) gg 2 3;
@@ -390,7 +390,7 @@ $defl! test (&i)
 			$defl! Y (f) ($lambda (&h) h h)
 				(wrap ($vau/e (() copy-environment) (x) #ignore f
 					(wrap ($vau/e (() copy-environment) z #ignore
-						(apply (x x) z)))));
+						(apply (x x) (idv z))))));
 			$def! fact Y ($lambda (&f)
 				wrap ($vau/e (() copy-environment) (z) #ignore
 					$if (eqv? z 0) 1 (* z (f (- z 1)))));
