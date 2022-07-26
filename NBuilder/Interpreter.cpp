@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3396
+\version r3477
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-06-30 04:14 +0800
+	2022-07-26 22:29 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -30,7 +30,7 @@
 //	namespace YSLib, IsList, AccessFirstSubterm, LiftOtherValue, IsEmpty,
 //	RemoveHead;
 #include YFM_NPL_NPLA1Forms // for IsAtom, bad_any_cast, IsPair, type_id,
-//	IsLeaf, trivial_swap, TraceException, A1::TraceBacktrace,
+//	IsCombiningTerm, IsLeaf, trivial_swap, TraceException, A1::TraceBacktrace,
 //	YSLib::IO::StreamGet;
 #include <functional> // for std::bind, std::ref, std::placeholders::_1;
 #include <Helper/YModules.h>
@@ -861,55 +861,53 @@ EvaluateFastNonListCore(TermNode& term, const shared_ptr<Environment>& p_env,
 			EnvironmentReference(p_env, NPL::Deref(p_env).GetAnchorPtr()));
 }
 
-template<typename _func, typename _func2, typename _fReduceBranch>
+template<typename _func, typename _func2, typename _fReducePair>
 // XXX: This is less efficient at least on x86_64-pc-linux G++ 12.1.
 #if YB_IMPL_GNUCPP < 120000
 YB_FLATTEN
 #endif
 inline ReductionStatus
 ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
-	_fReduceBranch reduce_branch)
+	_fReducePair reduce_pair)
 {
-	if(term.Value)
+	if(IsCombiningTerm(term))
+		return reduce_pair(term, cs);
+	// XXX: There are several administrative differences to the original
+	//	%ContextState::DefaultReduceOnce. For leaf values other than value
+	//	tokens, the next term is set up in the original implemenation but
+	//	omitted here, cf. assumption 1.
+	if(const auto p = TermToNamePtr(term))
 	{
-		// XXX: There are several administrative differences to the original
-		//	%ContextState::DefaultReduceOnce. For leaf values other than value
-		//	tokens, the next term is set up in the original implemenation but
-		//	omitted here, cf. assumption 1.
-		if(const auto p = TermToNamePtr(term))
-		{
-			string_view id(*p);
+		string_view id(*p);
 
-			YAssert(IsLeaf(term),
-				"Unexpected irregular representation of term found.");
-			// XXX: Assume the call does not rely on %term and it does not
-			//	change the stored name on throwing.
-			// XXX: See assumption 2. This is also known not throwing
-			//	%BadIdentifier.
-			auto pr(ResolveDefault(cs.GetRecordPtr(), id));
+		YAssert(IsLeaf(term),
+			"Unexpected irregular representation of term found.");
+		// XXX: Assume the call does not rely on %term and it does not change
+		//	the stored name on throwing.
+		// XXX: See assumption 2. This is also known not throwing
+		//	%BadIdentifier.
+		auto pr(ResolveDefault(cs.GetRecordPtr(), id));
 
-			if(pr.first)
-				return f(*pr.first, pr.second);
+		if(pr.first)
+			return f(*pr.first, pr.second);
 #	if NPLC_Impl_UseSourceInfo
-			{
-				BadIdentifier e(id);
+		{
+			BadIdentifier e(id);
 
-				if(const auto p_si = A1::QuerySourceInformation(term.Value))
-					e.Source = *p_si;
-				throw e;
-			}
-#	else
-			throw BadIdentifier(id);
-#	endif
+			if(const auto p_si = A1::QuerySourceInformation(term.Value))
+				e.Source = *p_si;
+			throw e;
 		}
-		return f2();
+#	else
+		throw BadIdentifier(id);
+#	endif
 	}
-	return reduce_branch(term, cs);
+	return f2();
 }
 
-template<typename _func>
+template<typename _fReducePair>
 YB_FLATTEN inline ReductionStatus
-ReduceFastSimple(TermNode& term, A1::ContextState& cs, _func f)
+ReduceFastSimple(TermNode& term, A1::ContextState& cs, _fReducePair reduce_pair)
 {
 	return ReduceFastTmpl(term, cs,
 		[&](TermNode& bound, const shared_ptr<Environment>& p_env){
@@ -926,7 +924,7 @@ ReduceFastSimple(TermNode& term, A1::ContextState& cs, _func f)
 		}, bound);
 	}, [] YB_LAMBDA_ANNOTATE((), ynothrow, const){
 		return ReductionStatus::Retained;
-	}, f);
+	}, reduce_pair);
 }
 //@}
 
@@ -935,61 +933,58 @@ ReduceFastSimple(TermNode& term, A1::ContextState& cs, _func f)
 ReductionStatus
 ReduceFastBranch(TermNode&, A1::ContextState&);
 
-//! \since YSLib build 945
 ReductionStatus
 ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
 {
-	YAssert(term.size() != 1, "Invalid term found.");
-	if(IsBranch(term))
-		return [&] YB_LAMBDA_ANNOTATE((), , flatten){
-			YAssert(term.size() > 1, "Invalid term found.");
-			// XXX: These passes are known safe to synchronize.
-			if(IsEmpty(AccessFirstSubterm(term)))
-				RemoveHead(term);
-			YAssert(IsBranchedList(term), "Invalid term found.");
-			cs.LastStatus = ReductionStatus::Neutral;
+	YAssert(IsCombiningTerm(term), "Invalid term found.");
+	YAssert(!(IsList(term) && term.size() == 1), "Invalid term found.");
+	return [&] YB_LAMBDA_ANNOTATE((), , flatten){
+		YAssert(term.size() > (IsList(term) ? 1 : 0), "Invalid term found.");
+		// XXX: These passes are known safe to synchronize.
+		if(IsEmpty(AccessFirstSubterm(term)))
+			RemoveHead(term);
+		YAssert(IsBranch(term), "Invalid term found.");
+		cs.LastStatus = ReductionStatus::Neutral;
 
-			auto& sub(AccessFirstSubterm(term));
+		auto& sub(AccessFirstSubterm(term));
 
-			return ReduceFastTmpl(sub, cs,
-				[&](TermNode& bound, const shared_ptr<Environment>&){
-				return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr){
-					cs.OperatorName = std::move(sub.Value);
-					// XXX: Missing setting of the 1st subterm is safe, cf.
-					//	assumption 4.
-					// XXX: This is safe, cf. assumption 3.
-					A1::EvaluateLiteralHandler(sub, cs, nd);
-					return ReduceCombinedReferent(term, cs, nd);
-				}, bound);
-			}, [&]{
-				return ReduceCombinedBranch(term, cs);
-			}, [&](TermNode&, ContextNode& ctx){
-				// XXX: %trivial_swap is not used here to avoid worse
-				//	inlining.
-				RelaySwitched(ctx,
-					A1::NameTypedReducerHandler([&](ContextNode& c)
+		return ReduceFastTmpl(sub, cs,
+			[&](TermNode& bound, const shared_ptr<Environment>&){
+			return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr){
+				cs.OperatorName = std::move(sub.Value);
+				// XXX: Missing setting of the 1st subterm is safe, cf.
+				//	assumption 4.
+				// XXX: This is safe, cf. assumption 3.
+				A1::EvaluateLiteralHandler(sub, cs, nd);
+				return ReduceCombinedReferent(term, cs, nd);
+			}, bound);
+		}, [&]{
+			return ReduceCombinedBranch(term, cs);
+		}, [&](TermNode&, ContextNode& ctx){
+			// XXX: %trivial_swap is not used here to avoid worse inlining.
+			RelaySwitched(ctx, A1::NameTypedReducerHandler([&](ContextNode& c)
 #if YB_IMPL_GNUCPP >= 120000
-					YB_ATTR(noinline)
+				YB_ATTR(noinline)
 #endif
-				{
-					return A1::ReduceCombinedBranch(term, c);
-				}, "eval-combine-operands"));
-				return RelaySwitched(ctx, trivial_swap, [&](ContextNode& c)
+			{
+				return A1::ReduceCombinedBranch(term, c);
+			}, "eval-combine-operands"));
+			return RelaySwitched(ctx, trivial_swap, [&](ContextNode& c)
 #if YB_IMPL_GNUCPP >= 120000
-					YB_ATTR(noinline)
+				YB_ATTR(noinline)
 #endif
-				{
-					return ReduceFastBranch(sub, A1::ContextState::Access(c));
-				});
+			{
+				return ReduceFastBranch(sub, A1::ContextState::Access(c));
 			});
-		}();
-	return ReductionStatus::Retained;
+		});
+	}();
 }
 
 ReductionStatus
 ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 {
-	if(term.size() == 1)
+	YAssert(IsCombiningTerm(term), "Invalid term found.");
+	if(IsList(term) && term.size() == 1)
 	{
 		auto term_ref(ystdex::ref(term));
 
