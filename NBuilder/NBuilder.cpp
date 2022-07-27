@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8597
+\version r8599
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-07-21 03:41 +0800
+	2022-07-25 02:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -310,7 +310,6 @@ LoadFunctions(Interpreter& intp)
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Definition of $if is in %YFramework.NPL.Dependency.
 	RegisterUnary<Strict, const string>(rctx, "symbol-string?", IsSymbol);
-	RegisterUnary(rctx, "list?", ComposeReferencedTermOp(IsList));
 	RegisterUnary(rctx, "listv?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
 	// NOTE: Definitions of null?, nullv?, reference?, bound-lvalue?,
@@ -680,7 +679,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.4+ b949+"
+#define NPLC_VER "V1.4+ b950+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
