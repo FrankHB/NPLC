@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3477
+\version r3492
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-07-26 22:29 +0800
+	2022-08-06 01:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -25,12 +25,11 @@
 */
 
 
-#include "Interpreter.h" // for type_info, QueryTypeName, IsTyped, YSLib::sfmt,
-//	YSLib::ostringstream, A1::QuerySourceInformation, YAssertNonnull,
-//	namespace YSLib, IsList, AccessFirstSubterm, LiftOtherValue, IsEmpty,
-//	RemoveHead;
-#include YFM_NPL_NPLA1Forms // for IsAtom, bad_any_cast, IsPair, type_id,
-//	IsCombiningTerm, IsLeaf, trivial_swap, TraceException, A1::TraceBacktrace,
+#include "Interpreter.h" // for IsAtom, bad_any_cast, IsPair, type_id,
+//	type_info, QueryTypeName, IsTyped, YSLib::sfmt, YSLib::ostringstream,
+//	YAssertNonnull, IsCombiningTerm, IsLeaf, A1::QuerySourceInformation, IsList,
+//	RemoveHead, IsEmpty, AccessFirstSubterm, trivial_swap, IsSingleElementList,
+//	LiftOtherValue, namespace YSLib, TraceException, A1::TraceBacktrace,
 //	YSLib::IO::StreamGet;
 #include <functional> // for std::bind, std::ref, std::placeholders::_1;
 #include <Helper/YModules.h>
@@ -902,7 +901,12 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 		throw BadIdentifier(id);
 #	endif
 	}
+#if true
+	// XXX: This is faster.
 	return f2();
+#else
+	return !IsTyped<A1::ValueToken>(term) ? f2() : ReductionStatus::Retained;
+#endif
 }
 
 template<typename _fReducePair>
@@ -984,14 +988,12 @@ ReductionStatus
 ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 {
 	YAssert(IsCombiningTerm(term), "Invalid term found.");
-	if(IsList(term) && term.size() == 1)
+	if(IsSingleElementList(term))
 	{
 		auto term_ref(ystdex::ref(term));
 
-		ystdex::retry_on_cond([&]{
-			auto& tm(term_ref.get());
-
-			return IsList(tm) && tm.size() == 1;
+		ystdex::retry_on_cond([&] YB_LAMBDA_ANNOTATE((), , pure){
+			return IsSingleElementList(term_ref);
 		}, [&]{
 			term_ref = AccessFirstSubterm(term_ref);
 		});
