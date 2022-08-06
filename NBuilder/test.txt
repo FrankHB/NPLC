@@ -49,8 +49,8 @@ $defv! $expect-moved (.&expr) d
 	$let ((&res eval expr d))
 		$if (moved? res) (pass (forward! res))
 			(fail-on-expect expr (forward! res) ());
-$defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
-$defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
+$defl! info (.&msgs) apply putss (list* "Test case: " (forward! msgs));
+$defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (forward! msgs));
 
 $def! __make-stdenv copy-environment;
 $defl! list-restv (&x) list (restv x);
