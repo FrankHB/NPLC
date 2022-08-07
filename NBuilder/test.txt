@@ -535,6 +535,9 @@ $defl! test (&i)
 	))
 	((eqv? i 10) (
 		info "list operations";
+		subinfo "empty list calls: list and list%";
+		$expect () () list;
+		$expect () () list%;
 		subinfo "empty list calls: list* and list*%;" " fixed since b897";
 		$expect () list* ();
 		$expect () list*% ();
