@@ -18,11 +18,11 @@ $defl! xcons% (&x &y) cons% y x;
 $defv%! $while (&test .&exprseq) d
 	$when (eval test d)
 		(eval% (list* () $sequence exprseq) d)
-		(eval% (list* () $while (move! test) (move! exprseq)) d);
+		(eval% (list* () $while (forward! test) (forward! exprseq)) d);
 $defv%! $until (&test .&exprseq) d
 	$unless (eval test d)
 		(eval% (list* () $sequence exprseq) d)
-		(eval% (list* () $until (move! test) (move! exprseq)) d);
+		(eval% (list* () $until (forward! test) (forward! exprseq)) d);
 $defl%! and &x $sequence
 	($defl%! and-aux (&h &l) $if (null? l) (forward! h)
 		(and-aux ($if h (forward! (first% l)) #f) (forward! (rest% l))))
