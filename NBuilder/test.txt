@@ -635,6 +635,8 @@ $defl! test (&i)
 		subinfo "improper list access";
 		$expect (cons% 2 3) restv (list*% 1 2 3);
 		$check eq? (rest% (cons% 2 q-a)) q-a;
+		subinfo "subpair reference referent;" " fixed since b952";
+		$let* ((pr cons 1 2) ((#ignore .&xs) pr)) $check-not uncollapsed? xs;
 		subinfo "list lambda binding";
 		apply ($lambda% (&x &y) x) (list% q-li q-li2);
 		subinfo "list modification";
