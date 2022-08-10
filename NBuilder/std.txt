@@ -74,8 +74,9 @@ $defv! $let-safe% (&bindings .&body) d
 "NOTE", "Definitions of $bindings/p->environment, $bindings->environment,",
 	" $provide!, $import!, nonfoldable?, list-extract-first,",
 	" list-extract-rest%, list-push-front! are in %YFramework.NPL.Dependency.";
-$defl! list-push-back! (&l &x)
-	assign! l (list-concat (move! l) (list% (forward! x)));
+$defl! list-push-back! (&l &x) $if (modifiable? (check-list-reference l))
+	(assign! l (list-concat (idv l) (list% (forward! x))))
+	(raise-type-error "Modifiable object expected.");
 $defw%! foldr (&kons &knil .&ls) d
 	accr (move! ls) nonfoldable? (forward! knil) list-extract-first
 		list-extract-rest%
