@@ -1112,13 +1112,18 @@ $defl! test (&i)
 		info "std.continuations";
 		$let ()
 		(
-			$import&! std.continuations call/1cc continuation->applicative;
+			$import&! std.continuations
+				call/1cc continuation->applicative apply-continuation;
 
 			$expect 42 call/1cc ($lambda . 42);
 			$let ((a 43)) $expect 43 call/1cc ($lambda . a);
 			$expect (list 44) call/1cc ($lambda (&k) (
 				(continuation->applicative (move! k))
 					($sequence (display/newline "ready to call k") 44);
+				raise-error "Failed to skip."));
+			$expect 45 call/1cc ($lambda (&k) (
+				apply-continuation (move! k)
+					($sequence (display/newline "ready to call k") 45);
 				raise-error "Failed to skip."))
 		)
 	))
