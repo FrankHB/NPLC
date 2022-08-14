@@ -142,6 +142,13 @@ $defl! test (&i)
 		$expect (list* 1 2 3) apply list% (list* 1 2 3);
 		subinfo "apply nocopy functions;" " fixed since b944";
 		apply (() make-nocopy-fn) ();
+		subinfo "apply and apply-list trailing irregular representation;"
+			" fixed native since b952";
+		$let* ((e () get-current-environment) (l list () e))
+		(
+			$expect 42 eval% (list*% (unwrap apply) list% 42 (rest& l)) e;
+			$expect () eval% (list*% (unwrap apply-list) list% () (rest& l)) e
+		)
 	))
 	((eqv? i 3) (
 		info "recursive function calls";
