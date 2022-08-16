@@ -560,6 +560,11 @@ $defl! test (&i)
 	))
 	((eqv? i 10) (
 		info "list operations";
+		subinfo "list?";
+		$check list? (list 1);
+		$check list? (cons% 2 ());
+		subinfo "list? trailing irregular representation";
+		$check-not list? (cons% 3 nilvr);
 		subinfo "empty list calls: list and list%";
 		$expect () () list;
 		$expect () () list%;
