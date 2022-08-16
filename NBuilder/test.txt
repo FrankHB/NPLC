@@ -548,6 +548,8 @@ $defl! test (&i)
 		subinfo "empty list calls: list* and list*%;" " fixed since b897";
 		$expect () list* ();
 		$expect () list*% ();
+		subinfo "list*% reference preserving;" " fixed derivation since b953";
+		$check reference? (list*% id);
 		subinfo "list underlying opeative evaluations";
 		$expect 1 eval (list*% (unwrap list%) 1) (() get-current-environment);
 		$expect 1 eval
