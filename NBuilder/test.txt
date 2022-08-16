@@ -135,6 +135,13 @@ $defl! test (&i)
 				($lambda (x) ($lambda (y) foo y) x) ());
 		$expect () ($lambda (x) ($lambda (y) ($lambda (z) z) y) x) ();
 		$expect () $let () ($def! l list (); ($lambda ((&x .)) x) l);
+		subinfo "combiner subobjects of vau prvalue incorrectly moved;"
+			" fixed since b953";
+		$let ((f $lambda (x) x))
+		(
+			(idv (unwrap f)) 1;
+			$expect 42 (f 42)
+		);
 		subinfo "apply";
 		$expect 42 apply list% 42;
 		$expect (list 1 2) apply list% (list% 1 2);
