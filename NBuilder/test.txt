@@ -645,11 +645,17 @@ $defl! test (&i)
 			test first;
 			test first&
 		);
-		subinfo "first& propagation of nonmodifiable reference elements;"
-			"fixed derivation since b953";
-		$let ((li list% q-a)) $check-not modifiable? (first& (as-const li));
 		subinfo "firstv copy elision on xvalues;" " fixed since b939";
 		$let ((li list% (() make-nocopy))) $def! b firstv (expire li);
+		$let ((li list% q-a q-a))
+		(
+			subinfo "first& propagation of nonmodifiable reference elements;"
+				"fixed derivation since b953";
+			$let ((li list% q-a)) $check-not modifiable? (first& (as-const li));
+			subinfo "rest& propagation of nonmodifiable reference elements;"
+				"fixed native since b953";
+			$check-not modifiable? (rest& (as-const li))
+		);
 		subinfo "list access";
 		list% q-li q-li2
 			(idv (first q-li)) (restv q-li)
