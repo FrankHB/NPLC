@@ -645,6 +645,9 @@ $defl! test (&i)
 			test first;
 			test first&
 		);
+		subinfo "first& propagation of nonmodifiable reference elements;"
+			"fixed derivation since b953";
+		$let ((li list% q-a)) $check-not modifiable? (first& (as-const li));
 		subinfo "firstv copy elision on xvalues;" " fixed since b939";
 		$let ((li list% (() make-nocopy))) $def! b firstv (expire li);
 		subinfo "list access";
@@ -1305,7 +1308,7 @@ $defl! test (&i)
 			$expect 2 max 1 2;
 			$expect -inf.0 min -inf.0 2;
 			$expect 0 abs 0;
-			subinfo "odd? for negative odd flonums;" " fixed since b937";
+			subinfo "odd? for negative odd flonums" " fixed since b937";
 			$check odd? -1.0
 		);
 		$let ()
