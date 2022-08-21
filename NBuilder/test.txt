@@ -716,7 +716,7 @@ $defl! test (&i)
 			$expect (list (list 7 3 1) 7 3 1) cons% q-li (idv q-li);
 			$expect 3 first& (first& q-li4);
 			set-first! (first& q-li4) (list () 2);
-			$expect (list 1) (rest& (first& q-li4));
+			$expect (list 1) (restv (first& q-li4));
 			$expect (list (list (list () 2) 1) 3 4 5) q-li4
 		);
 		subinfo "list modification temporary preservation;" " fixed since b944";
