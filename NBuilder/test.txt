@@ -415,6 +415,9 @@ $defl! test (&i)
 			$urfr 4;
 			$rem $urfri 5
 		);
+		subinfo "unwrap propagation of nonmodifiable references of irregular"
+			" representation;" "fixed since b953";
+		$check-not modifiable? (unwrap id);
 		subinfo "self-evaluation on nested one-element list of irregular"
 			" representations;" " fixed since b945";
 		$expect (unwrap id)
