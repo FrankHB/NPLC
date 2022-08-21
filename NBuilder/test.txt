@@ -632,10 +632,20 @@ $defl! test (&i)
 			$check-not unique? (first@ l0);
 			$check-not unique? (first@ l1);
 			$check-not unique? (first@ l2);
+			subinfo "first@ xvalue;" " fixed derivation since b953";
+			$check unique? (first@ (expire l0));
+			$check unique? (first@ (expire l1));
+			$check unique? (first@ (expire l2));
 			subinfo "first& unique";
 			$check-not unique? (first& l0);
 			$check-not unique? (first& l1);
-			$check unique? (first& l2)
+			$check unique? (first& l2);
+			subinfo "first& xvalue;" " fixed derivation since b953";
+			$check-not unique? (first& (expire l1));
+			$check unique? (first& (expire l2));
+			subinfo "first& non-reference element unique preserving;"
+				" fixed since b953";
+			$check unique? (first& (expire l0))
 		);
 		subinfo "rest& xvalues";
 		$let ((l0 list q-a q-a) (l1 list% q-a q-a) (l2 list% (expire q-a)
