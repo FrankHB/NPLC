@@ -637,6 +637,15 @@ $defl! test (&i)
 			$check-not unique? (first& l1);
 			$check unique? (first& l2)
 		);
+		subinfo "rest& xvalues";
+		$let ((l0 list q-a q-a) (l1 list% q-a q-a) (l2 list% (expire q-a)
+			(expire q-a)))
+		(
+			subinfo "rest& unique";
+			$check-not unique? (rest& l0);
+			$check-not unique? (rest& l1);
+			$check-not unique? (rest& l2)
+		);
 		subinfo "first forwarding;" " fixed derivation since b939";
 		$let ()
 		(
