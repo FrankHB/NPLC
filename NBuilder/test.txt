@@ -625,6 +625,18 @@ $defl! test (&i)
 				($let ((li q-li2)) (restv (expire li); li));
 			$expect-moved first a
 		);
+		subinfo "first@ and first& xvalues";
+		$let ((l0 list q-a) (l1 list% q-a) (l2 list% (expire q-a)))
+		(
+			subinfo "first@ unique";
+			$check-not unique? (first@ l0);
+			$check-not unique? (first@ l1);
+			$check-not unique? (first@ l2);
+			subinfo "first& unique";
+			$check-not unique? (first& l0);
+			$check-not unique? (first& l1);
+			$check unique? (first& l2)
+		);
 		subinfo "first forwarding;" " fixed derivation since b939";
 		$let ()
 		(
