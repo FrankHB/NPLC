@@ -6,12 +6,6 @@ $def! $redef! $def!;
 $defv%! $unspecified ((&x .)) d forward! (eval% x d);
 $defv! $defu! (&x .&xs) d eval (list $set! d x $unspecified xs) d;
 
-$defl%! rest& (&pr)
-	($lambda% ((#ignore .&xs)) $if (unique? ($resolve-identifier pr))
-		(expire xs) ($resolve-identifier xs))
-	($if (unique? ($resolve-identifier pr)) pr
-		(check-pair-reference (forward! pr)));
-
 "NOTE", "Core library.";
 "NOTE", "Definitions of id, idv, list, list%, rlist, $quote, $defl!, first,",
 	" first&, restv, rest%, rest& are in %YFramework.NPL.Dependency.";
