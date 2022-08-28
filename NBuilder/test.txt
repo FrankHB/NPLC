@@ -1197,7 +1197,31 @@ $defl! test (&i)
 			$expect 45 call/1cc ($lambda (&k) (
 				apply-continuation (move! k)
 					($sequence (display/newline "ready to call k") 45);
-				raise-error "Failed to skip."))
+				raise-error "Failed to skip."));
+			subinfo "simple exceptions";
+			$let ()
+			(
+				$defv%! $throw (&ex) d
+					eval% (list% apply-continuation (list% move! ($quote __cc))
+						(list% apply ($quote __h) (list% list% (forward! ex))
+						(list% make-environment ($quote __d)))) d;
+				$defv%! $try/catch (&expr &h) d
+					call/1cc (eval% (list% $lambda% (list% ($quote &k))
+						(list% $sequence
+							(list% $def! ((unwrap list%) __h __d __cc)
+								list% (eval% h d) d (move! ($quote k)))
+						(forward! expr))) d);
+
+				$import! std.math + *;
+
+				$expect 21 $try/catch (+ 17 4) ($lambda (x) * x 3);
+				$expect 10
+					$try/catch (+ 17 ($throw (+ 2 3))) ($lambda (x) * x 2);
+				$expect 30 $try/catch ($try/catch (+ 17 ($throw (+ 2 4)))
+					($lambda (x) * x 5)) idv;
+				$expect 30 $try/catch ($try/catch (+ 17 ($throw (+ 2 4)))
+					($lambda (x) $throw (* x 5))) idv
+			)
 		)
 	))
 	((eqv? i 16) (
