@@ -1186,8 +1186,10 @@ $defl! test (&i)
 			$import&! std.continuations
 				call/1cc continuation->applicative apply-continuation;
 
+			subinfo "normal path";
 			$expect 42 call/1cc ($lambda . 42);
 			$let ((a 43)) $expect 43 call/1cc ($lambda . a);
+			subinfo "abnormal path";
 			$expect (list 44) call/1cc ($lambda (&k) (
 				(continuation->applicative (move! k))
 					($sequence (display/newline "ready to call k") 44);
