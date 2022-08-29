@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3498
+\version r3525
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-08-18 05:09 +0800
+	2022-08-30 01:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -896,6 +896,8 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 		{
 			BadIdentifier e(id);
 
+			// XXX: Inlining expansion of the call to
+			//	%A1::QuerySourceInformation here is likely less efficient.
 			if(const auto p_si = A1::QuerySourceInformation(term.Value))
 				e.Source = *p_si;
 			throw e;
@@ -1007,6 +1009,15 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 }
 //@}
 #endif
+
+//! \since YSLib build 954
+template<typename _func>
+inline void
+RewriteBy(REPLContext& context, _func f)
+{
+	context.Root.Rewrite(
+		NPL::ToReducer(context.Allocator, trivial_swap, std::move(f)));
+}
 
 } // unnamed namespace;
 
@@ -1163,34 +1174,32 @@ Interpreter::PrepareExecution(ContextNode& ctx)
 void
 Interpreter::Run()
 {
-	Context.Root.Rewrite(NPL::ToReducer(Context.Allocator,
-		trivial_swap, std::bind(&Interpreter::RunLoop, std::ref(*this),
-		std::placeholders::_1)));
+	// XXX: Use %std::bind here can be a slightly more efficient.
+	RewriteBy(Context,
+		std::bind(&Interpreter::RunLoop, this, std::placeholders::_1));
 }
 
-void
+YB_FLATTEN void
 Interpreter::RunScript(string filename)
 {
 	if(filename == "-")
 	{
 		Context.ShareCurrentSource("*STDIN*");
-		Context.Root.Rewrite(NPL::ToReducer(Context.Allocator, trivial_swap,
-			[&](ContextNode& ctx){
+		RewriteBy(Context, [&](ContextNode& ctx){
 			PrepareExecution(ctx);
 			Term = Context.ReadFrom(std::cin, ctx);
 			return ExecuteOnce(ctx);
-		}));
+		});
 	}
 	else if(!filename.empty())
 	{
 		Context.ShareCurrentSource(filename);
-		Context.Root.Rewrite(NPL::ToReducer(Context.Allocator, trivial_swap,
-			[&](ContextNode& ctx){
+		RewriteBy(Context, [&](ContextNode& ctx){
 			PrepareExecution(ctx);
 			// NOTE: As %A1::ReduceToLoadExternal.
 			Term = Context.Load(Context, ctx, std::move(filename));
 			return ExecuteOnce(ctx);
-		}));
+		});
 	}
 }
 
@@ -1200,10 +1209,10 @@ Interpreter::RunLine(string_view unit)
 	if(!unit.empty())
 	{
 		Context.ShareCurrentSource("*STDIN*");
-		Context.Root.Rewrite(NPL::ToReducer(Context.Allocator, trivial_swap,
-			[&](ContextNode& ctx){
+		// XXX: Use %std::bind here can be a slightly less efficient.
+		RewriteBy(Context, [&](ContextNode& ctx){
 			return ExecuteString(unit, ctx);
-		}));
+		});
 	}
 }
 
@@ -1215,10 +1224,9 @@ Interpreter::RunLoop(ContextNode& ctx)
 	{
 		Context.ShareCurrentSource("*STDIN*");
 		RelaySwitched(ctx, trivial_swap,
-			std::bind(&Interpreter::RunLoop, std::ref(*this),
-			std::placeholders::_1));
-		return !line.empty() ? ExecuteString(line, ctx)
-			: ReductionStatus::Partial;
+			std::bind(&Interpreter::RunLoop, this, std::placeholders::_1));
+		return
+			!line.empty() ? ExecuteString(line, ctx) : ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;
 	// TODO: Add root continuation?
