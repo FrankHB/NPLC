@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8599
+\version r8639
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-07-25 02:49 +0800
+	2022-09-02 00:39 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -25,13 +25,14 @@
 */
 
 
-#include "NBuilder.h" // for istringstream, FilterExceptions, EXIT_FAILURE,
-//	EXIT_SUCCESS;
+#include "NBuilder.h" // for std::ios_base, std::istream, istringstream,
+//	FilterExceptions, EXIT_FAILURE, EXIT_SUCCESS;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <iostream> // for std::clog, std::cout, std::endl;
 #include <string> // for getline;
-#include YFM_YSLib_Core_YObject // for type_index, to_string, make_string_view,
-//	YSLib::to_std_string, std::stoi;
+#include YFM_YSLib_Core_YObject // for PolymorphicAllocatorHolder,
+//	YSLib::default_allocator, PolymorphicValueHolder, type_index, to_string,
+//	make_string_view, YSLib::to_std_string, std::stoi;
 #include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
@@ -80,10 +81,23 @@ using namespace platform_ex;
 namespace
 {
 
-//! \since YSLib build 737
+//! \since YSLib build 954
+//@{
+#if true
+// XXX: This might or might not be a bit efficient.
+template<class _tStream>
+using GPortHolder = PolymorphicAllocatorHolder<std::ios_base, _tStream,
+	YSLib::default_allocator<yimpl(byte)>>;
+#else
+template<class _tStream>
+using GPortHolder = PolymorphicValueHolder<std::ios_base, _tStream>;
+#endif
+
 void
-ParseStream(std::istream& is)
+ParseStream(std::ios_base& sbase)
 {
+	auto& is(dynamic_cast<std::istream&>(sbase));
+
 	if(is)
 	{
 		Session sess;
@@ -107,6 +121,7 @@ ParseStream(std::istream& is)
 		is.seekg(0);
 	}
 }
+//@}
 
 
 //! \since YSLib build 799
@@ -547,17 +562,29 @@ LoadFunctions(Interpreter& intp)
 
 			return A1::ReduceToLoadExternal(term, ctx, context);
 		});
-	RegisterUnary<Strict, const string>(rctx, "ofs", [](const string& path){
-		if(ifstream ifs{path})
-			return ifs;
+	RegisterUnary<Strict, const string>(rctx, "open-input-file",
+		[](const string& path){
+		if(ifstream ifs{path, std::ios_base::in | std::ios_base::binary})
+			return ValueObject(std::allocator_arg, path.get_allocator(),
+				any_ops::use_holder, in_place_type<GPortHolder<ifstream>>,
+				std::move(ifs));
 		throw LoggedEvent(
 			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
 	});
-	RegisterUnary<Strict, const string>(rctx, "oss", [](const string& str){
-		return istringstream(str);
+	RegisterUnary<Strict, const string>(rctx, "open-input-string",
+		[](const string& str){
+		// XXX: Blocked. Use of explicit allocator requires C++20 and later.
+		//	Hopefully other changes of LWG 3006 are implemented in the previous
+		//	modes (which is true for all recent libstdc++, libc++ and Microsoft
+		//	VC++ STL).
+		if(istringstream iss{str})
+			return ValueObject(std::allocator_arg, str.get_allocator(),
+				any_ops::use_holder, in_place_type<GPortHolder<istringstream>>,
+				std::move(iss));
+		throw LoggedEvent(
+			ystdex::sfmt("Failed opening string '%s'.", str.c_str()));
 	});
-	RegisterUnary<Strict, ifstream>(rctx, "parse-f", ParseStream);
-	RegisterUnary<Strict, std::istringstream>(rctx, "parse-s", ParseStream);
+	RegisterUnary<Strict, std::ios_base>(rctx, "parse-stream", ParseStream);
 #if NPLC_Impl_TestTemporaryOrder
 	RegisterUnary<Strict, const string>(renv, "mark-guard", [](string str){
 		return MarkGuard(std::move(str));
@@ -679,7 +706,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.4+ b950+"
+#define NPLC_VER "V1.4+ b953+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
