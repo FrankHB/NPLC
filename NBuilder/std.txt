@@ -111,7 +111,6 @@ $defl! operative? (&x) $and (combiner? x)
 $defl! applicative? (&x) $and (combiner? x)
 	(not? (eqv? (get-wrapping-count x) 0));
 $defl! int? (&x) typeid-match? x "int";
-$defl! string? (&x) typeid-match? x "string";
 
 "NOTE", "Numeric library.";
 $defl! iota (&x)
