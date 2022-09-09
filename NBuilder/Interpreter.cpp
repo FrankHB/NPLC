@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3525
+\version r3526
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-08-30 01:02 +0800
+	2022-09-10 01:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -1137,6 +1137,7 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 ReductionStatus
 Interpreter::ExecuteOnce(ContextNode& ctx)
 {
+	Context.Preprocess(Term);
 	UpdateTextColor(SideEffectColor),
 	UpdateTextColor(SideEffectColor, true);
 	return A1::ReduceOnce(Term, ctx);
