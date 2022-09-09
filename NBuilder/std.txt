@@ -101,8 +101,8 @@ $defv! $binds? (&e .&ss) d $let ((&senv eval e d))
 $defl! ptype (&x) ($remote-eval puts std.io) (nameof (typeid x));
 $defl! typeid-match? (&x &id) eqv? (get-typeid id) (typeid x);
 $defl! bool? (&x) typeid-match? x "bool";
-$defl! symbol? (&x) $and (typeid-match? x "symbol")
-	(symbol-string? (symbol->string x));
+$defl/e! basic-identifier? std.strings (&x)
+	$if (symbol? x) (symbol-string? (symbol->string x)) #f;
 $defl! environment? (&x) $or (typeid-match? x "environment")
 	(typeid-match? x "environment#owned");
 $defl! combiner? (&x) typeid-match? x "combiner";
