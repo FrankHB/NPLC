@@ -22,7 +22,7 @@ open-input-file <string> ：打开以参数为文件名的文件为输入端口�
 open-input-string <string> ：打开参数为输入端口。
 basic-identifier? <object> ：判断参数是可作为词法上接受的标识符(@3.3.1) 的 <symbol> 且仅其字符串表示仅包含 symbol-string? 中的字符。
 **原理**
-端口提供和实现环境交互的 I/O 副作用。作用同 [RnRS] 和 [RnRK] 中的类似类型。ISO C 和 ISO C++ 等语言中的库的流(stream) 的概念指利用更一般的代理求值得到的惰性求值类型，不一定具有副作用。
+端口提供和实现环境交互的 I/O 副作用。作用同 [RnRS] 和 [RnRK] 中的类似类型。这对应 ISO C 和 ISO C++ 等语言中的库的流(stream) 的概念。但流在更一般的意义上是和惰性求值关联的数据结构，不一定具有副作用。
 同 [RnRS] ，符号不都能在源程序中直接表示，只有标识符在语法上直接支持而不需要转义。作为标识符的符号可视为 <symbol> 的子类型，这个函数即其类型谓词。另见 ftp://ftp.cs.utexas.edu/pub/garbage/cs345/schintro-v13/schintro_104.html 。
 symbol-string? 中支持基本字符集([NPL @@3.3]) 。这些字符至少支持 NPLA1 标准库以及和 ISO C++ 互操作时使用的标识符的需要。
 
