@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2021 FrankHB.
+	© 2013-2022 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r402
+\version r411
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2021-10-21 18:10 +0800
+	2022-09-13 01:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -42,8 +42,8 @@ namespace NPL
 using namespace YSLib::Consoles;
 //! \since YSLib build 674
 using YSLib::Logger;
-//! \since YSLib build 740
-using A1::REPLContext;
+//! \since YSLib build 955
+using A1::GlobalState;
 
 //! \since YSLib build 304
 enum class SSignal
@@ -189,12 +189,14 @@ private:
 	shared_ptr<Environment> p_ground{};
 
 public:
-	//! \since YSLib build 885
-	REPLContext Context;
+	//! \since YSLib build 955
+	GlobalState Global;
+	//! \since YSLib build 955
+	A1::ContextState Main{Global};
 	//! \since YSLib build 892
-	TermNode Term{Context.Allocator};
+	TermNode Term{Global.Allocator};
 	//! \since YSLib build 895
-	ContextNode::ReducerSequence Backtrace{Context.Allocator};
+	ContextNode::ReducerSequence Backtrace{Global.Allocator};
 
 	//! \since YSLib build 885
 	Interpreter();

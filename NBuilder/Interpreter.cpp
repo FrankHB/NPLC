@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3526
+\version r3560
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-09-10 01:17 +0800
+	2022-09-14 03:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -1010,21 +1010,20 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 //@}
 #endif
 
-//! \since YSLib build 954
+//! \since YSLib build 955
 template<typename _func>
 inline void
-RewriteBy(REPLContext& context, _func f)
+RewriteBy(A1::ContextState& cs, _func f)
 {
-	context.Root.Rewrite(
-		NPL::ToReducer(context.Allocator, trivial_swap, std::move(f)));
+	cs.Rewrite(NPL::ToReducer(cs.get_allocator(), trivial_swap, std::move(f)));
 }
 
 } // unnamed namespace;
 
 Interpreter::Interpreter()
 	: terminal(), terminal_err(stderr), pool_rsrc(&GetUpstreamResourceRef()),
-	line(), Context([this](const A1::GParsedValue<ByteParser>& str){
-		TermNode term(Context.Allocator);
+	line(), Global([this](const A1::GParsedValue<ByteParser>& str){
+		TermNode term(Global.Allocator);
 		const auto id(YSLib::make_string_view(str));
 
 #if NPLC_Impl_UseCheckedExtendedLiteral
@@ -1032,14 +1031,15 @@ Interpreter::Interpreter()
 #endif
 			A1::ParseLeaf(term, id);
 		return term;
-	}, [this](const A1::GParsedValue<SourcedByteParser>& val){
-		TermNode term(Context.Allocator);
+	}, [this](const A1::GParsedValue<SourcedByteParser>& val,
+		const A1::ContextState& cs){
+		TermNode term(Global.Allocator);
 		const auto id(YSLib::make_string_view(val.second));
 
 #if NPLC_Impl_UseCheckedExtendedLiteral
 		if(A1::HandleCheckedExtendedLiteral(term, id))
 #endif
-			A1::ParseLeafWithSourceInformation(term, id, Context.CurrentSource,
+			A1::ParseLeafWithSourceInformation(term, id, cs.CurrentSource,
 				val.first);
 		return term;
 	}, NPLC_Impl_MemoryResourceName)
@@ -1047,16 +1047,16 @@ Interpreter::Interpreter()
 	using namespace std;
 
 #if NPLC_Impl_UseSourceInfo
-	Context.UseSourceLocation = true;
+	Global.UseSourceLocation = true;
 #endif
 #if NPLC_Impl_TracePerformDetails
-	SetupTraceDepth(Context.Root);
+	SetupTraceDepth(Main);
 #endif
 	// TODO: Avoid reassignment of default passes?
 #if NPLC_Impl_FastAsyncReduce
-	if(Context.IsAsynchronous())
+	if(Global.IsAsynchronous())
 		// XXX: Only safe and meaningful for asynchrnous implementations.
-		Context.Root.ReduceOnce.Handler = [&]
+		Main.ReduceOnce.Handler = []
 			YB_LAMBDA_ANNOTATE((TermNode& term, ContextNode& ctx), , flatten){
 			return ReduceFastSimple(term, A1::ContextState::Access(ctx),
 				ReduceFastBranch);
@@ -1072,7 +1072,7 @@ Interpreter::Interpreter()
 	passes += ReduceHeadEmptyList;
 	passes += A1::ReduceFirst;
 	passes += A1::ReduceCombined;
-	Context.Root.EvaluateList = std::move(passes);
+	Global.EvaluateList = std::move(passes);
 #endif
 }
 
@@ -1109,8 +1109,8 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 	catch(SSignal e)
 	{
 		if(e == SSignal::Exit)
-			// XXX: Assume the current context is %Context.Root.
-			Context.Root.UnwindCurrent();
+			// XXX: Assume the current context is %Main.
+			Main.UnwindCurrent();
 		else
 		{
 			UpdateTextColor(SignalColor);
@@ -1126,8 +1126,8 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 
 		UpdateTextColor(ErrorColor, true);
 		TraceException(e, trace);
-		trace.TraceFormat(Notice, "Location: %s.", Context.CurrentSource
-			? Context.CurrentSource->c_str() : "<unknown>");
+		trace.TraceFormat(Notice, "Location: %s.", Main.CurrentSource
+			? Main.CurrentSource->c_str() : "<unknown>");
 #if NPLC_Impl_UseBacktrace
 		A1::TraceBacktrace(Backtrace, trace);
 #endif
@@ -1137,7 +1137,7 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 ReductionStatus
 Interpreter::ExecuteOnce(ContextNode& ctx)
 {
-	Context.Preprocess(Term);
+	Global.Preprocess(Term);
 	UpdateTextColor(SideEffectColor),
 	UpdateTextColor(SideEffectColor, true);
 	return A1::ReduceOnce(Term, ctx);
@@ -1147,7 +1147,7 @@ ReductionStatus
 Interpreter::ExecuteString(string_view unit, ContextNode& ctx)
 {
 	PrepareExecution(ctx);
-	Term = Context.ReadFrom(unit);
+	Term = Global.ReadFrom(unit, Main);
 	return ExecuteOnce(ctx);
 }
 
@@ -1176,7 +1176,7 @@ void
 Interpreter::Run()
 {
 	// XXX: Use %std::bind here can be a slightly more efficient.
-	RewriteBy(Context,
+	RewriteBy(Main,
 		std::bind(&Interpreter::RunLoop, this, std::placeholders::_1));
 }
 
@@ -1185,20 +1185,20 @@ Interpreter::RunScript(string filename)
 {
 	if(filename == "-")
 	{
-		Context.ShareCurrentSource("*STDIN*");
-		RewriteBy(Context, [&](ContextNode& ctx){
+		Main.ShareCurrentSource("*STDIN*");
+		RewriteBy(Main, [&](ContextNode& ctx){
 			PrepareExecution(ctx);
-			Term = Context.ReadFrom(std::cin, ctx);
+			Term = Global.ReadFrom(std::cin, Main);
 			return ExecuteOnce(ctx);
 		});
 	}
 	else if(!filename.empty())
 	{
-		Context.ShareCurrentSource(filename);
-		RewriteBy(Context, [&](ContextNode& ctx){
+		Main.ShareCurrentSource(filename);
+		RewriteBy(Main, [&](ContextNode& ctx){
 			PrepareExecution(ctx);
 			// NOTE: As %A1::ReduceToLoadExternal.
-			Term = Context.Load(Context, ctx, std::move(filename));
+			Term = Global.Load(Main, std::move(filename));
 			return ExecuteOnce(ctx);
 		});
 	}
@@ -1209,9 +1209,9 @@ Interpreter::RunLine(string_view unit)
 {
 	if(!unit.empty())
 	{
-		Context.ShareCurrentSource("*STDIN*");
+		Main.ShareCurrentSource("*STDIN*");
 		// XXX: Use %std::bind here can be a slightly less efficient.
-		RewriteBy(Context, [&](ContextNode& ctx){
+		RewriteBy(Main, [&](ContextNode& ctx){
 			return ExecuteString(unit, ctx);
 		});
 	}
@@ -1223,7 +1223,7 @@ Interpreter::RunLoop(ContextNode& ctx)
 	// TODO: Set error continuation to filter exceptions.
 	if(WaitForLine())
 	{
-		Context.ShareCurrentSource("*STDIN*");
+		Main.ShareCurrentSource("*STDIN*");
 		RelaySwitched(ctx, trivial_swap,
 			std::bind(&Interpreter::RunLoop, this, std::placeholders::_1));
 		return
@@ -1238,10 +1238,8 @@ Interpreter::SaveGround()
 {
 	if(!p_ground)
 	{
-		auto& cs(Context.Root);
-
-		p_ground
-			= NPL::SwitchToFreshEnvironment(cs, ValueObject(cs.WeakenRecord()));
+		p_ground = NPL::SwitchToFreshEnvironment(Main,
+			ValueObject(Main.WeakenRecord()));
 		return true;
 	}
 	return {};
