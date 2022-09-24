@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8733
+\version r8749
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-09-13 04:00 +0800
+	2022-09-24 18:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -25,8 +25,9 @@
 */
 
 
-#include "NBuilder.h" // for std::ios_base, std::istream, istringstream,
-//	FilterExceptions, EXIT_FAILURE, EXIT_SUCCESS;
+#include "NBuilder.h" // for NPL::EmplaceLeaf, NPL::A1::LiteralHandler,
+//	std::ios_base, std::istream, trivial_swap, ContextState, A1::MoveKeptGuard,
+//	istringstream, FilterExceptions, EXIT_FAILURE, EXIT_SUCCESS;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <iostream> // for std::clog, std::cout, std::endl;
 #include <string> // for getline;
@@ -36,8 +37,7 @@
 #include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
 #include YFM_YSLib_Core_YApplication // for YSLib, Application;
-#include YFM_NPL_NPLA1Forms // for NPL, NPL::A1, NPL::A1::Forms, trivial_swap,
-//	ContextState, A1::MoveKeptGuard;
+#include YFM_NPL_NPLA1Forms // for NPL::A1::Forms;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include YFM_NPL_Dependency // for EnvironmentGuard, A1::RelayToLoadExternal;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
@@ -45,9 +45,12 @@
 #include <ytest/timing.hpp> // for ytest::timing::once;
 #include YFM_Helper_Initialization // for YSLib::TraceForOutermost;
 
-namespace NPL
+//! \since YSLib build 957
+namespace NBuilder
 {
 
+//! \since YSLib build 878
+//@{
 #ifdef NDEBUG
 #	define NPLC_Impl_DebugAction false
 #	define NPLC_Impl_TestTemporaryOrder false
@@ -55,14 +58,12 @@ namespace NPL
 #	define NPLC_Impl_DebugAction true
 #	define NPLC_Impl_TestTemporaryOrder true
 #endif
-
-namespace A1
-{
+//@}
 
 void
 RegisterLiteralSignal(ContextNode& ctx, const string& name, SSignal sig)
 {
-	NPL::EmplaceLeaf<LiteralHandler>(ctx, name, trivial_swap,
+	NPL::EmplaceLeaf<NPL::A1::LiteralHandler>(ctx, name, trivial_swap,
 		std::allocator_arg, ctx.get_allocator(),
 		[=] YB_LAMBDA_ANNOTATE((const ContextNode&), , noreturn)
 		-> ReductionStatus{
@@ -70,11 +71,10 @@ RegisterLiteralSignal(ContextNode& ctx, const string& name, SSignal sig)
 	});
 }
 
-} // namespace A1;
+} // namespace NBuilder;
 
-} // namespace NPL;
-
-using namespace NPL;
+//! \since YSLib build 957
+using namespace NBuilder;
 using namespace A1;
 using namespace platform_ex;
 
@@ -705,7 +705,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.4+ b954+"
+#define NPLC_VER "V1.4+ b956+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux

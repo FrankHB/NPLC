@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2017, 2020 FrankHB.
+	© 2012-2017, 2020, 2022 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r2063
+\version r2071
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2020-04-12 12:22 +0800
+	2022-09-24 18:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -28,24 +28,20 @@
 #ifndef INC_NPL_NBuilder_h_
 #define INC_NPL_NBuilder_h_
 
-#include "Interpreter.h"
+#include "Interpreter.h" // for ContextNode, string, SSignal;
 
-namespace NPL
+//! \since YSLib build 957
+namespace NBuilder
 {
 
 //! \since YSLib build 674
 using namespace YSLib;
 
-namespace A1
-{
-
 //! \since YSLib build 674
 void
 RegisterLiteralSignal(ContextNode&, const string&, SSignal);
 
-} // namespace A1;
-
-} // namespace NPL;
+} // namespace NBuilder;
 
 #endif
 

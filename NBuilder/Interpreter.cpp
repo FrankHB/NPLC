@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3560
+\version r3572
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-09-14 03:24 +0800
+	2022-09-24 18:51 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -67,10 +67,12 @@
 #	include NPLC_Impl_ExtInc_mimalloc
 #endif
 
-namespace NPL
+namespace NBuilder
 {
 
+//! \since YSLib build 304
 yconstexpr auto prompt("> ");
+
 //! \since YSLib build 519
 namespace
 {
@@ -869,7 +871,7 @@ template<typename _func, typename _func2, typename _fReducePair>
 YB_FLATTEN
 #endif
 inline ReductionStatus
-ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
+ReduceFastTmpl(TermNode& term, ContextState& cs, _func f, _func2 f2,
 	_fReducePair reduce_pair)
 {
 	if(IsCombiningTerm(term))
@@ -916,7 +918,7 @@ ReduceFastTmpl(TermNode& term, A1::ContextState& cs, _func f, _func2 f2,
 
 template<typename _fReducePair>
 YB_FLATTEN inline ReductionStatus
-ReduceFastSimple(TermNode& term, A1::ContextState& cs, _fReducePair reduce_pair)
+ReduceFastSimple(TermNode& term, ContextState& cs, _fReducePair reduce_pair)
 {
 	return ReduceFastTmpl(term, cs,
 		[&](TermNode& bound, const shared_ptr<Environment>& p_env){
@@ -940,10 +942,10 @@ ReduceFastSimple(TermNode& term, A1::ContextState& cs, _fReducePair reduce_pair)
 //! \since YSLib build 883
 //@{
 ReductionStatus
-ReduceFastBranch(TermNode&, A1::ContextState&);
+ReduceFastBranch(TermNode&, ContextState&);
 
 ReductionStatus
-ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
+ReduceFastBranchNotNested(TermNode& term, ContextState& cs)
 {
 	YAssert(IsCombiningTerm(term), "Invalid term found.");
 	YAssert(!(IsList(term) && term.size() == 1), "Invalid term found.");
@@ -983,14 +985,14 @@ ReduceFastBranchNotNested(TermNode& term, A1::ContextState& cs)
 				YB_ATTR(noinline)
 #endif
 			{
-				return ReduceFastBranch(sub, A1::ContextState::Access(c));
+				return ReduceFastBranch(sub, ContextState::Access(c));
 			});
 		});
 	}();
 }
 
 ReductionStatus
-ReduceFastBranch(TermNode& term, A1::ContextState& cs)
+ReduceFastBranch(TermNode& term, ContextState& cs)
 {
 	YAssert(IsCombiningTerm(term), "Invalid term found.");
 	if(IsSingleElementList(term))
@@ -1013,7 +1015,7 @@ ReduceFastBranch(TermNode& term, A1::ContextState& cs)
 //! \since YSLib build 955
 template<typename _func>
 inline void
-RewriteBy(A1::ContextState& cs, _func f)
+RewriteBy(ContextState& cs, _func f)
 {
 	cs.Rewrite(NPL::ToReducer(cs.get_allocator(), trivial_swap, std::move(f)));
 }
@@ -1032,7 +1034,7 @@ Interpreter::Interpreter()
 			A1::ParseLeaf(term, id);
 		return term;
 	}, [this](const A1::GParsedValue<SourcedByteParser>& val,
-		const A1::ContextState& cs){
+		const ContextState& cs){
 		TermNode term(Global.Allocator);
 		const auto id(YSLib::make_string_view(val.second));
 
@@ -1058,7 +1060,7 @@ Interpreter::Interpreter()
 		// XXX: Only safe and meaningful for asynchrnous implementations.
 		Main.ReduceOnce.Handler = []
 			YB_LAMBDA_ANNOTATE((TermNode& term, ContextNode& ctx), , flatten){
-			return ReduceFastSimple(term, A1::ContextState::Access(ctx),
+			return ReduceFastSimple(term, ContextState::Access(ctx),
 				ReduceFastBranch);
 		};
 #elif NPLC_Impl_LogBeforeReduce
@@ -1261,5 +1263,5 @@ Interpreter::WaitForLine(std::istream& is, std::ostream& os)
 	return is;
 }
 
-} // namespace NPL;
+} // namespace NBuilder;
 

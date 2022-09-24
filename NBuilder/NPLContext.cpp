@@ -1,5 +1,5 @@
 ﻿/*
-	© 2012-2017, 2020-2021 FrankHB.
+	© 2012-2017, 2020-2022 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NPLContext.cpp
 \ingroup Adaptor
 \brief NPL 上下文。
-\version r2448
+\version r2454
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 329
 \par 创建时间:
 	2012-08-03 19:55:29 +0800
 \par 修改时间:
-	2021-11-08 09:15 +0800
+	2022-09-24 18:22 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -36,10 +36,7 @@ using namespace YSLib;
 //! \since YSLib build 676
 using namespace std::placeholders;
 
-namespace NPL
-{
-
-namespace A1
+namespace NBuilder
 {
 
 bool
@@ -59,8 +56,6 @@ HandleCheckedExtendedLiteral(TermNode& term, string_view id)
 	return true;
 }
 
-} // namespace A1;
-
-} // namespace NPL;
+} // namespace NBuilder;
 
 
