@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3572
+\version r3575
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-09-24 18:51 +0800
+	2022-09-24 18:55 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -1104,7 +1104,7 @@ Interpreter::HandleSignal(SSignal e)
 }
 
 void
-Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
+Interpreter::HandleREPLException(std::exception_ptr p_exc, ContextNode& ctx)
 {
 	YAssertNonnull(p_exc);
 	TryExpr(std::rethrow_exception(std::move(p_exc)))
@@ -1125,6 +1125,7 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, Logger& trace)
 		const auto gd(ystdex::make_guard([&]() ynothrowv{
 			Backtrace.clear();
 		}));
+		auto& trace(ctx.Trace);
 
 		UpdateTextColor(ErrorColor, true);
 		TraceException(e, trace);
@@ -1163,7 +1164,7 @@ Interpreter::PrepareExecution(ContextNode& ctx)
 		const ContextNode::ReducerSequence::const_iterator& i){
 		ctx.TailAction = nullptr;
 		ctx.Shift(Backtrace, i);
-		HandleREPLException(std::move(p), ctx.Trace);
+		HandleREPLException(std::move(p), ctx);
 	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
 	RelaySwitched(ctx, trivial_swap, A1::NameTypedReducerHandler([&]{
 	//	UpdateTextColor(InfoColor, true);
