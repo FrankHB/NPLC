@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3575
+\version r3578
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-09-24 18:55 +0800
+	2022-10-03 20:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -962,12 +962,12 @@ ReduceFastBranchNotNested(TermNode& term, ContextState& cs)
 		return ReduceFastTmpl(sub, cs,
 			[&](TermNode& bound, const shared_ptr<Environment>&){
 			return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr){
-				cs.OperatorName = std::move(sub.Value);
 				// XXX: Missing setting of the 1st subterm is safe, cf.
 				//	assumption 4.
 				// XXX: This is safe, cf. assumption 3.
 				A1::EvaluateLiteralHandler(sub, cs, nd);
-				return ReduceCombinedReferent(term, cs, nd);
+				return
+					ReduceCombinedReferentWithOperator(term, cs, nd, sub.Value);
 			}, bound);
 		}, [&]{
 			return ReduceCombinedBranch(term, cs);
