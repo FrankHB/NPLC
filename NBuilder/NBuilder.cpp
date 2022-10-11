@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8751
+\version r8752
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-10-12 02:48 +0800
+	2022-10-12 05:23 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -366,7 +366,7 @@ LoadFunctions(Interpreter& intp)
 		[](const ContextHandler& h, int n) -> ContextHandler{
 		if(const auto p = h.target<FormContextHandler>())
 			return FormContextHandler(p->Handler, size_t(n));
-		return FormContextHandler(h, 1);
+		return FormContextHandler(h, Strict);
 	});
 	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
 #endif
