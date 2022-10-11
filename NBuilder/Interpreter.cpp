@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3578
+\version r3581
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-10-03 20:24 +0800
+	2022-10-12 02:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -211,7 +211,7 @@ YB_ATTR_nodiscard YB_PURE string
 StringifyContextHandler(const _tHandler& h)
 {
 	if(const auto p = h.template target<A1::FormContextHandler>())
-		switch(p->Wrapping)
+		switch(p->GetWrappingCount())
 		{
 		case 0:
 			return "operative[" + StringifyContextHandler(p->Handler) + "]";
@@ -220,7 +220,8 @@ StringifyContextHandler(const _tHandler& h)
 				StringifyContextHandler(p->Handler).c_str());
 		default:
 			return YSLib::sfmt<string>("applicative[%s, wrapping = %zu]",
-				StringifyContextHandler(p->Handler).c_str(), p->Wrapping);
+				StringifyContextHandler(p->Handler).c_str(),
+				p->GetWrappingCount());
 		}
 	if(const auto p = h.template target<A1::WrappedContextHandler<
 		YSLib::GHEvent<void(NPL::TermNode&, NPL::ContextNode&)>>>())

@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8749
+\version r8751
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-09-24 18:22 +0800
+	2022-10-12 02:48 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -478,7 +478,7 @@ LoadFunctions(Interpreter& intp)
 		// FIXME: Unsigned count shall be used.
 		[](const ContextHandler& h) -> int{
 		if(const auto p = h.target<FormContextHandler>())
-			return int(p->Wrapping);
+			return int(p->GetWrappingCount());
 		return 0;
 	});
 	// NOTE: List library.
@@ -705,7 +705,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.4+ b956+"
+#define NPLC_VER "V1.4+ b957+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
