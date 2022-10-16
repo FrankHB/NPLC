@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3581
+\version r3585
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-10-12 02:49 +0800
+	2022-10-16 20:38 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -31,7 +31,8 @@
 //	RemoveHead, IsEmpty, AccessFirstSubterm, trivial_swap, IsSingleElementList,
 //	LiftOtherValue, namespace YSLib, TraceException, A1::TraceBacktrace,
 //	YSLib::IO::StreamGet;
-#include <functional> // for std::bind, std::ref, std::placeholders::_1;
+#include <ystdex/functional.hpp> // for ystdex::bind1, std::bind, std::ref,
+//	std::placeholders::_1;
 #include <Helper/YModules.h>
 #include YFM_YCLib_YCommon // for ystdex::quote;
 #include <ystdex/expanded_function.hpp> // for ystdex::retry_on_cond;
@@ -1161,12 +1162,12 @@ Interpreter::PrepareExecution(ContextNode& ctx)
 	ctx.SaveExceptionHandler();
 	// TODO: Blocked. Use C++14 lambda initializers to simplify the
 	//	implementation.
-	ctx.HandleException = std::bind([&](std::exception_ptr p,
+	ctx.HandleException = ystdex::bind1([&](std::exception_ptr p,
 		const ContextNode::ReducerSequence::const_iterator& i){
 		ctx.TailAction = nullptr;
 		ctx.Shift(Backtrace, i);
 		HandleREPLException(std::move(p), ctx);
-	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
+	}, ctx.GetCurrent().cbegin());
 	RelaySwitched(ctx, trivial_swap, A1::NameTypedReducerHandler([&]{
 	//	UpdateTextColor(InfoColor, true);
 	//	clog << "Unrecognized reduced token list:" << endl;
