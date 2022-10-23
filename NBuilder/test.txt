@@ -131,6 +131,8 @@ $defl! test (&i)
 			$expect (- 0 1) gg 2 3;
 			$expect (- 0 1) $gg 3 4
 		);
+		subinfo "empty name of dynamic environments;" " fixed since b959";
+		() ($vau () '' '');
 		subinfo "combiner rvalue calls: tail calls;" " fixed since b856";
 		$expect () ($lambda (x) forward x) ();
 		$expect () ($lambda (x) ($lambda (y) idv y) x) ();
