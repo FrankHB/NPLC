@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3585
+\version r3586
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-10-16 20:38 +0800
+	2022-10-31 22:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -818,7 +818,7 @@ ResolveDefault(shared_ptr<Environment> p_env, string_view id)
 					auto& envs(parent.GetObject<EnvironmentList>());
 
 					p_next = RedirectEnvironmentList(
-						p_env->Bindings.get_allocator(), cont,
+						p_env->GetMapRef().get_allocator(), cont,
 						envs.cbegin(), envs.cend());
 				}
 				while(!p_next && bool(cont))
