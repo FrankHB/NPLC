@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8752
+\version r8755
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-10-12 05:23 +0800
+	2022-11-02 03:29 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -310,7 +310,7 @@ LoadFunctions(Interpreter& intp)
 	renv.DefineChecked("root-context", ValueObject(cs, OwnershipTag<>()));
 	// XXX: Temporarily unfreeze the environment to allow the external
 	//	definitions in the ground environment.
-	renv.Frozen = {};
+	renv.Unfreeze();
 
 	const auto rwenv(cs.WeakenRecord());
 
@@ -596,7 +596,7 @@ LoadFunctions(Interpreter& intp)
 	//	interactive interpreter run (the REPL loop and the single line
 	//	evaluation).
 	A1::PreloadExternal(cs, "std.txt");
-	renv.Frozen = true;
+	renv.Freeze();
 	intp.SaveGround();
 	A1::PreloadExternal(cs, "init.txt");
 #if NPLC_Impl_DebugAction
@@ -705,7 +705,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.4+ b957+"
+#define NPLC_VER "V1.4+ b959+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
