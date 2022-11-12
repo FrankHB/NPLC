@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3586
+\version r3589
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-10-31 22:35 +0800
+	2022-11-12 20:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -192,6 +192,8 @@ DecodeTypeName(const type_info& ti)
 	// XXX: The following cases are dependent on mangled names.
 	// TODO: Use libcxxabi interface conditionally?
 	if(std::strcmp(name, "N3NPL2A112_GLOBAL__N_110VauHandlerE") == 0)
+		return "vau (without dynamic environment)";
+	if(std::strcmp(name, "N3NPL2A112_GLOBAL__N_117DynamicVauHandlerE") == 0)
 		return "vau";
 	if(std::strstr(name, "GroundedDerived"))
 		return "ground derived native handler";
@@ -389,6 +391,7 @@ struct NodeValueLogger
 //@{
 using ystdex::ceiling_lb;
 yconstexpr const auto min_block_size(resource_pool::adjust_for_block(1, 1));
+// XXX: This is tuned for %ystdex::resource_pool::allocate.
 yconstexpr const size_t init_pool_num(yimpl(19));
 //! \since YSLib build 885
 static_assert(init_pool_num > 1, "Invalid pool configuration found.");
