@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8763
+\version r8818
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-11-21 04:38 +0800
+	2022-11-21 05:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -320,25 +320,25 @@ LoadFunctions(Interpreter& intp)
 	const auto rwenv(cs.WeakenRecord());
 
 	// NOTE: Literal expression forms.
-	RegisterForm(cs, "$retain", Retain);
-	RegisterForm(cs, "$retain1", trivial_swap, ystdex::bind1(RetainN, 1));
+	RegisterForm(m, "$retain", Retain);
+	RegisterForm(m, "$retain1", trivial_swap, ystdex::bind1(RetainN, 1));
 #if true
 	// NOTE: Primitive features, listed as RnRK, except mentioned above. See
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Definitions of eq?, eql?, eqr?, eqv? are in
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Definition of $if is in %YFramework.NPL.Dependency.
-	RegisterUnary<Strict, const string>(cs, "symbol-string?", IsSymbol);
-	RegisterUnary(cs, "listv?", IsList);
+	RegisterUnary<Strict, const string>(m, "symbol-string?", IsSymbol);
+	RegisterUnary(m, "listv?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
 	// NOTE: Definitions of null?, nullv?, reference?, bound-lvalue?,
 	//	uncollapsed?, unique?, move!, transfer!, deshare, as-const, expire are
 	//	in %YFramework.NPL.Dependency.
-	RegisterStrict(cs, "make-nocopy", [](TermNode& term){
+	RegisterStrict(m, "make-nocopy", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = NoCopy();
 	});
-	RegisterStrict(cs, "make-nocopy-fn", [](TermNode& term){
+	RegisterStrict(m, "make-nocopy-fn", [](TermNode& term){
 		RetainN(term, 0);
 		// TODO: Blocked. Use C++14 lambda initializers to simplify the
 		//	implementation.
@@ -350,7 +350,7 @@ LoadFunctions(Interpreter& intp)
 	//	eval, eval%, copy-environment, lock-current-environment,
 	//	lock-environment, make-environment, weaken-environment are in
 	//	%YFramework.NPL.Dependency.
-	RegisterUnary(cs, "resolve-environment", [](TermNode& x){
+	RegisterUnary(m, "resolve-environment", [](TermNode& x){
 		return ResolveEnvironment(x).first;
 	});
 	// NOTE: Environment mutation is optional in Kernel and supported here.
@@ -359,15 +359,15 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Removing definitions do not guaranteed supported by all
 	//	environments. They are as-is for the current environment implementation,
 	//	but may not work for some specific environments in future.
-	RegisterForm(cs, "$undef!", Undefine);
-	RegisterForm(cs, "$undef-checked!", UndefineChecked);
+	RegisterForm(m, "$undef!", Undefine);
+	RegisterForm(m, "$undef-checked!", UndefineChecked);
 	// NOTE: Definitions of $vau, $vau/e, wrap and wrap% are in
 	//	%YFramework.NPL.Dependency.
 	// NOTE: The applicatives 'wrap1' and 'wrap1%' do check before wrapping.
-	RegisterStrict(cs, "wrap1", WrapOnce);
-	RegisterStrict(cs, "wrap1%", WrapOnceRef);
+	RegisterStrict(m, "wrap1", WrapOnce);
+	RegisterStrict(m, "wrap1%", WrapOnceRef);
 	// XXX: Use unsigned count.
-	RegisterBinary<Strict, const ContextHandler, const int>(cs, "wrap-n",
+	RegisterBinary<Strict, const ContextHandler, const int>(m, "wrap-n",
 		[](const ContextHandler& h, int n) -> ContextHandler{
 		if(const auto p = h.target<FormContextHandler>())
 			return FormContextHandler(p->Handler, size_t(n));
@@ -376,47 +376,47 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
 #endif
 	// NOTE: NPLA value transferring.
-	RegisterUnary(cs, "vcopy", [](const TermNode& x){
+	RegisterUnary(m, "vcopy", [](const TermNode& x){
 		return x.Value.MakeCopy();
 	});
-	RegisterUnary(cs, "vcopymove", [](TermNode& x){
+	RegisterUnary(m, "vcopymove", [](TermNode& x){
 		// NOTE: Shallow copy or move.
 		return x.Value.CopyMove();
 	});
-	RegisterUnary(cs, "vmove", [](const TermNode& x){
+	RegisterUnary(m, "vmove", [](const TermNode& x){
 		return x.Value.MakeMove();
 	});
-	RegisterUnary(cs, "vmovecopy", [](const TermNode& x){
+	RegisterUnary(m, "vmovecopy", [](const TermNode& x){
 		return x.Value.MakeMoveCopy();
 	});
-	RegisterStrict(cs, "lcopy", [](TermNode& term){
+	RegisterStrict(m, "lcopy", [](TermNode& term){
 		return ListCopyOrMove<const TermNode>(term, &ValueObject::MakeCopy);
 	});
-	RegisterStrict(cs, "lcopymove", [](TermNode& term){
+	RegisterStrict(m, "lcopymove", [](TermNode& term){
 		return ListCopyOrMove<TermNode>(term, &ValueObject::CopyMove);
 	});
-	RegisterStrict(cs, "lmove", [](TermNode& term){
+	RegisterStrict(m, "lmove", [](TermNode& term){
 		return ListCopyOrMove<const TermNode>(term, &ValueObject::MakeMove);
 	});
-	RegisterStrict(cs, "lmovecopy", [](TermNode& term){
+	RegisterStrict(m, "lmovecopy", [](TermNode& term){
 		return ListCopyOrMove<const TermNode>(term, &ValueObject::MakeMoveCopy);
 	});
-	RegisterStrict(cs, "tcopy", [](TermNode& term){
+	RegisterStrict(m, "tcopy", [](TermNode& term){
 		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeCopy);
 	});
-	RegisterStrict(cs, "tcopymove", [](TermNode& term){
+	RegisterStrict(m, "tcopymove", [](TermNode& term){
 		return TermCopyOrMove<TermNode>(term, &ValueObject::CopyMove);
 	});
-	RegisterStrict(cs, "tmove", [](TermNode& term){
+	RegisterStrict(m, "tmove", [](TermNode& term){
 		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeMove);
 	});
-	RegisterStrict(cs, "tmovecopy", [](TermNode& term){
+	RegisterStrict(m, "tmovecopy", [](TermNode& term){
 		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeMoveCopy);
 	});
 	// XXX: For test or debug only.
 #if NPLC_Impl_DebugAction
-	RegisterUnary(cs, "tt", DefaultDebugAction);
-	RegisterUnary<Strict, const string>(cs, "dbg", [](const string& cmd){
+	RegisterUnary(m, "tt", DefaultDebugAction);
+	RegisterUnary<Strict, const string>(m, "dbg", [](const string& cmd){
 		if(cmd == "on")
 			use_debug = true;
 		else if(cmd == "off")
@@ -425,10 +425,10 @@ LoadFunctions(Interpreter& intp)
 			terminate();
 	});
 #endif
-	RegisterForm(cs, "$crash", []{
+	RegisterForm(m, "$crash", []{
 		terminate();
 	});
-	RegisterUnary<Strict, const string>(cs, "trace", trivial_swap,
+	RegisterUnary<Strict, const string>(m, "trace", trivial_swap,
 		[&](const string& cmd){
 		const auto set_t_lv([&](const string& str) -> Logger::Level{
 			if(str == "on")
@@ -451,16 +451,16 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Object interoperation.
 	// NOTE: Definitions of ref is in %YFramework.NPL.Dependency.
 	// NOTE: Environments library.
-	RegisterUnary<Strict, const type_index>(cs, "nameof",
+	RegisterUnary<Strict, const type_index>(m, "nameof",
 		[](const type_index& ti){
 		return string(ti.name());
 	});
 	// NOTE: Type operation library.
-	RegisterUnary(cs, "typeid", [](const TermNode& x){
+	RegisterUnary(m, "typeid", [](const TermNode& x){
 		return type_index(ReferenceTerm(x).Value.type());
 	});
 	// TODO: Copy of operand cannot be used for move-only types.
-	RegisterUnary<Strict, const string>(cs, "get-typeid",
+	RegisterUnary<Strict, const string>(m, "get-typeid",
 		[](const string& str) -> type_index{
 		if(str == "bool")
 			return type_id<bool>();
@@ -479,7 +479,7 @@ LoadFunctions(Interpreter& intp)
 			return type_id<string>();
 		return type_id<void>();
 	});
-	RegisterUnary<Strict, const ContextHandler>(cs, "get-wrapping-count",
+	RegisterUnary<Strict, const ContextHandler>(m, "get-wrapping-count",
 		// FIXME: Unsigned count shall be used.
 		[](const ContextHandler& h) -> int{
 		if(const auto p = h.target<FormContextHandler>())
@@ -488,22 +488,22 @@ LoadFunctions(Interpreter& intp)
 	});
 	// NOTE: List library.
 	// TODO: Check list type?
-	RegisterUnary(cs, "list-length",
+	RegisterUnary(m, "list-length",
 		ComposeReferencedTermOp(FetchListLength));
-	RegisterUnary(cs, "listv-length", FetchListLength);
-	RegisterUnary(cs, "leaf?", ComposeReferencedTermOp(IsLeaf));
-	RegisterUnary(cs, "leafv?", IsLeaf);
+	RegisterUnary(m, "listv-length", FetchListLength);
+	RegisterUnary(m, "leaf?", ComposeReferencedTermOp(IsLeaf));
+	RegisterUnary(m, "leafv?", IsLeaf);
 	// NOTE: Encapsulations library is in %YFramework.NPL.Dependency.
 	// NOTE: String library.
 	// NOTE: Definitions of ++, string-empty?, string<- are in
 	//	%YFramework.NPL.Dependency.
-	RegisterBinary<Strict, const string, const string>(cs, "string=?",
+	RegisterBinary<Strict, const string, const string>(m, "string=?",
 		ystdex::equal_to<>());
-	RegisterUnary<Strict, const string>(cs, "string-length",
+	RegisterUnary<Strict, const string>(m, "string-length",
 		[&](const string& str) ynothrow{
 		return int(str.length());
 	});
-	RegisterBinary<Strict, string, string>(renv, "string-contains?",
+	RegisterBinary<Strict, string, string>(m, "string-contains?",
 		[](const string& x, const string& y){
 		return x.find(y) != string::npos;
 	});
@@ -512,20 +512,20 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Definitions of number functions are in module std.math in
 	//	%YFramework.NPL.Dependency.
 	using Number = int;
-	RegisterBinary<Strict, const Number, const Number>(cs, "%",
+	RegisterBinary<Strict, const Number, const Number>(m, "%",
 		[](const Number& e1, const Number& e2){
 		if(e2 != 0)
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	RegisterUnary<Strict, const int>(cs, "itos", [](int x){
+	RegisterUnary<Strict, const int>(m, "itos", [](int x){
 		return string(make_string_view(to_string(x)));
 	});
-	RegisterUnary<Strict, const string>(cs, "stoi", [](const string& x){
+	RegisterUnary<Strict, const string>(m, "stoi", [](const string& x){
 		return std::stoi(YSLib::to_std_string(x));
 	});
 	// NOTE: I/O library.
-	RegisterStrict(cs, "read-line", [](TermNode& term){
+	RegisterStrict(m, "read-line", [](TermNode& term){
 		RetainN(term, 0);
 
 		string line(term.get_allocator());
@@ -533,23 +533,23 @@ LoadFunctions(Interpreter& intp)
 		getline(std::cin, line);
 		term.SetValue(line);
 	});
-	RegisterUnary(cs, "write", trivial_swap, [&](TermNode& term){
+	RegisterUnary(m, "write", trivial_swap, [&](TermNode& term){
 		WriteTermValue(global.GetOutputStreamRef(), term);
 		return ValueToken::Unspecified;
 	});
-	RegisterUnary(cs, "display", trivial_swap, [&](TermNode& term){
+	RegisterUnary(m, "display", trivial_swap, [&](TermNode& term){
 		DisplayTermValue(global.GetOutputStreamRef(), term);
 		return ValueToken::Unspecified;
 	});
-	RegisterUnary(cs, "logd", [](TermNode& term){
+	RegisterUnary(m, "logd", [](TermNode& term){
 		LogTermValue(term, Notice);
 		return ValueToken::Unspecified;
 	});
-	RegisterStrict(cs, "logv", trivial_swap,
+	RegisterStrict(m, "logv", trivial_swap,
 		ystdex::bind1(LogTermValue, Notice));
-	RegisterUnary<Strict, const string>(cs, "echo", Echo);
+	RegisterUnary<Strict, const string>(m, "echo", Echo);
 	if(global.IsAsynchronous())
-		RegisterStrict(cs, "load-at-root", trivial_swap,
+		RegisterStrict(m, "load-at-root", trivial_swap,
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 			// NOTE: This does not support PTC.
@@ -558,7 +558,7 @@ LoadFunctions(Interpreter& intp)
 			return A1::RelayToLoadExternal(ctx, term);
 		});
 	else
-		RegisterStrict(cs, "load-at-root", trivial_swap,
+		RegisterStrict(m, "load-at-root", trivial_swap,
 			[&, rwenv](TermNode& term, ContextNode& ctx){
 			RetainN(term);
 
@@ -566,7 +566,7 @@ LoadFunctions(Interpreter& intp)
 
 			return A1::ReduceToLoadExternal(term, ctx);
 		});
-	RegisterUnary<Strict, const string>(cs, "open-input-file",
+	RegisterUnary<Strict, const string>(m, "open-input-file",
 		[](const string& path){
 		if(ifstream ifs{path, std::ios_base::in | std::ios_base::binary})
 			return ValueObject(std::allocator_arg, path.get_allocator(),
@@ -575,7 +575,7 @@ LoadFunctions(Interpreter& intp)
 		throw LoggedEvent(
 			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
 	});
-	RegisterUnary<Strict, const string>(cs, "open-input-string",
+	RegisterUnary<Strict, const string>(m, "open-input-string",
 		[](const string& str){
 		// XXX: Blocked. Use of explicit allocator requires C++20 and later.
 		//	Hopefully other changes of LWG 3006 are implemented in the previous
@@ -588,12 +588,12 @@ LoadFunctions(Interpreter& intp)
 		throw LoggedEvent(
 			ystdex::sfmt("Failed opening string '%s'.", str.c_str()));
 	});
-	RegisterUnary<Strict, std::ios_base>(cs, "parse-stream", ParseStream);
+	RegisterUnary<Strict, std::ios_base>(m, "parse-stream", ParseStream);
 #if NPLC_Impl_TestTemporaryOrder
-	RegisterUnary<Strict, const string>(renv, "mark-guard", [](string str){
+	RegisterUnary<Strict, const string>(m, "mark-guard", [](string str){
 		return MarkGuard(std::move(str));
 	});
-	RegisterStrict(renv, "mark-guard-test", []{
+	RegisterStrict(m, "mark-guard-test", []{
 		MarkGuard("A"), MarkGuard("B"), MarkGuard("C");
 	});
 #endif
