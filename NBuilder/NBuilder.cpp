@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8755
+\version r8763
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-11-02 03:29 +0800
+	2022-11-21 04:38 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -265,9 +265,11 @@ LoadFunctions(Interpreter& intp)
 {
 	using namespace std::placeholders;
 	using namespace Forms;
+	using NPL::Environment;
 	auto& global(intp.Global);
 	auto& cs(intp.Main);
 	auto& renv(cs.GetRecordRef());
+	auto& m(renv.GetMapRef());
 	string init_trace_option;
 
 	cs.Trace.FilterLevel = FetchEnvironmentVariable(init_trace_option,
@@ -278,7 +280,8 @@ LoadFunctions(Interpreter& intp)
 	LoadModuleChecked(cs, "env_SHBuild_", [&]{
 		LoadModule_SHBuild(cs);
 		// XXX: Overriding.
-		cs.GetRecordRef().Define("SHBuild_BaseTerminalHook_",
+		Environment::Define(cs.GetRecordRef().GetMapRef(),
+			"SHBuild_BaseTerminalHook_",
 			ValueObject(function<void(const string&, const string&)>(
 			[&](const string& n, const string& val){
 				auto& os(global.GetOutputStreamRef());
@@ -306,8 +309,10 @@ LoadFunctions(Interpreter& intp)
 	RegisterLiteralSignal(cs, "license", SSignal::License);
 	// NOTE: Definition of %inert is in %YFramework.NPL.Dependency.
 	// NOTE: Context builtins.
-	renv.DefineChecked("REPL-context", ValueObject(global, OwnershipTag<>()));
-	renv.DefineChecked("root-context", ValueObject(cs, OwnershipTag<>()));
+	Environment::DefineChecked(m, "REPL-context",
+		ValueObject(global, OwnershipTag<>()));
+	Environment::DefineChecked(m, "root-context",
+		ValueObject(cs, OwnershipTag<>()));
 	// XXX: Temporarily unfreeze the environment to allow the external
 	//	definitions in the ground environment.
 	renv.Unfreeze();
