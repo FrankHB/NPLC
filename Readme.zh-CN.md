@@ -18,7 +18,7 @@
 
 ## 使用 Code::Blocks 构建
 
-　　确保已在其中配置 YSLib 库的位置后，选择 `debug` 或 `release` 配置，直接构建。
+　　确保已在其中配置 YSLib 库的位置后，选择 debug 或 release 配置，直接构建。
 
 　　生成的可执行文件在配置名的目录下。
 
@@ -55,6 +55,23 @@ SHBuild_BuildApp . -xj,3
 　　构建默认依赖 YSLib 动态库。
 
 　　V0.8 起初始化加载 `test.txt`（可为空）。若没有这个文件，初始化出错。
+
+## 测试脚本
+
+　　以下脚本提供 `valgrind` 间接调用解释器命令行示例：
+
+* `td.sh` 调用 debug 模式解释器，默认调用 memcheck 检查泄漏。
+* `tr.sh` 调用 release 模式解释器，默认调用 callgrind 收集性能信息。
+
+　　`tr.sh` 输出在前缀为 `callgrind.out` 的文件中。
+
+　　脚本支持环境变量进行配置：
+
+* `CONF` ：配置名，决定解释器路径 `".$CONF/NBuilder.exe"` 。
+* `LOGOPT` ：日志文件选项。
+* `TOOLOPT` ：工具选项。
+
+　　默认情形的配置和实际命令行参见对应的脚本源代码。
 
 # 发布注记
 
@@ -249,6 +266,12 @@ klisp -e '(display ($sequence ($define! fib ($lambda (n) ($if (<=? n 1) n (+ (fi
 * **V1.0** 约 0.95
 
 　　（使用较小参数的基准测试内容另见 `test.txt` 中的 `pt` 函数。）
+
+　　虽然测试脚本在 V1.5 起正式提供，先前的性能测试数据也可通过脚本调用，如：
+
+```
+./tr.sh -e '()pt'
+```
 
 ## 元数据
 
