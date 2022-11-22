@@ -917,11 +917,12 @@ $defl! test (&i)
 				filter ($lambda (s) not? (string-empty? s))
 					(append a (list "" "1" "" "2"))
 		);
+		subinfo "assq";
+		$expect (list q-a "l") assq q-a (list
+			(list 9 2) (list 1 "m") (list% q-a "l") (list 3 4) (list% q-a 3));
 		subinfo "assv";
 		$expect (list 1 "l")
 			assv 1 (list (list 9 2) (list 1 "l") (list 3 4) (list 1 3));
-		$expect (list q-a "l") assq q-a (list
-			(list 9 2) (list 1 "m") (list% q-a "l") (list 3 4) (list% q-a 3));
 		subinfo "memv?";
 		$check memv? 1 (list 1 2 4);
 		subinfo "reduce";
