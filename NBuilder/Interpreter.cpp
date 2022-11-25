@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3592
+\version r3599
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-11-14 03:31 +0800
+	2022-11-26 05:25 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -27,10 +27,10 @@
 
 #include "Interpreter.h" // for IsAtom, bad_any_cast, IsPair, type_id,
 //	type_info, QueryTypeName, IsTyped, YSLib::sfmt, YSLib::ostringstream,
-//	YAssertNonnull, IsCombiningTerm, IsLeaf, A1::QuerySourceInformation, IsList,
-//	RemoveHead, IsEmpty, AccessFirstSubterm, trivial_swap, IsSingleElementList,
-//	LiftOtherValue, namespace YSLib, TraceException, A1::TraceBacktrace,
-//	YSLib::IO::StreamGet;
+//	YAssertNonnull, LookupName, IsCombiningTerm, IsLeaf,
+//	A1::QuerySourceInformation, IsList, RemoveHead, IsEmpty, AccessFirstSubterm,
+//	trivial_swap, IsSingleElementList, LiftOtherValue, namespace YSLib,
+//	TraceException, A1::TraceBacktrace, YSLib::IO::StreamGet;
 #include <ystdex/functional.hpp> // for ystdex::bind1, std::bind, std::ref,
 //	std::placeholders::_1;
 #include <Helper/YModules.h>
@@ -777,12 +777,12 @@ RedirectEnvironmentList(Environment::allocator_type a, Redirector& cont,
 // XXX: This is essentially same to %ContextNode::DefaultResolve. However, the
 //	optimal implementation here can hardly make %ContextNode::DefaultResolve
 //	perform better (possibly due to inlining).
-YB_FLATTEN Environment::NameResolution
+YB_FLATTEN NameResolution
 ResolveDefault(shared_ptr<Environment> p_env, string_view id)
 {
 	YAssertNonnull(p_env);
 
-	auto p_obj(p_env->LookupName(id));
+	auto p_obj(LookupName(p_env->GetMapRef(), id));
 
 	if(p_obj)
 		return {p_obj, std::move(p_env)};
@@ -836,7 +836,7 @@ ResolveDefault(shared_ptr<Environment> p_env, string_view id)
 			redir = bool(p_redirected);
 			return false;
 		});
-	}while(!(p_obj = p_env->LookupName(id)) && redir);
+	}while(!(p_obj = LookupName(p_env->GetMapRef(), id)) && redir);
 	return {p_obj, std::move(p_env)};
 }
 //@}
