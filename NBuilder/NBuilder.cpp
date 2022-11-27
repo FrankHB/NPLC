@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8827
+\version r8828
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-11-27 15:44 +0800
+	2022-11-28 06:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -277,7 +277,7 @@ LoadFunctions(Interpreter& intp)
 	p_global = NPL::make_observer(&global);
 	LoadStandardContext(cs);
 	global.OutputStreamPtr = NPL::make_observer(&std::cout);
-	LoadModuleChecked(cs, "env_SHBuild_", [&]{
+	LoadModuleChecked(m, cs, "env_SHBuild_", [&]{
 		LoadModule_SHBuild(cs);
 		// XXX: Overriding.
 		Environment::Define(cs.GetRecordRef().GetMapRef(),

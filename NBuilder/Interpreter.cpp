@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3599
+\version r3601
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-11-26 05:25 +0800
+	2022-11-28 05:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -782,7 +782,7 @@ ResolveDefault(shared_ptr<Environment> p_env, string_view id)
 {
 	YAssertNonnull(p_env);
 
-	auto p_obj(LookupName(p_env->GetMapRef(), id));
+	auto p_obj(LookupName(p_env->GetMapUncheckedRef(), id));
 
 	if(p_obj)
 		return {p_obj, std::move(p_env)};
@@ -836,7 +836,7 @@ ResolveDefault(shared_ptr<Environment> p_env, string_view id)
 			redir = bool(p_redirected);
 			return false;
 		});
-	}while(!(p_obj = LookupName(p_env->GetMapRef(), id)) && redir);
+	}while(!(p_obj = LookupName(p_env->GetMapUncheckedRef(), id)) && redir);
 	return {p_obj, std::move(p_env)};
 }
 //@}
