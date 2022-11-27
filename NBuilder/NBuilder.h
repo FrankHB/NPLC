@@ -11,13 +11,13 @@
 /*!	\file NBuilder.h
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r2071
+\version r2073
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 304
 \par 创建时间:
 	2012-04-23 15:25:02 +0800
 \par 修改时间:
-	2022-09-24 18:22 +0800
+	2022-11-27 15:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -37,9 +37,9 @@ namespace NBuilder
 //! \since YSLib build 674
 using namespace YSLib;
 
-//! \since YSLib build 674
+//! \since YSLib build 961
 void
-RegisterLiteralSignal(ContextNode&, const string&, SSignal);
+RegisterLiteralSignal(BindingMap&, const string&, SSignal);
 
 } // namespace NBuilder;
 

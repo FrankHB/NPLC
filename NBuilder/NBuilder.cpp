@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8818
+\version r8827
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-11-21 05:35 +0800
+	2022-11-27 15:44 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -61,10 +61,10 @@ namespace NBuilder
 //@}
 
 void
-RegisterLiteralSignal(ContextNode& ctx, const string& name, SSignal sig)
+RegisterLiteralSignal(BindingMap& m, const string& name, SSignal sig)
 {
-	NPL::EmplaceLeaf<NPL::A1::LiteralHandler>(ctx, name, trivial_swap,
-		std::allocator_arg, ctx.get_allocator(),
+	NPL::EmplaceLeaf<NPL::A1::LiteralHandler>(m, name, trivial_swap,
+		std::allocator_arg, m.get_allocator(),
 		[=] YB_LAMBDA_ANNOTATE((const ContextNode&), , noreturn)
 		-> ReductionStatus{
 		throw sig;
@@ -302,11 +302,11 @@ LoadFunctions(Interpreter& intp)
 		})));
 	});
 	// NOTE: Literal builtins.
-	RegisterLiteralSignal(cs, "exit", SSignal::Exit);
-	RegisterLiteralSignal(cs, "cls", SSignal::ClearScreen);
-	RegisterLiteralSignal(cs, "about", SSignal::About);
-	RegisterLiteralSignal(cs, "help", SSignal::Help);
-	RegisterLiteralSignal(cs, "license", SSignal::License);
+	RegisterLiteralSignal(m, "exit", SSignal::Exit);
+	RegisterLiteralSignal(m, "cls", SSignal::ClearScreen);
+	RegisterLiteralSignal(m, "about", SSignal::About);
+	RegisterLiteralSignal(m, "help", SSignal::Help);
+	RegisterLiteralSignal(m, "license", SSignal::License);
 	// NOTE: Definition of %inert is in %YFramework.NPL.Dependency.
 	// NOTE: Context builtins.
 	Environment::DefineChecked(m, "REPL-context",
@@ -710,7 +710,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.4+ b959+"
+#define NPLC_VER "V1.4+ b960+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
