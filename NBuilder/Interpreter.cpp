@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3601
+\version r3706
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-11-28 05:30 +0800
+	2022-12-18 02:41 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -736,7 +736,7 @@ IsReserved(string_view id) ynothrowv
 }
 #endif
 
-shared_ptr<Environment>
+YB_ATTR_nodiscard shared_ptr<Environment>
 RedirectToShared(string_view id, shared_ptr<Environment> p_env)
 {
 #if NPL_NPLA_CheckParentEnvironment
@@ -756,7 +756,7 @@ RedirectToShared(string_view id, shared_ptr<Environment> p_env)
 using Redirector
 	= ystdex::unchecked_function<observer_ptr<const ValueObject>()>;
 
-observer_ptr<const ValueObject>
+YB_ATTR_nodiscard observer_ptr<const ValueObject>
 RedirectEnvironmentList(Environment::allocator_type a, Redirector& cont,
 	EnvironmentList::const_iterator first, EnvironmentList::const_iterator last)
 {
@@ -772,72 +772,80 @@ RedirectEnvironmentList(Environment::allocator_type a, Redirector& cont,
 	}
 	return {};
 }
+//@}
 
 
-// XXX: This is essentially same to %ContextNode::DefaultResolve. However, the
-//	optimal implementation here can hardly make %ContextNode::DefaultResolve
-//	perform better (possibly due to inlining).
-YB_FLATTEN NameResolution
-ResolveDefault(shared_ptr<Environment> p_env, string_view id)
+// XXX: This is essentially same to %ContextNode::DefaultResolve.
+//! \since YSLib build 962
+//@{
+YB_ATTR_nodiscard bool
+ResolveRedirect(shared_ptr<Environment>& p_env, string_view id,
+	Redirector& cont)
+{
+	lref<const ValueObject> cur(p_env->Parent);
+	shared_ptr<Environment> p_redirected{};
+
+	ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
+		const ValueObject& parent(cur);
+		const auto& ti(parent.type());
+
+		if(IsTyped<EnvironmentReference>(ti))
+		{
+			p_redirected = RedirectToShared(id,
+				parent.GetObject<EnvironmentReference>().Lock());
+			p_env.swap(p_redirected);
+		}
+		else if(IsTyped<shared_ptr<Environment>>(ti))
+		{
+			p_redirected = RedirectToShared(id,
+				parent.GetObject<shared_ptr<Environment>>());
+			p_env.swap(p_redirected);
+		}
+		else
+		{
+			observer_ptr<const ValueObject> p_next{};
+
+			if(IsTyped<EnvironmentList>(ti))
+			{
+				const auto& envs(parent.GetObject<EnvironmentList>());
+
+				p_next = RedirectEnvironmentList(
+					NPL::ToBindingsAllocator(*p_env), cont,
+					envs.cbegin(), envs.cend());
+			}
+			while(!p_next && bool(cont))
+				p_next = ystdex::exchange(cont, Redirector())();
+			if(p_next)
+			{
+				YAssert(!ystdex::ref_eq<>()(cur.get(), *p_next),
+					"Cyclic parent found.");
+				cur = *p_next;
+				return true;
+			}
+		}
+		return false;
+	});
+	return bool(p_redirected);
+}
+
+YB_ATTR_nodiscard NameResolution::first_type
+ResolveDefault(shared_ptr<Environment>& p_env, string_view id)
 {
 	YAssertNonnull(p_env);
 
-	auto p_obj(LookupName(p_env->GetMapUncheckedRef(), id));
-
-	if(p_obj)
-		return {p_obj, std::move(p_env)};
-
 	Redirector cont;
-	bool redir;
 
-	// XXX: Not using %ystdex::retry_on_cond here for performance.
-	do
+	return ystdex::retry_on_cond(
+#if YB_IMPL_GNUCPP >= 120000
+		[&](NameResolution::first_type p)
+#else
+		[&] YB_LAMBDA_ANNOTATE((NameResolution::first_type p), , flatten)
+#endif
 	{
-		lref<const ValueObject> cur(p_env->Parent);
-		shared_ptr<Environment> p_redirected{};
-
-		ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
-			const ValueObject& parent(cur);
-			const auto& ti(parent.type());
-
-			if(IsTyped<EnvironmentReference>(ti))
-			{
-				p_redirected = RedirectToShared(id,
-					parent.GetObject<EnvironmentReference>().Lock());
-				p_env.swap(p_redirected);
-			}
-			else if(IsTyped<shared_ptr<Environment>>(ti))
-			{
-				p_redirected = RedirectToShared(id,
-					parent.GetObject<shared_ptr<Environment>>());
-				p_env.swap(p_redirected);
-			}
-			else
-			{
-				observer_ptr<const ValueObject> p_next{};
-
-				if(IsTyped<EnvironmentList>(ti))
-				{
-					auto& envs(parent.GetObject<EnvironmentList>());
-
-					p_next = RedirectEnvironmentList(NPL::ToBindingsAllocator(
-						*p_env), cont, envs.cbegin(), envs.cend());
-				}
-				while(!p_next && bool(cont))
-					p_next = ystdex::exchange(cont, Redirector())();
-				if(p_next)
-				{
-					YAssert(!ystdex::ref_eq<>()(cur.get(), *p_next),
-						"Cyclic parent found.");
-					cur = *p_next;
-					return true;
-				}
-			}
-			redir = bool(p_redirected);
-			return false;
-		});
-	}while(!(p_obj = LookupName(p_env->GetMapUncheckedRef(), id)) && redir);
-	return {p_obj, std::move(p_env)};
+		return !(p || !ResolveRedirect(p_env, id, cont));
+	}, [&, id]{
+		return LookupName(p_env->GetMapUncheckedRef(), id);
+	});
 }
 //@}
 
@@ -894,10 +902,10 @@ ReduceFastTmpl(TermNode& term, ContextState& cs, _func f, _func2 f2,
 		//	the stored name on throwing.
 		// XXX: See assumption 2. This is also known not throwing
 		//	%BadIdentifier.
-		auto pr(ResolveDefault(cs.GetRecordPtr(), id));
+		auto p_env(cs.GetRecordPtr());
 
-		if(pr.first)
-			return f(*pr.first, pr.second);
+		if(const auto p_term = ResolveDefault(p_env, id))
+			return f(*p_term, p_env);
 #	if NPLC_Impl_UseSourceInfo
 		{
 			BadIdentifier e(id);
