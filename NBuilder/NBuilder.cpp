@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8866
+\version r8906
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-12-18 19:30 +0800
+	2022-12-18 19:33 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -739,6 +739,30 @@ RunEvalStrings(Interpreter& intp, vector<string>& eval_strs)
 		intp.RunLine(str);
 }
 
+//! \since YSLib build 962
+void
+RunInteractive()
+{
+	using namespace std;
+	Interpreter intp{};
+
+	intp.UpdateTextColor(TitleColor, true);
+	clog << title << endl << "Initializing...";
+	{
+		using namespace chrono;
+		const auto d(ytest::timing::once(
+			YSLib::Timers::HighResolutionClock::now,
+			LoadFunctions, std::ref(intp)));
+
+		clog << "NPLC initialization finished in " << d.count() / 1e9
+			<< " second(s)." << endl;
+	}
+	intp.UpdateTextColor(InfoColor, true);
+	clog << "Type \"exit\" to exit, \"cls\" to clear screen, \"help\","
+		" \"about\", or \"license\" for more information." << endl << endl;
+	intp.Run();
+}
+
 } // unnamed namespace;
 
 
@@ -824,31 +848,13 @@ main(int argc, char* argv[])
 
 				RunEvalStrings(intp, eval_strs);
 			}
+			else
+				RunInteractive();
 		}
 		else if(xargc == 1)
 		{
-			using namespace std;
-
 			Deref(LockCommandArguments()).Reset(argc, argv);
-
-			Interpreter intp{};
-
-			intp.UpdateTextColor(TitleColor, true);
-			clog << title << endl << "Initializing...";
-			{
-				using namespace chrono;
-				const auto d(ytest::timing::once(
-					YSLib::Timers::HighResolutionClock::now,
-					LoadFunctions, std::ref(intp)));
-
-				clog << "NPLC initialization finished in " << d.count() / 1e9
-					<< " second(s)." << endl;
-			}
-			intp.UpdateTextColor(InfoColor, true);
-			clog << "Type \"exit\" to exit,"
-				" \"cls\" to clear screen, \"help\", \"about\", or \"license\""
-				" for more information." << endl << endl;
-			intp.Run();
+			RunInteractive();
 		}
 	}, yfsig, Alert, TraceForOutermost) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
