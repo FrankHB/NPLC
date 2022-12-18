@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8828
+\version r8838
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-11-28 06:24 +0800
+	2022-12-18 18:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -632,9 +632,12 @@ const struct Option
 	{}
 } OptionsTable[]{
 	// NOTE: Alphabatical as %Tools.SHBuild.Main in YSLib.
-	{"-h, --help", "", {"Print this message."}},
+	{"-h, --help", "", {"Print this message and exit, without entering"
+		" execution modes."}},
 	{"-e", " [STRING]", {"Evaluate a string if the following argument exists."
 		" This option can occur more than once and combined with SRCPATH.\n"
+		"\tAny instance of this option implies the interpreter running in"
+		" scripting mode.\n"
 		"\tEach instance of this option (with its optional argument) will be"
 		" evaluated in order before evaluate the script specified by SRCPATH"
 		" (if any)."}}
@@ -661,10 +664,11 @@ PrintHelpMessage(const string& prog)
 		"  or:  \"%s\" [OPTIONS ... [-- [[SRCPATH] ARGS...]]]\n"
 		"\tThis program is an interpreter of NPLA1.\n"
 		"\tThere are two execution modes, scripting mode and interactive mode,"
-		" exclusively. In scripting mode, a script file specified in the"
-		" command line arguments is run. Otherwise, the program runs in the"
-		" interactive mode and the REPL (read-eval-print loop) is entered,"
-		" see below for details.\n"
+		" exclusively. In both modes, the interpreter is initialized before"
+		" further execution of the code. In scripting mode, a script file"
+		" specified by the command line argument SRCPATH (if any) is run."
+		" Otherwise, the program runs in the interactive mode and the REPL"
+		" (read-eval-print loop) is entered, see below for details.\n"
 		"\tThere are no checks on the values. Any behaviors depending"
 		" on the locale-specific values are unspecified.\n"
 		"\tCurrently accepted environment variable are:\n\n",
@@ -710,7 +714,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.4+ b960+"
+#define NPLC_VER "V1.4+ b961+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
