@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8906
+\version r8922
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-12-18 19:33 +0800
+	2022-12-18 19:37 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -258,6 +258,11 @@ struct MarkGuard
 	DefDeMoveAssignment(MarkGuard)
 };
 #endif
+
+//! \since YSLib build 962
+#define NBuilder_Default_Init_File "init.txt"
+//! \since YSLib build 962
+const char* init_file = NBuilder_Default_Init_File;
 
 //! \since YSLib build 885
 void
@@ -603,7 +608,8 @@ LoadFunctions(Interpreter& intp)
 	A1::PreloadExternal(cs, "std.txt");
 	renv.Freeze();
 	intp.SaveGround();
-	A1::PreloadExternal(cs, "init.txt");
+	if(init_file)
+		A1::PreloadExternal(cs, init_file);
 #if NPLC_Impl_DebugAction
 	global.EvaluateList.Add(DefaultDebugAction, 255);
 	global.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
@@ -640,7 +646,11 @@ const struct Option
 		" scripting mode.\n"
 		"\tEach instance of this option (with its optional argument) will be"
 		" evaluated in order before evaluate the script specified by SRCPATH"
-		" (if any)."}}
+		" (if any)."}},
+	{"-q, --no-init-file", "", {"Disable loading the init file. Otherwise, a"
+		" file named \"" NBuilder_Default_Init_File "\" is loaded at the end"
+		" of the initialization and before further evaluations. Currently this"
+		" is effective for both execution modes."}}
 };
 
 const array<const char*, 3> DeEnvs[]{
@@ -814,6 +824,11 @@ main(int argc, char* argv[])
 					else if(arg == "-e")
 					{
 						requires_eval = true;
+						continue;
+					}
+					else if(arg == "-q" || arg == "--no-init-file")
+					{
+						init_file = {};
 						continue;
 					}
 				}
