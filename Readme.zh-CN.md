@@ -46,9 +46,17 @@ SHBuild_BuildApp . -xj,3
 
 # 运行
 
-　　运行解释器可执行文件直接进入 REPL ；或使用命令行选项 `-e` ，支持直接求值字符串参数。
+　　运行解释器选项 `-h` 查看帮助消息，包括支持的执行模式、选项和环境变量。
 
-　　当前实现支持 `doc/NPL.txt` 中的函数和一些未公开的函数。
+　　运行解释器可执行文件可直接进入 REPL 或加载脚本。使用命令行选项 `-e` ，支持直接求值字符串参数。
+
+**注释** 选项 `-q` 或 `--no-start-file` 在一些 Scheme 语言的实现中通用，尽管模式和具体文件可能不同，如：
+
+* [MIT Scheme](https://www.gnu.org/software/mit-scheme/documentation/stable/mit-scheme-user/Customizing-Scheme.html#Customizing-Scheme)
+* [GNU Guile](https://www.gnu.org/software/guile/manual/html_node/Init-File.html)
+* [Racket](https://docs.racket-lang.org/reference/running-sa.html#%28mod-path._racket%2Finteractive%29)
+
+　　当前实现同时支持 `doc/NPL.txt` 中的函数和一些未公开的函数。
 
 ## 运行环境
 
