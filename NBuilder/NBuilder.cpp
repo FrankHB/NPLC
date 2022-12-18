@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8845
+\version r8866
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-12-18 19:02 +0800
+	2022-12-18 19:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -727,6 +727,18 @@ PrintHelpMessage(const string& prog)
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
 
+//! \since YSLib build 962
+void
+RunEvalStrings(Interpreter& intp, vector<string>& eval_strs)
+{
+	intp.UpdateTextColor(TitleColor);
+	LoadFunctions(intp);
+	// NOTE: Different strings are evaluated separatly in order.
+	//	This is simlilar to klisp.
+	for(const auto& str : eval_strs)
+		intp.RunLine(str);
+}
+
 } // unnamed namespace;
 
 
@@ -801,12 +813,7 @@ main(int argc, char* argv[])
 
 				Interpreter intp{};
 
-				intp.UpdateTextColor(TitleColor);
-				LoadFunctions(intp);
-				// NOTE: Different strings are evaluated separatly in order.
-				//	This is simlilar to klisp.
-				for(const auto& str : eval_strs)
-					intp.RunLine(str);
+				RunEvalStrings(intp, eval_strs);
 				// NOTE: The special name '-' is handled here. This conforms to
 				//	POSIX.1-2017 utility convention, Guideline 13.
 				intp.RunScript(std::move(src));
@@ -815,10 +822,7 @@ main(int argc, char* argv[])
 			{
 				Interpreter intp{};
 
-				intp.UpdateTextColor(TitleColor);
-				LoadFunctions(intp);
-				for(const auto& str : eval_strs)
-					intp.RunLine(str);
+				RunEvalStrings(intp, eval_strs);
 			}
 		}
 		else if(xargc == 1)
