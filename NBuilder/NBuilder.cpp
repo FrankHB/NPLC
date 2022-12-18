@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8838
+\version r8845
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-12-18 18:56 +0800
+	2022-12-18 19:02 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -669,6 +669,7 @@ PrintHelpMessage(const string& prog)
 		" specified by the command line argument SRCPATH (if any) is run."
 		" Otherwise, the program runs in the interactive mode and the REPL"
 		" (read-eval-print loop) is entered, see below for details.\n"
+		"\tThere are no checks on the encoding of the input code.\n"
 		"\tThere are no checks on the values. Any behaviors depending"
 		" on the locale-specific values are unspecified.\n"
 		"\tCurrently accepted environment variable are:\n\n",
@@ -683,11 +684,12 @@ PrintHelpMessage(const string& prog)
 		" scripting mode. In this case, SRCPATH is the 1st command line"
 		" argument not recognized as an option (see below). Otherwise, the"
 		" command line argument is treated as an option.\n"
-		"\tSRCPATH shall specify a path to a source file, or"
-		" the special value '-' which indicates the standard input. The source"
-		" specified by SRCPATH shall have NPLA1 source tokens, which are to be"
-		" read and evaluated in the initial environment of the interpreter."
-		" Otherwise, errors are raise to reject the source.\n\n"
+		"\tSRCPATH shall specify a path to a source file, or the special value"
+		" '-' which indicates the standard input."
+		"\tThe source specified by SRCPATH shall have NPLA1 source tokens"
+		" encoded in a text stream with optional UTF-8 BOM (byte-order mark),"
+		" which are to be read and evaluated in the initial environment of the"
+		" interpreter. Otherwise, errors are raise to reject the source.\n\n"
 		"OPTIONS ...\nOPTIONS ... -- [[SRCPATH] ARGS ...]\n"
 		"\tThe options and arguments for the program execution. After '--',"
 		" options parsing is turned off and every remained command line"
