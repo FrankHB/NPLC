@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3706
+\version r3724
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-12-18 02:41 +0800
+	2022-12-25 16:28 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -782,13 +782,15 @@ YB_ATTR_nodiscard bool
 ResolveRedirect(shared_ptr<Environment>& p_env, string_view id,
 	Redirector& cont)
 {
-	lref<const ValueObject> cur(p_env->Parent);
+	observer_ptr<const ValueObject> p_next(&p_env->Parent);
 	shared_ptr<Environment> p_redirected{};
 
-	ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
-		const ValueObject& parent(cur);
+	do
+	{
+		auto& parent(*p_next);
 		const auto& ti(parent.type());
 
+		p_next = {};
 		if(IsTyped<EnvironmentReference>(ti))
 		{
 			p_redirected = RedirectToShared(id,
@@ -803,28 +805,18 @@ ResolveRedirect(shared_ptr<Environment>& p_env, string_view id,
 		}
 		else
 		{
-			observer_ptr<const ValueObject> p_next{};
-
 			if(IsTyped<EnvironmentList>(ti))
 			{
 				const auto& envs(parent.GetObject<EnvironmentList>());
 
-				p_next = RedirectEnvironmentList(
-					NPL::ToBindingsAllocator(*p_env), cont,
-					envs.cbegin(), envs.cend());
+				p_next = RedirectEnvironmentList(NPL::ToBindingsAllocator(
+					*p_env), cont, envs.cbegin(), envs.cend());
 			}
 			while(!p_next && bool(cont))
 				p_next = ystdex::exchange(cont, Redirector())();
-			if(p_next)
-			{
-				YAssert(!ystdex::ref_eq<>()(cur.get(), *p_next),
-					"Cyclic parent found.");
-				cur = *p_next;
-				return true;
-			}
+			YAssert(p_next.get() != &parent, "Cyclic parent found.");
 		}
-		return false;
-	});
+	}while(p_next);
 	return bool(p_redirected);
 }
 
