@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3724
+\version r3744
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-12-25 16:28 +0800
+	2022-12-27 08:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -727,29 +727,19 @@ GetMonotonicPoolRef()
 #if NPLC_Impl_FastAsyncReduce
 //! \since YSLib build 945
 //@{
-#if NPL_NPLA_CheckParentEnvironment
-YB_ATTR_nodiscard YB_PURE bool
-IsReserved(string_view id) ynothrowv
-{
-	YAssertNonnull(id.data());
-	return ystdex::begins_with(id, "__");
-}
-#endif
-
+//! \since YSLib build 963
 YB_ATTR_nodiscard shared_ptr<Environment>
-RedirectToShared(string_view id, shared_ptr<Environment> p_env)
+RedirectToShared(shared_ptr<Environment> p_env)
 {
 #if NPL_NPLA_CheckParentEnvironment
 	if(p_env)
 #else
-	yunused(id);
 	YAssertNonnull(p_env);
 #endif
 		return p_env;
 #if NPL_NPLA_CheckParentEnvironment
-	throw InvalidReference(ystdex::sfmt("Invalid reference found for%s name"
-		" '%s', probably due to invalid context access by a dangling"
-		" reference.", IsReserved(id) ? " reserved" : "", id.data()));
+	throw InvalidReference(ystdex::sfmt("Invalid reference found for name,"
+		" probably due to invalid context access by a dangling reference."));
 #endif
 }
 
@@ -778,9 +768,9 @@ RedirectEnvironmentList(Environment::allocator_type a, Redirector& cont,
 // XXX: This is essentially same to %ContextNode::DefaultResolve.
 //! \since YSLib build 962
 //@{
+//! \since YSLib build 963
 YB_ATTR_nodiscard bool
-ResolveRedirect(shared_ptr<Environment>& p_env, string_view id,
-	Redirector& cont)
+ResolveRedirect(shared_ptr<Environment>& p_env, Redirector& cont)
 {
 	observer_ptr<const ValueObject> p_next(&p_env->Parent);
 	shared_ptr<Environment> p_redirected{};
@@ -793,14 +783,14 @@ ResolveRedirect(shared_ptr<Environment>& p_env, string_view id,
 		p_next = {};
 		if(IsTyped<EnvironmentReference>(ti))
 		{
-			p_redirected = RedirectToShared(id,
+			p_redirected = RedirectToShared(
 				parent.GetObject<EnvironmentReference>().Lock());
 			p_env.swap(p_redirected);
 		}
 		else if(IsTyped<shared_ptr<Environment>>(ti))
 		{
-			p_redirected = RedirectToShared(id,
-				parent.GetObject<shared_ptr<Environment>>());
+			p_redirected
+				= RedirectToShared(parent.GetObject<shared_ptr<Environment>>());
 			p_env.swap(p_redirected);
 		}
 		else
@@ -834,7 +824,7 @@ ResolveDefault(shared_ptr<Environment>& p_env, string_view id)
 		[&] YB_LAMBDA_ANNOTATE((NameResolution::first_type p), , flatten)
 #endif
 	{
-		return !(p || !ResolveRedirect(p_env, id, cont));
+		return !(p || !ResolveRedirect(p_env, cont));
 	}, [&, id]{
 		return LookupName(p_env->GetMapUncheckedRef(), id);
 	});
