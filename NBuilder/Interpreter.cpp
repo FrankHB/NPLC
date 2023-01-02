@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3772
+\version r3838
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-01-03 06:15 +0800
+	2023-01-03 06:17 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -727,43 +727,7 @@ GetMonotonicPoolRef()
 
 #if NPLC_Impl_FastAsyncReduce
 //! \since YSLib build 945
-//@{
-//! \since YSLib build 963
-YB_ATTR_nodiscard shared_ptr<Environment>
-RedirectToShared(shared_ptr<Environment> p_env)
-{
-#if NPL_NPLA_CheckParentEnvironment
-	if(p_env)
-#else
-	YAssertNonnull(p_env);
-#endif
-		return p_env;
-#if NPL_NPLA_CheckParentEnvironment
-	throw InvalidReference(ystdex::sfmt("Invalid reference found for name,"
-		" probably due to invalid context access by a dangling reference."));
-#endif
-}
-
 using Redirector = Environment::Redirector;
-
-YB_ATTR_nodiscard observer_ptr<const ValueObject>
-RedirectEnvironmentList(Environment::allocator_type a, Redirector& cont,
-	EnvironmentList::const_iterator first, EnvironmentList::const_iterator last)
-{
-	if(first != last)
-	{
-		cont = ystdex::make_obj_using_allocator<Redirector>(a, trivial_swap,
-			std::bind(
-			[=, &cont](EnvironmentList::const_iterator i, Redirector& c){
-			cont = std::move(c);
-			return RedirectEnvironmentList(a, cont, i, last);
-		}, std::next(first), std::move(cont)));
-		return NPL::make_observer(&*first);
-	}
-	return {};
-}
-//@}
-
 
 // XXX: This is essentially same to %ContextNode::DefaultResolve.
 //! \since YSLib build 962
@@ -778,46 +742,20 @@ ResolveRedirect(shared_ptr<Environment>& p_env, Redirector& cont)
 	do
 	{
 		auto& parent(*p_next);
-		const auto& ti(parent.type());
 
 		p_next = {};
-		if(IsTyped<IParent>(ti))
+		if(const auto p_poly = parent.AccessPtr<IParent>())
 		{
-			p_next = parent.GetObject<IParent>().TryRedirect(
-				p_redirected, cont);
+			p_next = p_poly->TryRedirect(p_redirected, cont);
 			if(p_redirected)
 			{
 				p_env.swap(p_redirected);
 				return true;
 			}
-			goto select_next;
 		}
-		else if(IsTyped<EnvironmentReference>(ti))
-		{
-			p_redirected = RedirectToShared(
-				parent.GetObject<EnvironmentReference>().Lock());
-			p_env.swap(p_redirected);
-		}
-		else if(IsTyped<shared_ptr<Environment>>(ti))
-		{
-			p_redirected
-				= RedirectToShared(parent.GetObject<shared_ptr<Environment>>());
-			p_env.swap(p_redirected);
-		}
-		else
-		{
-			if(IsTyped<EnvironmentList>(ti))
-			{
-				const auto& envs(parent.GetObject<EnvironmentList>());
-
-				p_next = RedirectEnvironmentList(envs.get_allocator(),
-					cont, envs.cbegin(), envs.cend());
-			}
-select_next:
-			while(!p_next && bool(cont))
-				p_next = ystdex::exchange(cont, Redirector())();
-			YAssert(p_next.get() != &parent, "Cyclic parent found.");
-		}
+		while(!p_next && bool(cont))
+			p_next = ystdex::exchange(cont, Redirector())();
+		YAssert(p_next.get() != &parent, "Cyclic parent found.");
 	}while(p_next);
 	return bool(p_redirected);
 }
