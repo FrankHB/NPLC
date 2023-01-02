@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2022 FrankHB.
+	© 2013-2023 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3744
+\version r3762
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-12-27 08:24 +0800
+	2023-01-03 04:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -743,8 +743,7 @@ RedirectToShared(shared_ptr<Environment> p_env)
 #endif
 }
 
-using Redirector
-	= ystdex::unchecked_function<observer_ptr<const ValueObject>()>;
+using Redirector = Environment::Redirector;
 
 YB_ATTR_nodiscard observer_ptr<const ValueObject>
 RedirectEnvironmentList(Environment::allocator_type a, Redirector& cont,
@@ -781,7 +780,18 @@ ResolveRedirect(shared_ptr<Environment>& p_env, Redirector& cont)
 		const auto& ti(parent.type());
 
 		p_next = {};
-		if(IsTyped<EnvironmentReference>(ti))
+		if(IsTyped<IParent>(ti))
+		{
+			p_next = parent.GetObject<IParent>().TryRedirect(
+				p_redirected, cont);
+			if(p_redirected)
+			{
+				p_env.swap(p_redirected);
+				return true;
+			}
+			goto select_next;
+		}
+		else if(IsTyped<EnvironmentReference>(ti))
 		{
 			p_redirected = RedirectToShared(
 				parent.GetObject<EnvironmentReference>().Lock());
@@ -799,9 +809,10 @@ ResolveRedirect(shared_ptr<Environment>& p_env, Redirector& cont)
 			{
 				const auto& envs(parent.GetObject<EnvironmentList>());
 
-				p_next = RedirectEnvironmentList(NPL::ToBindingsAllocator(
-					*p_env), cont, envs.cbegin(), envs.cend());
+				p_next = RedirectEnvironmentList(envs.get_allocator(),
+					cont, envs.cbegin(), envs.cend());
 			}
+select_next:
 			while(!p_next && bool(cont))
 				p_next = ystdex::exchange(cont, Redirector())();
 			YAssert(p_next.get() != &parent, "Cyclic parent found.");
