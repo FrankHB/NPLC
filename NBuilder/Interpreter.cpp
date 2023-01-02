@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3762
+\version r3767
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-01-03 04:24 +0800
+	2023-01-03 05:12 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -857,15 +857,12 @@ YB_FLATTEN void
 EvaluateFastNonListCore(TermNode& term, const shared_ptr<Environment>& p_env,
 	TermNode& bound, ResolvedTermReferencePtr p_ref)
 {
-	const auto a(term.get_allocator());
-
 	// XXX: Some uses of allocator are different to YSLib for performance.
 	if(p_ref)
-		term.SetContent(bound.GetContainer(), ValueObject(std::allocator_arg, a,
-			in_place_type<TermReference>, p_ref->GetTags() & ~TermTags::Unique,
-			*p_ref));
+		term.SetContent(bound.GetContainer(), ValueObject(in_place_type<
+			TermReference>, p_ref->GetTags() & ~TermTags::Unique, *p_ref));
 	else
-		term.SetValue(a, in_place_type<TermReference>,
+		term.SetValue(in_place_type<TermReference>,
 			NPL::Deref(p_env).MakeTermTags(bound) & ~TermTags::Unique, bound,
 			EnvironmentReference(p_env, NPL::Deref(p_env).GetAnchorPtr()));
 }
