@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3767
+\version r3772
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-01-03 05:12 +0800
+	2023-01-03 06:15 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -26,11 +26,12 @@
 
 
 #include "Interpreter.h" // for IsAtom, bad_any_cast, IsPair, type_id,
-//	type_info, QueryTypeName, IsTyped, YSLib::sfmt, YSLib::ostringstream,
-//	YAssertNonnull, LookupName, IsCombiningTerm, IsLeaf,
+//	type_info, QueryTypeName, IsTyped, YSLib::sfmt, ValueObject,
+//	YSLib::ostringstream, YAssertNonnull, LookupName, IsCombiningTerm, IsLeaf,
 //	A1::QuerySourceInformation, IsList, RemoveHead, IsEmpty, AccessFirstSubterm,
 //	trivial_swap, IsSingleElementList, LiftOtherValue, namespace YSLib,
-//	TraceException, A1::TraceBacktrace, YSLib::IO::StreamGet;
+//	TraceException, A1::TraceBacktrace, NPL::ToParent, SingleWeakParent,
+//	YSLib::IO::StreamGet;
 #include <ystdex/functional.hpp> // for ystdex::bind1, std::bind, std::ref,
 //	std::placeholders::_1;
 #include <Helper/YModules.h>
@@ -1244,7 +1245,7 @@ Interpreter::SaveGround()
 	if(!p_ground)
 	{
 		p_ground = NPL::SwitchToFreshEnvironment(Main,
-			ValueObject(Main.WeakenRecord()));
+			NPL::ToParent<SingleWeakParent>(Main.WeakenRecord()));
 		return true;
 	}
 	return {};
