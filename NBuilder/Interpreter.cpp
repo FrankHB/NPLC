@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3849
+\version r3850
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-01-04 22:35 +0800
+	2023-01-10 06:35 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -736,7 +736,7 @@ using Redirector = Environment::Redirector;
 YB_ATTR_nodiscard bool
 ResolveRedirect(shared_ptr<Environment>& p_env, Redirector& cont)
 {
-	observer_ptr<const IParent> p_next(&p_env->Parent.GetObject<IParent>());
+	observer_ptr<const IParent> p_next(&p_env->Parent.GetObject());
 
 	do
 	{
