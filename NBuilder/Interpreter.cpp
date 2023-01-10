@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3850
+\version r3852
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-01-10 06:35 +0800
+	2023-01-11 07:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -413,8 +413,8 @@ const size_t max_fast_block_size(1U << max_fast_block_shift);
 
 } // unnamed namespace;
 
-shared_pool_resource::shared_pool_resource(
-	const pool_options& opts, memory_resource* p_up) ynothrow
+shared_pool_resource::shared_pool_resource(const pool_options& opts,
+	memory_resource* p_up)
 	: saved_options(opts), oversized((yconstraint(p_up), *p_up)), pools(p_up)
 {
 	adjust_pool_options(saved_options);

@@ -1,5 +1,5 @@
 ﻿/*
-	© 2013-2022 FrankHB.
+	© 2013-2023 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r418
+\version r426
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2022-09-24 18:55 +0800
+	2023-01-11 07:52 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -95,12 +95,16 @@ public:
 	\sa adjust_pool_options
 	*/
 	//@{
-	shared_pool_resource() ynothrow
+	//! \since YSLib build 964
+	shared_pool_resource()
 		: shared_pool_resource(pool_options(), get_default_resource())
 	{}
-	//! \pre 断言：指针参数非空。
+	/*!
+	\pre 断言：指针参数非空。
+	\since YSLib build 964
+	*/
 	YB_NONNULL(3)
-	shared_pool_resource(const pool_options&, memory_resource*) ynothrow;
+	shared_pool_resource(const pool_options&, memory_resource*);
 	//! \pre 间接断言：指针参数非空。
 	explicit
 	shared_pool_resource(memory_resource* upstream)
