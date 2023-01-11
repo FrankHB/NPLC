@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3852
+\version r3853
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-01-11 07:53 +0800
+	2023-01-11 08:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -631,7 +631,7 @@ struct test_memory_resource : public memory_resource,
 	private ystdex::noncopyable, private ystdex::nonmovable
 {
 	lref<memory_resource> underlying;
-	unordered_map<void*, pair<size_t, size_t>> ump{};
+	YSLib::unordered_map<void*, pair<size_t, size_t>> ump{};
 
 	test_memory_resource()
 		: underlying(GetDefaultResourceRef())
