@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3853
+\version r3855
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-01-11 08:03 +0800
+	2023-01-16 18:53 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -1177,8 +1177,8 @@ Interpreter::SaveGround()
 {
 	if(!p_ground)
 	{
-		p_ground = NPL::SwitchToFreshEnvironment(Main,
-			NPL::ToParent<SingleWeakParent>(Main.WeakenRecord()));
+		p_ground = NPL::SwitchToFreshEnvironment(Main, NPL::ToParent<
+			SingleWeakParent>(Global.Allocator, Main.WeakenRecord()));
 		return true;
 	}
 	return {};
