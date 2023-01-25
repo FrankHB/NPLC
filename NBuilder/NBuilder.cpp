@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8948
+\version r8976
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-01-25 21:59 +0800
+	2023-01-25 22:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -259,6 +259,7 @@ struct MarkGuard
 const char* init_file = NBuilder_Default_Init_File;
 
 //! \since YSLib build 885
+// XXX: 'YB_FLATTEN' is a bit efficient, but slow (more than 3x) in compilation.
 void
 LoadFunctions(Interpreter& intp)
 {
@@ -732,32 +733,41 @@ PrintHelpMessage(const string& prog)
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
 	NPLC_PLATFORM);
 
+//! \since YSLib build 965
+template<typename _fCallable, typename... _tParams>
+inline void
+Launch(default_allocator<yimpl(byte)> a, _fCallable&& f, _tParams&&... args)
+{
+	Interpreter intp{};
+
+	NPL::GuardExceptionsForAllocator(a, yforward(f), intp, yforward(args)...);
+}
+
 //! \since YSLib build 962
 void
 RunEvalStrings(Interpreter& intp, vector<string>& eval_strs)
 {
 	intp.UpdateTextColor(TitleColor);
 	LoadFunctions(intp);
-	// NOTE: Different strings are evaluated separatly in order.
-	//	This is simlilar to klisp.
+	// NOTE: Different strings are evaluated separatly in order. This is
+	//	simlilar to klisp.
 	for(const auto& str : eval_strs)
 		intp.RunLine(str);
 }
 
-//! \since YSLib build 962
+//! \since YSLib build 965
 void
-RunInteractive()
+RunInteractive(Interpreter& intp)
 {
 	using namespace std;
-	Interpreter intp{};
 
 	intp.UpdateTextColor(TitleColor, true);
 	clog << title << endl << "Initializing...";
 	{
 		using namespace chrono;
 		const auto d(ytest::timing::once(
-			YSLib::Timers::HighResolutionClock::now,
-			LoadFunctions, std::ref(intp)));
+			YSLib::Timers::HighResolutionClock::now, LoadFunctions,
+			std::ref(intp)));
 
 		clog << "NPLC initialization finished in " << d.count() / 1e9
 			<< " second(s)." << endl;
@@ -787,6 +797,7 @@ main(int argc, char* argv[])
 	//	disturb prompt color setting.
 	ystdex::setnbuf(stdout);
 	return FilterExceptions([&]{
+		static pmr::new_delete_resource_t r;
 		// NOTE: Allocators are specified in the interpreter instance, not here.
 		//	This also makes it easier to prevent the invalid resource used as it
 		//	in %Tools.SHBuild.Main in YSLib.
@@ -848,27 +859,22 @@ main(int argc, char* argv[])
 				const auto p_cmd_args(YSLib::LockCommandArguments());
 
 				p_cmd_args->Arguments = std::move(args);
-
-				Interpreter intp{};
-
-				RunEvalStrings(intp, eval_strs);
-				// NOTE: The special name '-' is handled here. This conforms to
-				//	POSIX.1-2017 utility convention, Guideline 13.
-				intp.RunScript(std::move(src));
+				Launch(&r, [&](Interpreter& intp){
+					RunEvalStrings(intp, eval_strs);
+					// NOTE: The special name '-' is handled here. This conforms
+					//	to POSIX.1-2017 utility convention, Guideline 13.
+					intp.RunScript(std::move(src));
+				});
 			}
 			else if(!eval_strs.empty())
-			{
-				Interpreter intp{};
-
-				RunEvalStrings(intp, eval_strs);
-			}
+				Launch(&r, RunEvalStrings, eval_strs);
 			else
-				RunInteractive();
+				Launch(&r, RunInteractive);
 		}
 		else if(xargc == 1)
 		{
 			Deref(LockCommandArguments()).Reset(argc, argv);
-			RunInteractive();
+			Launch(&r, RunInteractive);
 		}
 	}, yfsig, Alert, TraceForOutermost) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
