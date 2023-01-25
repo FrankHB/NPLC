@@ -1,5 +1,5 @@
 ﻿/*
-	© 2011-2022 FrankHB.
+	© 2011-2023 FrankHB.
 
 	This file is part of the YSLib project, and may only be used,
 	modified, and distributed under the terms of the YSLib project
@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8923
+\version r8948
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2022-12-25 18:57 +0800
+	2023-01-25 21:59 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -25,20 +25,21 @@
 */
 
 
-#include "NBuilder.h" // for NPL::EmplaceLeaf, NPL::A1::LiteralHandler,
-//	std::ios_base, std::istream, trivial_swap, ContextState, A1::MoveKeptGuard,
-//	istringstream, FilterExceptions, EXIT_FAILURE, EXIT_SUCCESS;
+#include "NBuilder.h" // for NPL, A1, NPL::EmplaceLeaf, NPL::A1::LiteralHandler,
+//	default_allocator, std::ios_base, std::istream, trivial_swap, ContextState,
+//	A1::MoveKeptGuard, istringstream, FilterExceptions, EXIT_FAILURE,
+//	EXIT_SUCCESS;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <iostream> // for std::clog, std::cout, std::endl;
 #include <string> // for getline;
-#include YFM_YSLib_Core_YObject // for PolymorphicAllocatorHolder,
-//	YSLib::default_allocator, PolymorphicValueHolder, type_index, to_string,
-//	make_string_view, YSLib::to_std_string, std::stoi;
+#include YFM_YSLib_Core_YObject // for YSLib::PolymorphicAllocatorHolder,
+//	YSLib::PolymorphicValueHolder, type_index, to_string, make_string_view,
+//	YSLib::to_std_string, std::stoi;
 #include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
-#include YFM_YSLib_Core_YApplication // for YSLib, Application;
-#include YFM_NPL_NPLA1Forms // for NPL::A1::Forms;
+#include YFM_NPL_NPLA1Forms // for Forms;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
+#include YFM_YCLib_Host // for platform_ex::Terminal;
 #include YFM_NPL_Dependency // for EnvironmentGuard, A1::RelayToLoadExternal;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
 //	std::chrono::duration_cast;
@@ -71,13 +72,6 @@ RegisterLiteralSignal(BindingMap& m, const string& name, SSignal sig)
 	});
 }
 
-} // namespace NBuilder;
-
-//! \since YSLib build 957
-using namespace NBuilder;
-using namespace A1;
-using namespace platform_ex;
-
 namespace
 {
 
@@ -86,11 +80,11 @@ namespace
 #if true
 // XXX: This might or might not be a bit efficient.
 template<class _tStream>
-using GPortHolder = PolymorphicAllocatorHolder<std::ios_base, _tStream,
-	YSLib::default_allocator<yimpl(byte)>>;
+using GPortHolder = YSLib::PolymorphicAllocatorHolder<std::ios_base, _tStream,
+	default_allocator<yimpl(byte)>>;
 #else
 template<class _tStream>
-using GPortHolder = PolymorphicValueHolder<std::ios_base, _tStream>;
+using GPortHolder = YSLib::PolymorphicValueHolder<std::ios_base, _tStream>;
 #endif
 
 void
@@ -196,7 +190,7 @@ template<typename _tNode, typename _fCallable>
 ReductionStatus
 ListCopyOrMove(TermNode& term, _fCallable f)
 {
-	Forms::CallUnary([&](_tNode& node){
+	A1::Forms::CallUnary([&](_tNode& node){
 		auto con(node.CreateWith(f));
 
 		ystdex::swap_dependent(term.GetContainerRef(), con);
@@ -209,7 +203,7 @@ template<typename _tNode, typename _fCallable>
 ReductionStatus
 TermCopyOrMove(TermNode& term, _fCallable f)
 {
-	Forms::CallUnary([&](_tNode& node){
+	A1::Forms::CallUnary([&](_tNode& node){
 		SetContentWith(term, node, f);
 	}, term);
 	return ReductionStatus::Retained;
@@ -269,6 +263,7 @@ void
 LoadFunctions(Interpreter& intp)
 {
 	using namespace std::placeholders;
+	using namespace A1;
 	using namespace Forms;
 	using NPL::Environment;
 	auto& global(intp.Global);
@@ -290,7 +285,7 @@ LoadFunctions(Interpreter& intp)
 			ValueObject(function<void(const string&, const string&)>(
 			[&](const string& n, const string& val){
 				auto& os(global.GetOutputStreamRef());
-				Terminal te;
+				platform_ex::Terminal te;
 
 				{
 					const auto t_gd(te.LockForeColor(DarkCyan));
@@ -726,7 +721,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.5 b962"
+#define NPLC_VER "V1.5+ b964+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
@@ -775,11 +770,15 @@ RunInteractive()
 
 } // unnamed namespace;
 
+} // namespace NBuilder;
+
 
 //! \since YSLib build 304
 int
 main(int argc, char* argv[])
 {
+	using namespace NBuilder;
+
 	// XXX: Windows 10 rs2_prerelease may have some bugs for MBCS console
 	//	output. String from 'std::putc' or iostream with stdio buffer (unless
 	//	set with '_IONBF') seems to use wrong width of characters, resulting
