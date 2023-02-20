@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3855
+\version r3877
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-01-16 18:53 +0800
+	2023-02-21 02:27 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -27,11 +27,11 @@
 
 #include "Interpreter.h" // for IsAtom, bad_any_cast, IsPair, type_id,
 //	type_info, QueryTypeName, IsTyped, YSLib::sfmt, ValueObject,
-//	YSLib::ostringstream, YAssertNonnull, LookupName, IsCombiningTerm, IsLeaf,
-//	A1::QuerySourceInformation, IsList, RemoveHead, IsEmpty, AccessFirstSubterm,
-//	trivial_swap, IsSingleElementList, LiftOtherValue, namespace YSLib,
-//	TraceException, A1::TraceBacktrace, NPL::ToParent, SingleWeakParent,
-//	YSLib::IO::StreamGet;
+//	YSLib::ostringstream, YSLib::linked_map, YAssertNonnull, LookupName,
+//	IsCombiningTerm, IsLeaf, A1::QuerySourceInformation, IsList, RemoveHead,
+//	IsEmpty, AccessFirstSubterm, trivial_swap, IsSingleElementList,
+//	LiftOtherValue, namespace YSLib, TraceException, A1::TraceBacktrace,
+//	NPL::ToParent, SingleWeakParent, YSLib::IO::StreamGet;
 #include <ystdex/functional.hpp> // for ystdex::bind1, std::bind, std::ref,
 //	std::placeholders::_1;
 #include <Helper/YModules.h>
@@ -80,7 +80,7 @@ namespace
 {
 
 //! \since YSLib build 948
-//@{
+//!@{
 template<typename _func>
 void
 PrintTermNodeCore(std::ostream& os, const TermNode& term, _func f,
@@ -165,10 +165,10 @@ PrintTermNode(std::ostream& os, const TermNode& term, _func f, bool pfx = {},
 		CatchIgnore(bad_any_cast&)
 	}, depth, idx);
 }
-//@}
+//!@}
 
 //! \since YSLib build 889
-//@{
+//!@{
 YB_ATTR_nodiscard YB_ATTR_returns_nonnull YB_PURE const char*
 DecodeTypeName(const type_info& ti)
 {
@@ -232,7 +232,7 @@ StringifyContextHandler(const _tHandler& h)
 		return "wrapped " + StringifyContextHandler(p->Handler);
 	return string("ContextHandler: ") + DecodeTypeName(h.target_type());
 }
-//@}
+//!@}
 
 //! \since YSLib build 929
 YB_ATTR_nodiscard YB_PURE string
@@ -256,7 +256,7 @@ StringifyValueObjectDefault(const ValueObject& vo)
 }
 
 //! \since YSLib build 932
-//@{
+//!@{
 // NOTE: The precisions of the format for flonums are as Racket BC. See
 //	https://github.com/racket/racket/blob/d10b9e083ce3c2068f960ce924af88f34111db26/racket/src/bc/src/numstr.c#L1846-L1873.
 
@@ -345,7 +345,7 @@ StringifyValueObjectEscape(const ValueObject& vo,
 		return EscapeLiteral(*p);
 	return fallback(vo);
 }
-//@}
+//!@}
 
 //! \since YSLib build 852
 YB_ATTR_nodiscard YB_PURE string
@@ -389,7 +389,7 @@ struct NodeValueLogger
 
 
 //! \since YSLib build 867
-//@{
+//!@{
 using ystdex::ceiling_lb;
 yconstexpr const auto min_block_size(resource_pool::adjust_for_block(1, 1));
 // XXX: This is tuned for %ystdex::resource_pool::allocate.
@@ -409,7 +409,7 @@ const auto min_lb_size(ceiling_lb(min_block_size));
 const size_t max_fast_block_shift(min_lb_size + init_pool_num - 1);
 const size_t max_fast_block_size(1U << max_fast_block_shift);
 #endif
-//@}
+//!@}
 
 } // unnamed namespace;
 
@@ -564,7 +564,7 @@ namespace
 using namespace pmr;
 
 //! \since YSLib build 884
-//@{
+//!@{
 #if NPLC_Impl_mimalloc
 class default_memory_resource : public memory_resource
 {
@@ -611,7 +611,7 @@ public:
 	}
 };
 #endif
-//@}
+//!@}
 
 //! \since YSLib build 881
 YB_ATTR_nodiscard memory_resource&
@@ -631,7 +631,7 @@ struct test_memory_resource : public memory_resource,
 	private ystdex::noncopyable, private ystdex::nonmovable
 {
 	lref<memory_resource> underlying;
-	YSLib::unordered_map<void*, pair<size_t, size_t>> ump{};
+	YSLib::linked_map<void*, pair<size_t, size_t>> ump{};
 
 	test_memory_resource()
 		: underlying(GetDefaultResourceRef())
@@ -731,7 +731,7 @@ using Redirector = Environment::Redirector;
 
 // XXX: This is essentially same to %ContextNode::DefaultResolve.
 //! \since YSLib build 962
-//@{
+//!@{
 //! \since YSLib build 963
 YB_ATTR_nodiscard bool
 ResolveRedirect(shared_ptr<Environment>& p_env, Redirector& cont)
@@ -774,7 +774,7 @@ ResolveDefault(shared_ptr<Environment>& p_env, string_view id)
 		return LookupName(p_env->GetMapUncheckedRef(), id);
 	});
 }
-//@}
+//!@}
 
 // XXX: There are several fast asynchrnous reduction assumptions from NPLA1.
 //	1. For the leaf values other than value tokens, the next term is not relied
@@ -786,7 +786,7 @@ ResolveDefault(shared_ptr<Environment>& p_env, string_view id)
 //	4. The 1st subterm of the combining term is not relied on in the context
 //		handler calls.
 //! \since YSLib build 945
-//@{
+//!@{
 YB_FLATTEN void
 EvaluateFastNonListCore(TermNode& term, const shared_ptr<Environment>& p_env,
 	TermNode& bound, ResolvedTermReferencePtr p_ref)
@@ -873,10 +873,10 @@ ReduceFastSimple(TermNode& term, ContextState& cs, _fReducePair reduce_pair)
 		return ReductionStatus::Retained;
 	}, reduce_pair);
 }
-//@}
+//!@}
 
 //! \since YSLib build 883
-//@{
+//!@{
 ReductionStatus
 ReduceFastBranch(TermNode&, ContextState&);
 
@@ -945,7 +945,7 @@ ReduceFastBranch(TermNode& term, ContextState& cs)
 	}
 	return ReduceFastBranchNotNested(term, cs);
 }
-//@}
+//!@}
 #endif
 
 //! \since YSLib build 955
