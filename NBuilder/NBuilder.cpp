@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8976
+\version r8992
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-01-25 22:20 +0800
+	2023-03-06 07:31 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -51,7 +51,7 @@ namespace NBuilder
 {
 
 //! \since YSLib build 878
-//@{
+//!@{
 #ifdef NDEBUG
 #	define NPLC_Impl_DebugAction false
 #	define NPLC_Impl_TestTemporaryOrder false
@@ -59,7 +59,7 @@ namespace NBuilder
 #	define NPLC_Impl_DebugAction true
 #	define NPLC_Impl_TestTemporaryOrder true
 #endif
-//@}
+//!@}
 
 void
 RegisterLiteralSignal(BindingMap& m, const string& name, SSignal sig)
@@ -76,7 +76,7 @@ namespace
 {
 
 //! \since YSLib build 954
-//@{
+//!@{
 #if true
 // XXX: This might or might not be a bit efficient.
 template<class _tStream>
@@ -115,7 +115,7 @@ ParseStream(std::ios_base& sbase)
 		is.seekg(0);
 	}
 }
-//@}
+//!@}
 
 
 //! \since YSLib build 955
@@ -123,7 +123,7 @@ observer_ptr<const GlobalState> p_global;
 
 #if NPLC_Impl_DebugAction
 //! \since YSLib build 785
-//@{
+//!@{
 bool use_debug = {};
 
 //! \since YSLib build 955
@@ -181,7 +181,7 @@ DefaultLeafDebugAction(TermNode& term, ContextNode& ctx)
 	}
 	return ReductionStatus::Partial;
 }
-//@}
+//!@}
 #endif
 
 
@@ -613,7 +613,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 //! \since YSLib build 926
-//@{
+//!@{
 template<class _tString>
 auto
 Quote(_tString&& str) -> decltype(ystdex::quote(yforward(str), '\''))
@@ -718,11 +718,11 @@ PrintHelpMessage(const string& prog)
 	ystdex::write_literal(os,
 		"The exit status is 0 on success and 1 otherwise.\n");
 }
-//@}
+//!@}
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.5+ b964+"
+#define NPLC_VER "V1.5+ b968+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
@@ -789,13 +789,6 @@ main(int argc, char* argv[])
 {
 	using namespace NBuilder;
 
-	// XXX: Windows 10 rs2_prerelease may have some bugs for MBCS console
-	//	output. String from 'std::putc' or iostream with stdio buffer (unless
-	//	set with '_IONBF') seems to use wrong width of characters, resulting
-	//	mojibake. This is one of the possible workaround. Note that
-	//	'ios_base::sync_with_stdio({})' would also fix this problem but it would
-	//	disturb prompt color setting.
-	ystdex::setnbuf(stdout);
 	return FilterExceptions([&]{
 		static pmr::new_delete_resource_t r;
 		// NOTE: Allocators are specified in the interpreter instance, not here.
