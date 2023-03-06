@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8992
+\version r8997
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-03-06 07:31 +0800
+	2023-03-07 06:50 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -30,8 +30,10 @@
 //	A1::MoveKeptGuard, istringstream, FilterExceptions, EXIT_FAILURE,
 //	EXIT_SUCCESS;
 #include <ystdex/base.h> // for ystdex::noncopyable;
-#include <iostream> // for std::clog, std::cout, std::endl;
-#include <string> // for getline;
+#include <ystdex/string.hpp> // for getline, ystdex::write_literal,
+//	ystdex::sfmt;
+#include <iostream> // for std::clog, std::cout, std::endl,
+//	std::ios_base::unitbuf;
 #include YFM_YSLib_Core_YObject // for YSLib::PolymorphicAllocatorHolder,
 //	YSLib::PolymorphicValueHolder, type_index, to_string, make_string_view,
 //	YSLib::to_std_string, std::stoi;
@@ -665,6 +667,7 @@ PrintHelpMessage(const string& prog)
 	using ystdex::sfmt;
 	auto& os(std::cout);
 
+	os.setf(std::ios_base::unitbuf);
 	StreamPut(os, sfmt("Usage: \"%s\" [OPTIONS ...] SRCPATH"
 		" [OPTIONS ... [-- [ARGS...]]]\n"
 		"  or:  \"%s\" [OPTIONS ... [-- [[SRCPATH] ARGS...]]]\n"
