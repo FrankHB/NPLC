@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r8997
+\version r9009
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-03-07 06:50 +0800
+	2023-03-07 07:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -626,27 +626,30 @@ Quote(_tString&& str) -> decltype(ystdex::quote(yforward(str), '\''))
 
 const struct Option
 {
-	const char *prefix, *option_arg;
+	//! \since YSLib build 969
+	std::vector<const char*> prefixes;
+	const char* option_arg;
 	// XXX: Similar to %Tools.SHBuild.Main in YSLib.
 	std::vector<const char*> option_details;
 
-	Option(const char* pfx, const char* opt_arg,
+	//! \since YSLib build 969
+	Option(std::initializer_list<const char*> il_pfx, const char* opt_arg,
 		std::initializer_list<const char*> il)
-		: prefix(pfx), option_arg(opt_arg), option_details(il)
+		: prefixes(il_pfx), option_arg(opt_arg), option_details(il)
 	{}
 } OptionsTable[]{
 	// NOTE: Alphabatical as %Tools.SHBuild.Main in YSLib.
-	{"-h, --help", "", {"Print this message and exit, without entering"
+	{{"-h", "--help"}, "", {"Print this message and exit, without entering"
 		" execution modes."}},
-	{"-e", " [STRING]", {"Evaluate a string if the following argument exists."
+	{{"-e"}, " [STRING]", {"Evaluate a string if the following argument exists."
 		" This option can occur more than once and combined with SRCPATH.\n"
 		"\tAny instance of this option implies the interpreter running in"
 		" scripting mode.\n"
 		"\tEach instance of this option (with its optional argument) will be"
 		" evaluated in order before evaluate the script specified by SRCPATH"
 		" (if any)."}},
-	{"-q, --no-init-file", "", {"Disable loading the init file. Otherwise, a"
-		" file named \"" NBuilder_Default_Init_File "\" is loaded at the end"
+	{{"-q", "--no-init-file"}, "", {"Disable loading the init file. Otherwise,"
+		" a file named \"" NBuilder_Default_Init_File "\" is loaded at the end"
 		" of the initialization and before further evaluations. Currently this"
 		" is effective for both execution modes."}}
 };
@@ -712,8 +715,8 @@ PrintHelpMessage(const string& prog)
 		"The recognized options are:\n\n");
 	for(const auto& opt : OptionsTable)
 	{
-		StreamPut(os,
-			sfmt("  %s%s\n", opt.prefix, opt.option_arg).c_str());
+		for(const auto& pfx : opt.prefixes)
+			StreamPut(os, sfmt("  %s%s\n", pfx, opt.option_arg).c_str());
 		for(const auto& des : opt.option_details)
 			StreamPut(os, sfmt("\t%s\n", des).c_str());
 		os << '\n';
