@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9074
+\version r9091
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-03-07 18:46 +0800
+	2023-03-07 19:24 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -654,6 +654,17 @@ const struct Option
 		" is effective for both execution modes."}}
 };
 
+//! \since YSLib build 969
+const array<const char*, 2> SysEnvs[]{
+	{{"NO_COLOR", "When set nonempty, disable colors and underlines in the"
+		" output even in the interactive environments."}},
+	{{"YF_DEBUG_OUTPUT", "[Windows only] When set to \"1\", enable the log"
+		" output for the debugger."}},
+	{{"YF_Use_tput", "[Non-Windows only] When set nonempty, use \"tput\""
+		" command instead of built-in escape sequence to display colors and"
+		" underlines in the terminal output."}}
+};
+
 const array<const char*, 3> DeEnvs[]{
 	// NOTE: The NPLA1 environment variables are from %NPL implemenations.
 	{{"NPLA1_PATH", "", "NPLA1 loader path template string."}},
@@ -712,6 +723,13 @@ PrintHelpMessage(const string& prog)
 	print_header("Environment:");
 	ystdex::write_literal(os,
 		"\n\n\tCurrently accepted environment variable are:\n\n");
+	for(const auto& env : SysEnvs)
+	{
+		print_entry(env[0]);
+		ystdex::write_literal(os, "\n\t");
+		StreamPut(os, env[1]);
+		ystdex::write_literal(os, "\n\n");
+	}
 	for(const auto& env : DeEnvs)
 	{
 		print_entry(env[0]);
