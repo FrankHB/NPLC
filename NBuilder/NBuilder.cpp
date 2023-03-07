@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9009
+\version r9074
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-03-07 07:45 +0800
+	2023-03-07 18:46 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -669,11 +669,36 @@ PrintHelpMessage(const string& prog)
 	using IO::StreamPut;
 	using ystdex::sfmt;
 	auto& os(std::cout);
+	platform_ex::Terminal te(stdout);
+	// TODO: Blocked. Use C++14 generic lambda expressions.
+	const auto print_highlight(
+		[&] YB_LAMBDA_ANNOTATE((const char* s), , nonnull(2)){
+		const auto t_gd(te.LockForeColor(White));
+
+		// XXX: For simple cases this can be %ystdex::write_literal.
+		//	However it relies on the generic lambda.
+		StreamPut(os, s);
+	});
+	const auto print_header(
+		[&] YB_LAMBDA_ANNOTATE((const char* s), , nonnull(2)){
+		const auto t_gd(te.LockUnderline());
+
+		print_highlight(s);
+	});
+	const auto print_entry(
+		[&] YB_LAMBDA_ANNOTATE((const char* s), , nonnull(2)){
+		ystdex::write_literal(os, "  ");
+		print_highlight(s);
+	});
 
 	os.setf(std::ios_base::unitbuf);
-	StreamPut(os, sfmt("Usage: \"%s\" [OPTIONS ...] SRCPATH"
-		" [OPTIONS ... [-- [ARGS...]]]\n"
-		"  or:  \"%s\" [OPTIONS ... [-- [[SRCPATH] ARGS...]]]\n"
+	print_header("Usage:");
+	ystdex::write_literal(os, " \"");
+	print_highlight(prog.c_str());
+	ystdex::write_literal(os,
+		"\" [OPTIONS ...] SRCPATH [OPTIONS ... [-- [ARGS...]]]\n  or:  \"");
+	print_highlight(prog.c_str());
+	ystdex::write_literal(os, "\" [OPTIONS ... [-- [[SRCPATH] ARGS...]]]\n\n"
 		"\tThis program is an interpreter of NPLA1.\n"
 		"\tThere are two execution modes, scripting mode and interactive mode,"
 		" exclusively. In both modes, the interpreter is initialized before"
@@ -683,16 +708,22 @@ PrintHelpMessage(const string& prog)
 		" (read-eval-print loop) is entered, see below for details.\n"
 		"\tThere are no checks on the encoding of the input code.\n"
 		"\tThere are no checks on the values. Any behaviors depending"
-		" on the locale-specific values are unspecified.\n"
-		"\tCurrently accepted environment variable are:\n\n",
-		prog.c_str(), prog.c_str()).c_str());
-	for(const auto& env : DeEnvs)
-		StreamPut(os, sfmt("  %s\n\t%s Default value is %s.\n\n", env[0],
-			env[2], env[1][0] == '\0' ? "empty"
-			: Quote(string(env[1])).c_str()).c_str());
+		" on the locale-specific values are unspecified.\n\n");
+	print_header("Environment:");
 	ystdex::write_literal(os,
-		"SRCPATH\n"
-		"\tThe source path. It is handled if and only if this program runs in"
+		"\n\n\tCurrently accepted environment variable are:\n\n");
+	for(const auto& env : DeEnvs)
+	{
+		print_entry(env[0]);
+		StreamPut(os, sfmt("\n\t%s Default value is %s.\n\n", env[2],
+			env[1][0] == '\0' ? "empty"
+			: Quote(string(env[1])).c_str()).c_str());
+	}
+	print_header("Arguments:");
+	os << '\n' << '\n';
+	print_entry("SRCPATH");
+	ystdex::write_literal(os,
+		"\n\tThe source path. It is handled if and only if this program runs in"
 		" scripting mode. In this case, SRCPATH is the 1st command line"
 		" argument not recognized as an option (see below). Otherwise, the"
 		" command line argument is treated as an option.\n"
@@ -701,9 +732,12 @@ PrintHelpMessage(const string& prog)
 		"\tThe source specified by SRCPATH shall have NPLA1 source tokens"
 		" encoded in a text stream with optional UTF-8 BOM (byte-order mark),"
 		" which are to be read and evaluated in the initial environment of the"
-		" interpreter. Otherwise, errors are raise to reject the source.\n\n"
-		"OPTIONS ...\nOPTIONS ... -- [[SRCPATH] ARGS ...]\n"
-		"\tThe options and arguments for the program execution. After '--',"
+		" interpreter. Otherwise, errors are raise to reject the source.\n\n");
+		print_entry("OPTIONS ...");
+		os << '\n';
+		print_entry("OPTIONS ... -- [[SRCPATH] ARGS ...]");
+	ystdex::write_literal(os,
+		"\n\tThe options and arguments for the program execution. After '--',"
 		" options parsing is turned off and every remained command line"
 		" argument (if any) is interpreted as an argument, except that the"
 		" 1st command line argument is treated as SRCPATH (implying scripting"
@@ -711,18 +745,28 @@ PrintHelpMessage(const string& prog)
 		"\tRecognized options are handled in this program, and the remained"
 		" arguments will be passed to the NPLA1 user program (in the script or"
 		" in the interactive environment) which can access the arguments via"
-		" appropriate API.\n\t"
-		"The recognized options are:\n\n");
+		" appropriate API.\n\n");
+	print_header("Options:");
+	ystdex::write_literal(os, "\n\n\tThe recognized options are:\n\n");
 	for(const auto& opt : OptionsTable)
 	{
 		for(const auto& pfx : opt.prefixes)
-			StreamPut(os, sfmt("  %s%s\n", pfx, opt.option_arg).c_str());
+		{
+			print_entry(pfx);
+			StreamPut(os, opt.option_arg);
+			os << '\n';
+		}
 		for(const auto& des : opt.option_details)
-			StreamPut(os, sfmt("\t%s\n", des).c_str());
+		{
+			os << '\t';
+			StreamPut(os, des);
+			os << '\n';
+		}
 		os << '\n';
 	}
+	print_header("Exit status:");
 	ystdex::write_literal(os,
-		"The exit status is 0 on success and 1 otherwise.\n");
+		"\n\n\tThe exit status is 0 on success and 1 otherwise.\n");
 }
 //!@}
 
