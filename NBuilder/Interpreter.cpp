@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3877
+\version r3907
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-02-21 02:27 +0800
+	2023-03-12 13:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -1058,7 +1058,7 @@ Interpreter::HandleREPLException(std::exception_ptr p_exc, ContextNode& ctx)
 	catch(std::exception& e)
 	{
 		using namespace YSLib;
-		const auto gd(ystdex::make_guard([&]() ynothrowv{
+		const auto gd(ystdex::make_guard([this]() ynothrowv{
 			Backtrace.clear();
 		}));
 		auto& trace(ctx.Trace);
@@ -1119,30 +1119,6 @@ Interpreter::Run()
 		std::bind(&Interpreter::RunLoop, this, std::placeholders::_1));
 }
 
-YB_FLATTEN void
-Interpreter::RunScript(string filename)
-{
-	if(filename == "-")
-	{
-		Main.ShareCurrentSource("*STDIN*");
-		RewriteBy(Main, [&](ContextNode& ctx){
-			PrepareExecution(ctx);
-			Term = Global.ReadFrom(std::cin, Main);
-			return ExecuteOnce(ctx);
-		});
-	}
-	else if(!filename.empty())
-	{
-		Main.ShareCurrentSource(filename);
-		RewriteBy(Main, [&](ContextNode& ctx){
-			PrepareExecution(ctx);
-			// NOTE: As %A1::ReduceToLoadExternal.
-			Term = Global.Load(Main, std::move(filename));
-			return ExecuteOnce(ctx);
-		});
-	}
-}
-
 void
 Interpreter::RunLine(string_view unit)
 {
@@ -1170,6 +1146,30 @@ Interpreter::RunLoop(ContextNode& ctx)
 	}
 	return ReductionStatus::Retained;
 	// TODO: Add root continuation?
+}
+
+YB_FLATTEN void
+Interpreter::RunScript(string filename)
+{
+	if(filename == "-")
+	{
+		Main.ShareCurrentSource("*STDIN*");
+		RewriteBy(Main, [&](ContextNode& ctx){
+			PrepareExecution(ctx);
+			Term = Global.ReadFrom(std::cin, Main);
+			return ExecuteOnce(ctx);
+		});
+	}
+	else if(!filename.empty())
+	{
+		Main.ShareCurrentSource(filename);
+		RewriteBy(Main, [&](ContextNode& ctx){
+			PrepareExecution(ctx);
+			// NOTE: As %A1::ReduceToLoadExternal.
+			Term = Global.Load(Main, std::move(filename));
+			return ExecuteOnce(ctx);
+		});
+	}
 }
 
 bool

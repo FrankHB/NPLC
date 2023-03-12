@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r426
+\version r442
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-01-11 07:52 +0800
+	2023-03-12 13:08 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,10 +29,13 @@
 #define INC_NPL_Interpreter_h_
 
 #include <Helper/YModules.h>
-#include "NPLContext.h"
-#include YFM_YSLib_Core_YConsole
-#include YFM_Helper_Environment
-#include <iosfwd>
+#include "NPLContext.h" // for NBuilder, YSLib::Logger;
+#include YFM_YSLib_Core_YConsole // for YSLib::Consoles, Color, color names,
+//	std::vector, string, size_t, shared_ptr, std::exception_ptr, string_view;
+#include YFM_NPL_NPLA1 // for A1::GlobalState, A1::ContextState;
+#include <ystdex/memory_resource.h> // for ystdex::pmr;
+#include YFM_YCLib_Host // for platform_ex::Terminal;
+#include <iosfwd> // for std::istream, std::ostream;
 #include <functional>
 
 //! \since YSLib build 957
@@ -60,7 +63,7 @@ enum class SSignal
 
 
 //! \since YSLib build 867
-//@{
+//!@{
 using namespace ystdex::pmr;
 
 /*!
@@ -94,7 +97,7 @@ public:
 	\note 实现定义：参见 adjust_pool_options 的调整的值。
 	\sa adjust_pool_options
 	*/
-	//@{
+	//!@{
 	//! \since YSLib build 964
 	shared_pool_resource()
 		: shared_pool_resource(pool_options(), get_default_resource())
@@ -114,7 +117,7 @@ public:
 	shared_pool_resource(const pool_options& opts)
 		: shared_pool_resource(opts, get_default_resource())
 	{}
-	//@}
+	//!@}
 	~shared_pool_resource() override = default;
 
 	void
@@ -149,7 +152,7 @@ private:
 	YB_ATTR_nodiscard YB_PURE std::pair<pools_t::iterator, size_t>
 	find_pool(size_t) ynothrow;
 };
-//@}
+//!@}
 
 
 //! \since YSLib build 928
@@ -217,7 +220,7 @@ public:
 
 private:
 	//! \since YSLib build 926
-	//@{
+	//!@{
 	ReductionStatus
 	ExecuteOnce(ContextNode&);
 
@@ -226,16 +229,12 @@ private:
 
 	void
 	PrepareExecution(ContextNode&);
-	//@}
+	//!@}
 
 public:
 	//! \since YSLib build 892
 	void
 	Run();
-
-	//! \since YSLib build 926
-	void
-	RunScript(string);
 
 	//! \since YSLib build 894
 	void
@@ -247,6 +246,10 @@ private:
 	RunLoop(ContextNode&);
 
 public:
+	//! \since YSLib build 926
+	void
+	RunScript(string);
+
 	//! \since YSLib build 834
 	bool
 	SaveGround();
