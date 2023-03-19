@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3907
+\version r3970
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-03-12 13:08 +0800
+	2023-03-12 16:51 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -956,6 +956,21 @@ RewriteBy(ContextState& cs, _func f)
 	cs.Rewrite(NPL::ToReducer(cs.get_allocator(), trivial_swap, std::move(f)));
 }
 
+//! \since YSLib build 969
+template<typename _func>
+void
+SetupExceptionHandler(ContextNode& ctx, _func f)
+{
+	ctx.SaveExceptionHandler();
+	// TODO: Blocked. Use C++14 lambda initializers to simplify the
+	//	implementation.
+	ctx.HandleException = ystdex::bind1([&, f](std::exception_ptr p,
+		const ContextNode::ReducerSequence::const_iterator& i){
+		ctx.TailAction = nullptr;
+		f(std::move(p), i);
+	}, ctx.GetCurrent().cbegin());
+}
+
 } // unnamed namespace;
 
 Interpreter::Interpreter()
@@ -1039,40 +1054,6 @@ Interpreter::HandleSignal(SSignal e)
 	}
 }
 
-void
-Interpreter::HandleREPLException(std::exception_ptr p_exc, ContextNode& ctx)
-{
-	YAssertNonnull(p_exc);
-	TryExpr(std::rethrow_exception(std::move(p_exc)))
-	catch(SSignal e)
-	{
-		if(e == SSignal::Exit)
-			// XXX: Assume the current context is %Main.
-			Main.UnwindCurrent();
-		else
-		{
-			UpdateTextColor(SignalColor);
-			HandleSignal(e);
-		}
-	}
-	catch(std::exception& e)
-	{
-		using namespace YSLib;
-		const auto gd(ystdex::make_guard([this]() ynothrowv{
-			Backtrace.clear();
-		}));
-		auto& trace(ctx.Trace);
-
-		UpdateTextColor(ErrorColor, true);
-		TraceException(e, trace);
-		trace.TraceFormat(Notice, "Location: %s.", Main.CurrentSource
-			? Main.CurrentSource->c_str() : "<unknown>");
-#if NPLC_Impl_UseBacktrace
-		A1::TraceBacktrace(Backtrace, trace);
-#endif
-	}
-}
-
 ReductionStatus
 Interpreter::ExecuteOnce(ContextNode& ctx)
 {
@@ -1091,17 +1072,46 @@ Interpreter::ExecuteString(string_view unit, ContextNode& ctx)
 }
 
 void
+Interpreter::HandleWithTrace(std::exception_ptr p, ContextNode& ctx)
+{
+	YAssertNonnull(p);
+	TryExpr(std::rethrow_exception(std::move(p)))
+	catch(std::exception& e)
+	{
+		const auto gd(ystdex::make_guard([this]() ynothrowv{
+			Backtrace.clear();
+		}));
+		auto& trace(ctx.Trace);
+
+		UpdateTextColor(ErrorColor, true);
+		TraceException(e, trace);
+		trace.TraceFormat(YSLib::Notice, "Location: %s.",
+			Main.CurrentSource ? Main.CurrentSource->c_str() : "<unknown>");
+#if NPLC_Impl_UseBacktrace
+		A1::TraceBacktrace(Backtrace, trace);
+#endif
+	}
+}
+
+void
 Interpreter::PrepareExecution(ContextNode& ctx)
 {
-	ctx.SaveExceptionHandler();
-	// TODO: Blocked. Use C++14 lambda initializers to simplify the
-	//	implementation.
-	ctx.HandleException = ystdex::bind1([&](std::exception_ptr p,
+	SetupExceptionHandler(ctx, [&](std::exception_ptr p,
 		const ContextNode::ReducerSequence::const_iterator& i){
-		ctx.TailAction = nullptr;
 		ctx.Shift(Backtrace, i);
-		HandleREPLException(std::move(p), ctx);
-	}, ctx.GetCurrent().cbegin());
+		TryExpr(HandleWithTrace(std::move(p), ctx))
+		catch(SSignal e)
+		{
+			if(e == SSignal::Exit)
+				// XXX: Assume the current context is %Main.
+				Main.UnwindCurrent();
+			else
+			{
+				UpdateTextColor(SignalColor);
+				HandleSignal(e);
+			}
+		}
+	});
 	RelaySwitched(ctx, trivial_swap, A1::NameTypedReducerHandler([&]{
 	//	UpdateTextColor(InfoColor, true);
 	//	clog << "Unrecognized reduced token list:" << endl;
