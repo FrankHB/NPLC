@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3970
+\version r3977
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-03-12 16:51 +0800
+	2023-03-12 17:37 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -1072,12 +1072,15 @@ Interpreter::ExecuteString(string_view unit, ContextNode& ctx)
 }
 
 void
-Interpreter::HandleWithTrace(std::exception_ptr p, ContextNode& ctx)
+Interpreter::HandleWithTrace(std::exception_ptr p, ContextNode& ctx,
+	ContextNode::ReducerSequence::const_iterator i)
 {
 	YAssertNonnull(p);
 	TryExpr(std::rethrow_exception(std::move(p)))
 	catch(std::exception& e)
 	{
+		ctx.Shift(Backtrace, i);
+
 		const auto gd(ystdex::make_guard([this]() ynothrowv{
 			Backtrace.clear();
 		}));
@@ -1098,8 +1101,7 @@ Interpreter::PrepareExecution(ContextNode& ctx)
 {
 	SetupExceptionHandler(ctx, [&](std::exception_ptr p,
 		const ContextNode::ReducerSequence::const_iterator& i){
-		ctx.Shift(Backtrace, i);
-		TryExpr(HandleWithTrace(std::move(p), ctx))
+		TryExpr(HandleWithTrace(std::move(p), ctx, i))
 		catch(SSignal e)
 		{
 			if(e == SSignal::Exit)
@@ -1109,6 +1111,9 @@ Interpreter::PrepareExecution(ContextNode& ctx)
 			{
 				UpdateTextColor(SignalColor);
 				HandleSignal(e);
+				// NOTE: This is necessary to remove the 'repl-print'
+				//	continuation added below.
+				Main.UnwindCurrentUntil(i);
 			}
 		}
 	});

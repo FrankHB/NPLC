@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r447
+\version r449
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-03-12 16:51 +0800
+	2023-03-12 17:37 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -217,7 +217,8 @@ public:
 private:
 	//! \since YSLib build 969
 	void
-	HandleWithTrace(std::exception_ptr, ContextNode&);
+	HandleWithTrace(std::exception_ptr, ContextNode&,
+		ContextNode::ReducerSequence::const_iterator);
 
 	//! \since YSLib build 926
 	//!@{
