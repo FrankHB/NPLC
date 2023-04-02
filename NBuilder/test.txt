@@ -1450,6 +1450,15 @@ $defl! test (&i)
 	))
 	((eqv? i 18) (
 		info "std.strings";
+		subinfo "string-empty? and ++";
+		$let ()
+		(
+			$import&! std.strings string-empty? ++;
+
+			$check string-empty? "";
+			$check-not string-empty? "s";
+			$expect "765pro" ++ "765" "pro"
+		);
 		subinfo "strings and symbols";
 		$let ()
 		(
