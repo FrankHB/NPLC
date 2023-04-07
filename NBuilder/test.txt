@@ -1506,6 +1506,14 @@ $defl! test (&i)
 			$import! std.system eval-string eval-unit get-current-repl;
 			eval-string "1" (() get-current-environment);
 			eval-unit "1;"
+		);
+		subinfo "eval-string with function call;" " fixed since b970";
+		$let ()
+		(
+			$import! std.system eval-string;
+			$defw! xeval (str) d eval-string str d;
+			$def! val 42;
+			$def! f xeval "$lambda () val"
 		)
 	))
 	(#t "No case found.")
