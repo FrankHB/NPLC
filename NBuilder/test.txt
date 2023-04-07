@@ -344,6 +344,14 @@ $defl! test (&i)
 		$expect 1 eval (list 1) (() get-current-environment);
 		$expect (cons 1 2) eval (list cons 1 2) (() get-current-environment);
 		$expect (list 1 2) eval (list list 1 2) (() get-current-environment);
+		subinfo "eval with function call";
+		$let ()
+		(
+			$defw! xeval (expr) d eval expr d;
+			$def! val 42;
+			$def! f xeval (list $lambda () val);
+			$expect 42 () f
+		);
 		subinfo "freeze-environment!";
 		$let ((e0 make-environment (() get-current-environment)))
 		(
