@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3977
+\version r3981
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-03-12 17:37 +0800
+	2023-04-19 06:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -1079,10 +1079,9 @@ Interpreter::HandleWithTrace(std::exception_ptr p, ContextNode& ctx,
 	TryExpr(std::rethrow_exception(std::move(p)))
 	catch(std::exception& e)
 	{
-		ctx.Shift(Backtrace, i);
-
-		const auto gd(ystdex::make_guard([this]() ynothrowv{
-			Backtrace.clear();
+		auto& cur(ctx.GetCurrentRef());
+		const auto gd(ystdex::make_guard([&]() ynothrowv{
+			cur.UnwindUntil(i);
 		}));
 		auto& trace(ctx.Trace);
 
@@ -1091,7 +1090,7 @@ Interpreter::HandleWithTrace(std::exception_ptr p, ContextNode& ctx,
 		trace.TraceFormat(YSLib::Notice, "Location: %s.",
 			Main.CurrentSource ? Main.CurrentSource->c_str() : "<unknown>");
 #if NPLC_Impl_UseBacktrace
-		A1::TraceBacktrace(Backtrace, trace);
+		A1::TraceBacktrace(cur.cbegin(), i, trace);
 #endif
 	}
 }
