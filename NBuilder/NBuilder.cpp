@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9091
+\version r9102
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-03-07 19:24 +0800
+	2023-04-19 19:48 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -274,6 +274,16 @@ LoadFunctions(Interpreter& intp)
 	auto& renv(cs.GetRecordRef());
 	auto& m(renv.GetMapRef());
 	string init_trace_option;
+	// NOTE: No error should occur on initialization. Backtrance is enabled
+	//	early here only for debugging purpose. If the initialization has been
+	//	succeeded, there should be no difference during the further execution.
+	//	Otherwise, there is a bug in the initialization before the call to
+	//	%A1::PreloadExternal below. Since now there is no inlined code loaded
+	//	here, it should be a bug in %LoadStandardContext which may call
+	//	%A1::Perform.
+#ifndef NDEBUG
+	const auto init_gd(intp.SetupInitialExceptionHandler(cs));
+#endif
 
 	cs.Trace.FilterLevel = FetchEnvironmentVariable(init_trace_option,
 		"NBUILDER_TRACE") ? Logger::Level::Debug : Logger::Level::Informative;
@@ -790,7 +800,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.5+ b968+"
+#define NPLC_VER "V1.5+ b972+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
