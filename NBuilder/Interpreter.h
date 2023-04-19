@@ -11,13 +11,13 @@
 /*!	\file Interpreter.h
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r451
+\version r455
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-04-19 06:38 +0800
+	2023-04-19 19:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -32,7 +32,7 @@
 #include "NPLContext.h" // for NBuilder, YSLib::Logger;
 #include YFM_YSLib_Core_YConsole // for YSLib::Consoles, Color, color names,
 //	std::vector, string, size_t, shared_ptr, std::exception_ptr, string_view;
-#include YFM_NPL_NPLA1 // for A1::GlobalState, A1::ContextState;
+#include YFM_NPL_NPLA1 // for A1::GlobalState, A1::ContextState, A1::Guard;
 #include <ystdex/memory_resource.h> // for ystdex::pmr;
 #include YFM_YCLib_Host // for platform_ex::Terminal;
 #include <iosfwd> // for std::istream, std::ostream;
@@ -252,6 +252,10 @@ public:
 	//! \since YSLib build 834
 	bool
 	SaveGround();
+
+	//! \since YSLib build 972
+	A1::Guard
+	SetupInitialExceptionHandler(ContextNode&);
 
 	std::istream&
 	WaitForLine();

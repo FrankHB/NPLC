@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r3981
+\version r4001
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-04-19 06:30 +0800
+	2023-04-19 19:30 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -41,7 +41,8 @@
 #include <cstring> // for std::strcmp, std::strstr;
 #include YFM_NPL_NPLAMath // for FPToString;
 #include <cstdio> // for std::fprintf, stderr;
-#include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
+#include <ystdex/scope_guard.hpp> // for ystdex::make_unique_guard,
+//	ystdex::make_guard;
 #include <iostream> // for std::cin, std::cout;
 
 #if YCL_Linux
@@ -1069,6 +1070,26 @@ Interpreter::ExecuteString(string_view unit, ContextNode& ctx)
 	PrepareExecution(ctx);
 	Term = Global.ReadFrom(unit, Main);
 	return ExecuteOnce(ctx);
+}
+
+A1::Guard
+Interpreter::SetupInitialExceptionHandler(ContextNode& ctx)
+{
+	// NOTE: As %ContextNode::RewriteGuarded. The guard is necessary for the
+	//	successive %RewriteBy call.
+	auto unwind(ystdex::make_unique_guard(std::bind(
+		[&](const ContextNode::ReducerSequence::const_iterator& i) ynothrow{
+		ctx.TailAction = nullptr;
+		ctx.UnwindCurrentUntil(i);
+	}, ctx.GetCurrent().cbegin())));
+
+	SetupExceptionHandler(ctx, [&](std::exception_ptr p,
+		const ContextNode::ReducerSequence::const_iterator& i){
+		HandleWithTrace(std::move(p), ctx, i);
+		throw;
+	});
+	return
+		A1::Guard(std::allocator_arg, ctx.get_allocator(), std::move(unwind));
 }
 
 void
