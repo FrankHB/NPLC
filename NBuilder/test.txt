@@ -161,7 +161,7 @@ $defl! test (&i)
 		$expect (cons 1 2) apply list% (cons% 1 2);
 		$expect (list* 1 2 3) apply list% (list* 1 2 3);
 		subinfo "apply nocopy functions;" " fixed since b944";
-		apply (() make-nocopy-fn) ();
+		apply (() make-nocopy-fn) ()
 	))
 	((eqv? i 3) (
 		info "recursive function calls";
@@ -169,7 +169,7 @@ $defl! test (&i)
 		$let ()
 		(
 			$defl! fib (&n) $if (<=? n 1) 1 (+ (fib (- n 1)) (fib (- n 2)));
-			$expect 8 fib 5;
+			$expect 8 fib 5
 		);
 		subinfo "Hofstadter Female and Male sequences";
 		$let ()
@@ -562,7 +562,7 @@ $defl! test (&i)
 							(eval% (cons% $aux exprseq) d)))))
 				($vau (head second) d (wrap
 					($vau #ignore #ignore (eval% second d))) (eval head d))
-		);
+		)
 	))
 	((eqv? i 10) (
 		info "list operations";
@@ -882,7 +882,7 @@ $defl! test (&i)
 			test-lextr list-extract%;
 			subinfo "list extraction #3";
 			$defl! list-extract% (&l &extr) map1 extr (forward! l);
-			test-lextr list-extract%;
+			test-lextr list-extract%
 		);
 		subinfo "list-extract-first value";
 		$let* ((i 1) (l0 list% i 2) (li list% (as-const l0) (list 3 4)))
@@ -1251,7 +1251,7 @@ $defl! test (&i)
 		$let ((a unit))
 		(
 			$def! p $lazy a;
-			$expect (force p) force p;
+			$expect (force p) force p
 		);
 		subinfo "lifting safety";
 		$let ()
@@ -1286,7 +1286,7 @@ $defl! test (&i)
 				($def! pb box% p);
 			$expect 5 () get-count;
 			$expect 0 force (unbox pb);
-			$expect 10 () get-count;
+			$expect 10 () get-count
 		);
 		subinfo "test #2 (as RnRK)";
 		$let ()
@@ -1432,7 +1432,7 @@ $defl! test (&i)
 			$expect imin floor-quotient imin 1;
 			$expect neg-imin floor-quotient imin -1;
 			$expect imin truncate-quotient imin 1;
-			$expect neg-imin truncate-quotient imin -1;
+			$expect neg-imin truncate-quotient imin -1
 		);
 		subinfo "AABB square number search";
 		$let ()
@@ -1630,8 +1630,8 @@ $defl! test-ptc (i)
 			$def! l list () (string->symbol "f");
 			$def! c () get-current-environment;
 			$defl! f () eval l c;
-			() f;
-		);
+			() f
+		)
 	))
 	((eqv? i 3) (
 		info "PTC combiner with recursive function lvalues";
@@ -1652,7 +1652,7 @@ $defl! test-ptc (i)
 		$defv! $seq2 (x y) d eval (list $sequence x y) d;
 			$defl! f (n) $seq2 n (f (- n 1)); f 1;
 		$defv! $seq2 (x y) d eval (list $sequence x y) (lock-environment d);
-			$defl! f (n) $seq2 n (f (- n 1)); f 1;
+			$defl! f (n) $seq2 n (f (- n 1)); f 1
 	))
 	((eqv? i 4) (
 		info "PTC combiner with comsumed recursive function prvalues";
@@ -1666,7 +1666,7 @@ $defl! test-ptc (i)
 		subinfo "PTC combiner with saved recursive function prvalues",
 			"since b861r0c", "cf. $2019-06 @ YSLib %Documentation::Workflow";
 		$defl! f (n) ($lambda (x) f x) n; f 1;
-		$defl! f (n) ($vau (x) d f (eval x d)) n; f 1;
+		$defl! f (n) ($vau (x) d f (eval x d)) n; f 1
 	))
 	((eqv? i 5) (
 		info "PTC combiners with wrap/unwrap";
