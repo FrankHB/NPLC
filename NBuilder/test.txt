@@ -207,9 +207,7 @@ $defl! test (&i)
 		subinfo "equal? regular result;" " fixed native since b948";
 		$check equal? #t (equal? (list 1 2) (list 1 2));
 		subinfo "equal? + fwd?";
-		$let ((fwd? $vau% (&x) d
-			($lambda% (%v) bound-lvalue? ($resolve-identifier v))
-				(eval% x d)))
+		$let ((fwd? $lambda% (%v) bound-lvalue? ($resolve-identifier v)))
 			$expect (list% #f #f #t #t #f)
 				list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
 					(fwd? (idv fwd?));
@@ -514,16 +512,16 @@ $defl! test (&i)
 						($def! $aux $vau/e% (make-environment
 							(() get-current-environment) (() __make-stdenv))
 							(&head .&tail) d
-							($if (null? tail) (eval head d)
-								($seq2 (eval% head d)
+							($if (null? tail) (eval@ (forward! head) d)
+								($seq2 (eval@ (forward! head) d)
 									(eval% (cons% $aux tail) d))))
 						($vau/e% (make-environment (() lock-current-environment)
 							(() __make-stdenv)) &exprseq d
 							($if (null? exprseq) #inert
-								(eval% (cons% $aux exprseq) d)))
-					))
-					($vau (head second) d (wrap
-						($vau #ignore #ignore (eval second d))) (eval head d));
+								(eval% (cons% $aux exprseq) d))))
+					($vau% (&head &second) d
+						($lambda #ignore (eval@ (forward! second) d))
+							(eval@ (forward! head) d));
 				test-sequence $sequence
 			);
 			subinfo "with copy-environment";
@@ -534,17 +532,16 @@ $defl! test (&i)
 						($def! $aux $vau/e% (make-environment
 							(() get-current-environment) (() copy-environment))
 								(&head .&tail) d
-							($if (null? tail) (eval head d)
+							($if (null? tail) (eval@ (forward! head) d)
 								($seq2 (eval% head d)
 									(eval% (cons% $aux tail) d))))
 						($vau/e% (make-environment (() lock-current-environment)
 							(() copy-environment)) &exprseq d
 							($if (null? exprseq) #inert
-								(eval% (cons% $aux exprseq) d)))
-					))
-					($vau (head second) d
-						(wrap ($vau #ignore #ignore (eval% second d)))
-							(eval% head d));
+								(eval% (cons% $aux exprseq) d))))
+					($vau% (&head &second) d
+						($lambda #ignore (eval@ (forward! second) d))
+							(eval@ (forward! head) d));
 				test-sequence $sequence
 			)
 		);
@@ -554,14 +551,16 @@ $defl! test (&i)
 			$def! $sequence
 				(wrap ($vau% (&$seq2) #ignore $seq2
 					($def! $aux $vau/e% (() copy-environment)
-						(&head .&tail) d ($if (null? tail) (eval% head d)
-							($seq2 (eval% head d)
+						(&head .&tail) d
+						($if (null? tail) (eval@ (forward! head) d)
+							($seq2 (eval@ (forward! head) d)
 								(eval% (cons% $aux tail) d))))
 					($vau/e% (() copy-environment) &exprseq d
 						($if (null? exprseq) #inert
-							(eval% (cons% $aux exprseq) d)))))
-				($vau (head second) d (wrap
-					($vau #ignore #ignore (eval% second d))) (eval head d))
+							(eval% (cons% $aux exprseq) d))))
+				($vau% (&head &second) d
+					($lambda #ignore (eval@ (forward! second) d))
+						(eval@ (forward! head) d))
 		)
 	))
 	((eqv? i 10) (
@@ -957,8 +956,8 @@ $defl! test (&i)
 		$let ()
 		(
 			$defl! |> (&f &g) $lambda/e% ($bindings/p->environment
-				((() make-standard-environment)) (&f (forward f))
-				(&g (forward g))) (&x) (forward g) ((forward f) (forward x));
+				((() make-standard-environment)) (&f forward! f)
+				(&g forward! g)) (&x) (forward! g) ((forward! f) (forward! x));
 			$defl! double (n) * n 2;
 			$defl! increment (n) + n 1;
 			$expect 42 double (increment (double (double 5)));
@@ -1220,7 +1219,8 @@ $defl! test (&i)
 					call/1cc (eval% (list% $lambda% (list% ($quote &k))
 						(list% $sequence
 							(list% $def! ((unwrap list%) __h __d __cc)
-								list% (eval% h d) d (move! ($quote k)))
+								list% (eval (forward! h) d) d
+								(move! ($quote k)))
 						(forward! expr))) d);
 
 				$import! std.math + *;
