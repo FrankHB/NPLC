@@ -777,7 +777,7 @@ $defl! test (&i)
 		$let ((li list% q-a 3))
 		(
 			list-push-front! li 1;
-			$check (reference? (first% (rest% li)))
+			$check reference? (first% (rest% li))
 		)
 	))
 	((eqv? i 11) (
