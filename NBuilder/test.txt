@@ -990,50 +990,45 @@ $defl! test (&i)
 		$expect "cd"
 			$let/e (derive-environment std.strings std.io) ((d "d"))
 				(puts (++ "a" "b"); (++ "c" d));
-		subinfo "binding lvalue lists; " "fixed native since b940";
-		$let ((n 42))
+		$let ((n 42) (e () get-current-environment) (test-lets $lambda (&test)
+			for-each-ltr test (list $let $let% $let* $let*% $letrec $letrec%)))
 		(
-			$defl! test-let ($let)
+			subinfo "binding lvalue lists;" "fixed native since b940";
+			test-lets ($lambda ($let)
 			(
-				$expect 42 eval% (list% $let () idv n)
-					(() get-current-environment);
+				$expect 42 eval% (list% $let () idv n) e;
 				$def! bd list% (list% ($quote a) 1) (list% ($quote b) 2);
-				$expect n eval% (list% $let bd idv n)
-					(() get-current-environment)
-			);
-			for-each-ltr test-let
-				(list $let $let% $let* $let*% $letrec $letrec%)
-		);
-		subinfo "binding noncopyable objects;" " fixed since b914";
-		$let ()
-		(
-			$defl! test-let-case ($let &x can-copy)
+				$expect n eval% (list% $let bd idv n) e
+			));
+			subinfo "binding noncopyable objects;" " fixed since b914";
+			$let ()
 			(
-				"reference support in parameter trees; fixed since b915";
-				$def! n 42;
-				$def! li1 list% ($quote a) n;
-				$def! bindings list% li1 (list% ($quote t) (move! x));
-				$if can-copy
+				$defl! test-let-case ($let &x can-copy)
 				(
-					$def! backup bindings;
-					eval% (list% $let (as-const bindings) move! ($quote t))
+					"reference support in parameter trees; fixed since b915";
+					$def! n 42;
+					$def! li1 list% ($quote a) n;
+					$def! bindings list% li1 (list% ($quote t) (move! x));
+					$if can-copy
+					(
+						$def! backup bindings;
+						eval% (list% $let (as-const bindings) move! ($quote t))
+							(() get-current-environment);
+						$expect bindings backup;
+						eval% (list% $let bindings move! ($quote t))
+							(() get-current-environment);
+						$expect bindings (id backup)
+					);
+					eval% (list% $let (expire bindings) move! ($quote t))
 						(() get-current-environment);
-					$expect bindings backup;
-					eval% (list% $let bindings move! ($quote t))
-						(() get-current-environment);
-					$expect bindings (id backup)
+					display/newline bindings
 				);
-				eval% (list% $let (expire bindings) move! ($quote t))
-					(() get-current-environment);
-				display/newline bindings
-			);
-			$defl! test-let ($let)
-			(
-				test-let-case $let (list make-nocopy) #t;
-				test-let-case $let (() make-nocopy) #f
-			);
-			for-each-ltr test-let
-				(list $let $let% $let* $let*% $letrec $letrec%)
+				test-lets ($lambda ($let)
+				(
+					test-let-case $let (list make-nocopy) #t;
+					test-let-case $let (() make-nocopy) #f
+				))
+			)
 		);
 		subinfo "binding noncopyable objects on new environment;"
 			" fixed since b918";
