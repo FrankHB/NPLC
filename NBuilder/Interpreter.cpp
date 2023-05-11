@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r4001
+\version r4097
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-04-19 19:30 +0800
+	2023-05-12 03:37 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -204,175 +204,148 @@ DecodeTypeName(const type_info& ti)
 	return name;
 }
 
+//! \since YSLib build 973
+//!@{
 YB_ATTR_nodiscard YB_PURE string
-StringifyEnvironment(const shared_ptr<Environment>& p_env, bool weak)
+StringifyEnvironment(const shared_ptr<Environment>& p_env, bool weak,
+	string::allocator_type a = {})
 {
-	return YSLib::sfmt<string>("#[%senvironment: %p]", weak ? "weak " : "",
+	return YSLib::sfmt<string>(a, "#[%senvironment: %p]", weak ? "weak " : "",
 		ystdex::pvoid(p_env.get()));
 }
 
 template<class _tHandler>
 YB_ATTR_nodiscard YB_PURE string
-StringifyContextHandler(const _tHandler& h)
+StringifyContextHandler(const _tHandler& h, string::allocator_type a = {})
 {
 	if(const auto p = h.template target<A1::FormContextHandler>())
 		switch(p->GetWrappingCount())
 		{
 		case 0:
-			return "operative[" + StringifyContextHandler(p->Handler) + "]";
+			return "operative[" + StringifyContextHandler(p->Handler, a) + "]";
 		case 1:
 			return YSLib::sfmt<string>("applicative[%s]",
-				StringifyContextHandler(p->Handler).c_str());
+				StringifyContextHandler(p->Handler, a).c_str());
 		default:
 			return YSLib::sfmt<string>("applicative[%s, wrapping = %zu]",
-				StringifyContextHandler(p->Handler).c_str(),
+				StringifyContextHandler(p->Handler, a).c_str(),
 				p->GetWrappingCount());
 		}
 	if(const auto p = h.template target<A1::WrappedContextHandler<
 		YSLib::GHEvent<void(NPL::TermNode&, NPL::ContextNode&)>>>())
-		return "wrapped " + StringifyContextHandler(p->Handler);
-	return string("ContextHandler: ") + DecodeTypeName(h.target_type());
+		return "wrapped " + StringifyContextHandler(p->Handler, a);
+	return string("ContextHandler: ", a) + DecodeTypeName(h.target_type());
 }
 //!@}
 
-//! \since YSLib build 929
 YB_ATTR_nodiscard YB_PURE string
-StringifyValueObjectDefault(const ValueObject& vo)
+StringifyValueObjectDefault(const ValueObject& vo,
+	string::allocator_type a = {})
 {
 	const auto& ti(vo.type());
 
-	// XXX: %NPL::TryAccessValue is not used. This ignores the possible
-	//	exception thrown from the value holder.
+	// XXX: As the comment in the implementation of %NPL::NumberValueToString in
+	//	%NPL.NPLAMath.
 	if(const auto p = vo.AccessPtr<bool>())
-		return *p ? "#t" : "#f";
+		return string(*p ? "#t" : "#f", a);
 	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
-		return StringifyEnvironment(*p, {});
+		return StringifyEnvironment(*p, {}, a);
 	if(const auto p = vo.AccessPtr<EnvironmentReference>())
-		return StringifyEnvironment(p->GetPtr().lock(), true);
+		return StringifyEnvironment(p->GetPtr().lock(), true, a);
 	if(const auto p = vo.AccessPtr<A1::ContextHandler>())
-		return "#[" + StringifyContextHandler(*p) + "]";
+		return "#[" + StringifyContextHandler(*p, a) + "]";
 	if(!IsTyped<void>(ti))
-		return ystdex::quote(string(DecodeTypeName(ti)), "#[", ']');
+		return ystdex::quote(string(DecodeTypeName(ti), a), "#[", ']');
 	throw bad_any_cast();
 }
 
-//! \since YSLib build 932
-//!@{
-// NOTE: The precisions of the format for flonums are as Racket BC. See
-//	https://github.com/racket/racket/blob/d10b9e083ce3c2068f960ce924af88f34111db26/racket/src/bc/src/numstr.c#L1846-L1873.
+YB_ATTR_nodiscard YB_PURE string
+StringifyBasicObject(const ValueObject& vo, string::allocator_type a = {})
+{
+	// XXX: Ditto.
+	if(const auto p = vo.AccessPtr<A1::ValueToken>())
+		return YSLib::sfmt<string>(a, "%s", to_string(*p).c_str());
+
+	auto res(NumberValueToString(vo, a));
+
+	return !res.empty() ? res : StringifyValueObjectDefault(vo, a);
+}
 
 YB_ATTR_nodiscard YB_PURE string
-StringifyBasicObject(const ValueObject& vo)
+StringifyBasicObjectWithTypeTag(const ValueObject& vo,
+	string::allocator_type a = {})
 {
 	using YSLib::sfmt;
 
 	// XXX: Ditto.
 	if(const auto p = vo.AccessPtr<A1::ValueToken>())
-		return sfmt<string>("%s", to_string(*p).c_str());
+		return sfmt<string>(a, "[ValueToken] %s", to_string(*p).c_str());
 	if(const auto p = vo.AccessPtr<int>())
-		return sfmt<string>("%d", *p);
+		return sfmt<string>(a, "[int] %d", *p);
 	if(const auto p = vo.AccessPtr<unsigned>())
-		return sfmt<string>("%u", *p);
+		return sfmt<string>(a, "[uint] %u", *p);
 	if(const auto p = vo.AccessPtr<long long>())
-		return sfmt<string>("%lld", *p);
+		return sfmt<string>(a, "[longlong] %lld", *p);
 	if(const auto p = vo.AccessPtr<unsigned long long>())
-		return sfmt<string>("%llu", *p);
+		return sfmt<string>(a, "[ulonglong] %llu", *p);
 	if(const auto p = vo.AccessPtr<double>())
-		return FPToString(*p);
+		return "[double] " + FPToString(*p, a);
 	if(const auto p = vo.AccessPtr<long>())
-		return sfmt<string>("%ld", *p);
+		return sfmt<string>(a, "[long] %ld", *p);
 	if(const auto p = vo.AccessPtr<unsigned long>())
-		return sfmt<string>("%lu", *p);
+		return sfmt<string>(a, "[ulong] %lu", *p);
 	if(const auto p = vo.AccessPtr<short>())
-		return sfmt<string>("%hd", *p);
+		return sfmt<string>(a, "[short] %hd", *p);
 	if(const auto p = vo.AccessPtr<unsigned short>())
-		return sfmt<string>("%hu", *p);
+		return sfmt<string>(a, "[ushort] %hu", *p);
 	if(const auto p = vo.AccessPtr<signed char>())
-		return sfmt<string>("%d", int(*p));
+		return sfmt<string>(a, "[char] %d", int(*p));
 	if(const auto p = vo.AccessPtr<unsigned char>())
-		return sfmt<string>("%u", unsigned(*p));
+		return sfmt<string>(a, "[uchar] %u", unsigned(*p));
 	if(const auto p = vo.AccessPtr<float>())
-		return FPToString(*p);
+		return "[float] " + FPToString(*p, a);
 	if(const auto p = vo.AccessPtr<long double>())
-		return FPToString(*p);
-	return StringifyValueObjectDefault(vo);
+		return "[longdouble] " + FPToString(*p, a);
+	return StringifyValueObjectDefault(vo, a);
 }
 
 YB_ATTR_nodiscard YB_PURE string
-StringifyBasicObjectWithTypeTag(const ValueObject& vo)
-{
-	using YSLib::sfmt;
-
-	// XXX: Ditto.
-	if(const auto p = vo.AccessPtr<A1::ValueToken>())
-		return sfmt<string>("[ValueToken] %s", to_string(*p).c_str());
-	if(const auto p = vo.AccessPtr<int>())
-		return sfmt<string>("[int] %d", *p);
-	if(const auto p = vo.AccessPtr<unsigned>())
-		return sfmt<string>("[uint] %u", *p);
-	if(const auto p = vo.AccessPtr<long long>())
-		return sfmt<string>("[longlong] %lld", *p);
-	if(const auto p = vo.AccessPtr<unsigned long long>())
-		return sfmt<string>("[ulonglong] %llu", *p);
-	if(const auto p = vo.AccessPtr<double>())
-		return "[double] " + FPToString(*p);
-	if(const auto p = vo.AccessPtr<long>())
-		return sfmt<string>("[long] %ld", *p);
-	if(const auto p = vo.AccessPtr<unsigned long>())
-		return sfmt<string>("[ulong] %lu", *p);
-	if(const auto p = vo.AccessPtr<short>())
-		return sfmt<string>("[short] %hd", *p);
-	if(const auto p = vo.AccessPtr<unsigned short>())
-		return sfmt<string>("[ushort] %hu", *p);
-	if(const auto p = vo.AccessPtr<signed char>())
-		return sfmt<string>("[char] %d", int(*p));
-	if(const auto p = vo.AccessPtr<unsigned char>())
-		return sfmt<string>("[uchar] %u", unsigned(*p));
-	if(const auto p = vo.AccessPtr<float>())
-		return "[float] " + FPToString(*p);
-	if(const auto p = vo.AccessPtr<long double>())
-		return "[longdouble] " + FPToString(*p);
-	return StringifyValueObjectDefault(vo);
-}
-
-YB_ATTR_nodiscard YB_PURE string
-StringifyValueObjectEscape(const ValueObject& vo,
-	string(&fallback)(const ValueObject&))
+StringifyValueObjectEscape(const ValueObject& vo, string::allocator_type a,
+	string(&fallback)(const ValueObject&, string::allocator_type))
 {
 	// XXX: Ditto.
 	if(const auto p = vo.AccessPtr<string>())
 		return ystdex::quote(EscapeLiteral(*p));
 	if(const auto p = vo.AccessPtr<TokenValue>())
 		return EscapeLiteral(*p);
-	return fallback(vo);
+	return fallback(vo, a);
 }
-//!@}
 
-//! \since YSLib build 852
 YB_ATTR_nodiscard YB_PURE string
-StringifyValueObject(const ValueObject& vo)
+StringifyValueObject(const ValueObject& vo, string::allocator_type a = {})
 {
-	return StringifyValueObjectEscape(vo, StringifyBasicObjectWithTypeTag);
+	return StringifyValueObjectEscape(vo, a, StringifyBasicObjectWithTypeTag);
 }
 
-//! \since YSLib build 928
 YB_ATTR_nodiscard YB_PURE string
-StringifyValueObjectForDisplay(const ValueObject& vo)
+StringifyValueObjectForDisplay(const ValueObject& vo,
+	string::allocator_type a = {})
 {
 	// XXX: Ditto.
 	if(const auto p = vo.AccessPtr<string>())
 		return string(*p, p->get_allocator());
 	if(const auto p = vo.AccessPtr<TokenValue>())
 		return string(*p, p->get_allocator());
-	return StringifyBasicObject(vo);
+	return StringifyBasicObject(vo, a);
 }
 
-//! \since YSLib build 928
 YB_ATTR_nodiscard YB_PURE string
-StringifyValueObjectForWrite(const ValueObject& vo)
+StringifyValueObjectForWrite(const ValueObject& vo,
+	string::allocator_type a = {})
 {
-	return StringifyValueObjectEscape(vo, StringifyBasicObject);
+	return StringifyValueObjectEscape(vo, a, StringifyBasicObject);
 }
+//!@}
 
 /*!
 \ingroup functors
@@ -384,7 +357,7 @@ struct NodeValueLogger
 	void
 	operator()(std::ostream& os, const TermNode& nd) const
 	{
-		os << StringifyValueObject(nd.Value);
+		os << StringifyValueObject(nd.Value, nd.get_allocator());
 	}
 };
 
@@ -520,7 +493,7 @@ DisplayTermValue(std::ostream& os, const TermNode& term)
 	YSLib::stringstream oss(string(term.get_allocator()));
 
 	PrintTermNode(oss, term, [](std::ostream& os0, const TermNode& nd){
-		os0 << StringifyValueObjectForDisplay(nd.Value);
+		os0 << StringifyValueObjectForDisplay(nd.Value, nd.get_allocator());
 	});
 	YSLib::IO::StreamPut(os, oss.str().c_str());
 }
@@ -531,7 +504,7 @@ LogTree(const ValueNode& node, Logger::Level lv)
 	YSLib::ostringstream oss(string(node.get_allocator()));
 
 	PrintNode(oss, node, [] YB_LAMBDA_ANNOTATE((const ValueNode& nd), , pure){
-		return StringifyValueObject(nd.Value);
+		return StringifyValueObject(nd.Value, nd.get_allocator());
 	});
 	yunused(lv);
 	YTraceDe(lv, "%s", oss.str().c_str());
@@ -553,7 +526,7 @@ WriteTermValue(std::ostream& os, const TermNode& term)
 	YSLib::ostringstream oss(string(term.get_allocator()));
 
 	PrintTermNode(oss, term, [](std::ostream& os0, const TermNode& nd){
-		os0 << StringifyValueObjectForWrite(nd.Value);
+		os0 << StringifyValueObjectForWrite(nd.Value, nd.get_allocator());
 	});
 	YSLib::IO::StreamPut(os, oss.str().c_str());
 }
