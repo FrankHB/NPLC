@@ -1454,18 +1454,23 @@ $defl! test (&i)
 				x (solve (add1 n));
 			$expect 7744 solve 80
 		);
-		subinfo "string->number";
+		subinfo "string->number and number->string";
 		$let ()
 		(
-			$import&! std.math string->number nan?;
+			$import&! std.math string->number number->string nan?;
 
-			$defl! test (i s) $expect i (string->number s);
+			$defl! test (i s)
+			(
+				$expect i (string->number s);
+				$expect s (number->string i)
+			);
 			test 0 "0";
 			test 1 "1";
 			test 1.0 "1.0";
 			test -2 "-2";
 			test +inf.0 "+inf.0";
-			$check nan? (string->number "+nan.0")
+			$check nan? (string->number "+nan.0");
+			$expect "+nan.0" (number->string +nan.0)
 		)
 	))
 	((eqv? i 18) (
