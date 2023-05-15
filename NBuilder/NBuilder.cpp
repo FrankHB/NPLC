@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9102
+\version r9105
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-04-19 19:48 +0800
+	2023-05-16 06:20 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -39,8 +39,8 @@
 //	YSLib::to_std_string, std::stoi;
 #include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
-#include YFM_NPL_NPLA1Forms // for Forms;
-#include <ystdex/scope_guard.hpp> // for ystdex::guard;
+#include YFM_NPL_NPLA1Forms // for NPL::Forms function templates;
+#include YFM_NPL_NPLA1Root // for IsSymbol, NPL::Forms functions;
 #include YFM_YCLib_Host // for platform_ex::Terminal;
 #include YFM_NPL_Dependency // for EnvironmentGuard, A1::RelayToLoadExternal;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
@@ -800,7 +800,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.5+ b972+"
+#define NPLC_VER "V1.5+ b973+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
