@@ -1222,7 +1222,7 @@ $defl! test (&i)
 								(move! ($quote k)))
 						(forward! expr))) d);
 
-				$import! std.math + *;
+				$import&! std.math + *;
 
 				$expect 21 $try/catch (+ 17 4) ($lambda (x) * x 3);
 				$expect 10
@@ -1236,8 +1236,9 @@ $defl! test (&i)
 	))
 	((eqv? i 16) (
 		info "std.promises";
-		$import! std.promises
+		$import&! std.promises
 			promise? memoize $lazy $lazy% $lazy/d $lazy/d% force;
+
 		subinfo "value category preservation";
 		$let ((p1 $lazy% idv unit))
 		(
@@ -1487,7 +1488,7 @@ $defl! test (&i)
 		subinfo "strings and symbols";
 		$let ()
 		(
-			$import! std.strings string->symbol symbol->string;
+			$import&! std.strings string->symbol symbol->string;
 
 			$expect "a" symbol->string ($quote a),
 			$expect "a" symbol->string (string->symbol "a")
@@ -1495,7 +1496,7 @@ $defl! test (&i)
 		subinfo "string split";
 		$let ()
 		(
-			$import! std.strings string-split;
+			$import&! std.strings string-split;
 
 			$expect (list "a" "b" "c") string-split "a;b;c" ";",
 			$expect (list "a" "b" "" "c") string-split "a.b..c" "."
@@ -1503,7 +1504,7 @@ $defl! test (&i)
 		subinfo "regular expressions";
 		$let ()
 		(
-			$import! std.strings string->regex regex-match? regex-replace;
+			$import&! std.strings string->regex regex-match? regex-replace;
 
 			$let ((pattern string->regex "\?"))
 			(
@@ -1520,14 +1521,14 @@ $defl! test (&i)
 		subinfo "eval-string and eval-unit";
 		$let ()
 		(
-			$import! std.system eval-string eval-unit get-current-repl;
+			$import&! std.system eval-string eval-unit get-current-repl;
 			eval-string "1" (() get-current-environment);
 			eval-unit "1;"
 		);
 		subinfo "eval-string with function call;" " fixed since b970";
 		$let ()
 		(
-			$import! std.system eval-string;
+			$import&! std.system eval-string;
 			$defw! xeval (str) d eval-string str d;
 			$def! val 42;
 			$def! f xeval "$lambda () val"
@@ -1781,7 +1782,8 @@ $defl! test-ptc (i)
 			" fixed @ b862 as $let";
 		$let ()
 		(
-			$import! std.promises $lazy/d force;
+			$import&! std.promises $lazy/d force;
+
 			$defl! stream-filter (p? s) ($lazy/d (() lock-current-environment)
 				$let ((v (force s)))
 					($if (null? v) v
