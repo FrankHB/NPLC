@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9105
+\version r9112
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-05-16 06:20 +0800
+	2023-05-27 19:34 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -516,12 +516,9 @@ LoadFunctions(Interpreter& intp)
 		[&](const string& str) ynothrow{
 		return int(str.length());
 	});
-	RegisterBinary<Strict, string, string>(m, "string-contains?",
-		[](const string& x, const string& y){
-		return x.find(y) != string::npos;
-	});
-	// NOTE: Definitions of string->symbol, symbol->string, string->regex,
-	//	regex-match? are in module std.strings in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of string-contains?, string-contains-ci?,
+	//	string->symbol, symbol->string, string->regex, regex-match? are in
+	//	module std.strings in %YFramework.NPL.Dependency.
 	// NOTE: Definitions of number functions are in module std.math in
 	//	%YFramework.NPL.Dependency.
 	using Number = int;
@@ -800,7 +797,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.5+ b973+"
+#define NPLC_VER "V1.5+ b974+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
