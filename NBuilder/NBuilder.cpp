@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9112
+\version r9193
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-05-27 19:34 +0800
+	2023-06-02 00:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -338,15 +338,19 @@ LoadFunctions(Interpreter& intp)
 #if true
 	// NOTE: Primitive features, listed as RnRK, except mentioned above. See
 	//	%YFramework.NPL.Dependency.
-	// NOTE: Definitions of eq?, eql?, eqr?, eqv? are in
+	// NOTE: Definitions of eq?, eql?, eqr? and eqv? are in
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Definition of $if is in %YFramework.NPL.Dependency.
-	RegisterUnary<Strict, const string>(m, "symbol-string?", IsSymbol);
-	RegisterUnary(m, "listv?", IsList);
 	// TODO: Add nonnull list predicate to improve performance?
-	// NOTE: Definitions of null?, nullv?, reference?, bound-lvalue?,
-	//	uncollapsed?, unique?, move!, transfer!, deshare, as-const, expire are
-	//	in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of null?, nullv?, branch?, branchv? are in
+	//	%YFramework.NPL.Dependency.
+	RegisterUnary(m, "listv?", IsList);
+	// NOTE: Definitions of pair?, pairv? and symbol? are in
+	//	%YFramework.NPL.Dependency.
+	RegisterUnary<Strict, const string>(m, "symbol-string?", IsSymbol);
+	// NOTE: Definitions of reference?, unique?,
+	//	modifiable?, temporary?, bound-lvalue?, uncollapsed?, deshare, as-const,
+	//	expire, move! and transfer! are in %YFramework.NPL.Dependency.
 	RegisterStrict(m, "make-nocopy", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = NoCopy();
@@ -360,21 +364,22 @@ LoadFunctions(Interpreter& intp)
 		}, NoCopy()), Strict);
 	});
 	// NOTE: Definitions of ref&, assign@!, cons, cons%, set-rest!, set-rest%!,
-	//	eval, eval%, copy-environment, lock-current-environment,
-	//	lock-environment, make-environment, weaken-environment are in
-	//	%YFramework.NPL.Dependency.
+	//	desigil are in %YFramework.NPL.Dependency.
+	// NOTE: Environments library.
+	// NOTE: Definitions of eval, eval%, bound?, $resolve-identifier,
+	//	$move-resolved!, copy-environment, freeze-environment, make-environment
+	//	and weaken-environment are in %YFramework.NPL.Dependency.
 	RegisterUnary(m, "resolve-environment", [](TermNode& x){
 		return ResolveEnvironment(x).first;
 	});
 	// NOTE: Environment mutation is optional in Kernel and supported here.
-	// NOTE: Definitions of $deflazy!, $def!, $defrec! are in
-	//	%YFramework.NPL.Dependency.
+	// NOTE: Definitions of $def and $defrec! are in %YFramework.NPL.Dependency.
 	// NOTE: Removing definitions do not guaranteed supported by all
 	//	environments. They are as-is for the current environment implementation,
 	//	but may not work for some specific environments in future.
 	RegisterForm(m, "$undef!", Undefine);
 	RegisterForm(m, "$undef-checked!", UndefineChecked);
-	// NOTE: Definitions of $vau, $vau/e, wrap and wrap% are in
+	// NOTE: Definitions of $vau/e, $vau/e%, wrap and wrap% are in
 	//	%YFramework.NPL.Dependency.
 	// NOTE: The applicatives 'wrap1' and 'wrap1%' do check before wrapping.
 	RegisterStrict(m, "wrap1", WrapOnce);
@@ -386,7 +391,10 @@ LoadFunctions(Interpreter& intp)
 			return FormContextHandler(p->Handler, size_t(n));
 		return FormContextHandler(h, Strict);
 	});
-	// NOTE: Definitions of unwrap is in %YFramework.NPL.Dependency.
+	// NOTE: Definition of unwrap is in %YFramework.NPL.Dependency.
+	// NOTE: Definitions of raise-error, raise-invalid-syntax-error,
+	//	raise-type-error, check-list-reference, check-pair-reference and
+	//	make-encapsulation-type are in %YFramework.NPL.Dependency.
 #endif
 	// NOTE: NPLA value transferring.
 	RegisterUnary(m, "vcopy", [](const TermNode& x){
@@ -460,10 +468,7 @@ LoadFunctions(Interpreter& intp)
 		else
 			throw std::invalid_argument("Invalid trace option found.");
 	});
-	// NOTE: Derived functions with probable privmitive implementation.
 	// NOTE: Object interoperation.
-	// NOTE: Definitions of ref is in %YFramework.NPL.Dependency.
-	// NOTE: Environments library.
 	RegisterUnary<Strict, const type_index>(m, "nameof",
 		[](const type_index& ti){
 		return string(ti.name());
@@ -499,6 +504,12 @@ LoadFunctions(Interpreter& intp)
 			return int(p->GetWrappingCount());
 		return 0;
 	});
+	// NOTE: Derived functions with probable privmitive implementation.
+	// NOTE: Definitions of get-current-environment, lock-current-environment,
+	//	$vau, $vau%, $quote, id, idv, list, $lvalue-identifier?, forward!,
+	//	list%, rlist, $remote-eval, $remote-eval%, $deflazy!, $set!, $setrec!,
+	//	$wvau, $wvau%, $wvau/e, $wvau/e%, $lambda, $lambda%, $lambda/e,
+	//	$lambda/e% are in %YFramework.NPL.Dependency.
 	// NOTE: List library.
 	// TODO: Check list type?
 	RegisterUnary(m, "list-length",
@@ -535,47 +546,8 @@ LoadFunctions(Interpreter& intp)
 		return std::stoi(YSLib::to_std_string(x));
 	});
 	// NOTE: I/O library.
-	RegisterStrict(m, "read-line", [](TermNode& term){
-		RetainN(term, 0);
-
-		string line(term.get_allocator());
-
-		getline(std::cin, line);
-		term.SetValue(line);
-	});
-	RegisterUnary(m, "write", trivial_swap, [&](TermNode& term){
-		WriteTermValue(global.GetOutputStreamRef(), term);
-		return ValueToken::Unspecified;
-	});
-	RegisterUnary(m, "display", trivial_swap, [&](TermNode& term){
-		DisplayTermValue(global.GetOutputStreamRef(), term);
-		return ValueToken::Unspecified;
-	});
-	RegisterUnary(m, "logd", [](TermNode& term){
-		LogTermValue(term, Notice);
-		return ValueToken::Unspecified;
-	});
-	RegisterStrict(m, "logv", trivial_swap,
-		ystdex::bind1(LogTermValue, Notice));
-	RegisterUnary<Strict, const string>(m, "echo", Echo);
-	if(global.IsAsynchronous())
-		RegisterStrict(m, "load-at-root", trivial_swap,
-			[&, rwenv](TermNode& term, ContextNode& ctx){
-			RetainN(term);
-			// NOTE: This does not support PTC.
-			RelaySwitched(ctx, A1::MoveKeptGuard(
-				EnvironmentGuard(ctx, ctx.SwitchEnvironment(rwenv.Lock()))));
-			return A1::RelayToLoadExternal(ctx, term);
-		});
-	else
-		RegisterStrict(m, "load-at-root", trivial_swap,
-			[&, rwenv](TermNode& term, ContextNode& ctx){
-			RetainN(term);
-
-			const EnvironmentGuard gd(ctx, ctx.SwitchEnvironment(rwenv.Lock()));
-
-			return A1::ReduceToLoadExternal(term, ctx);
-		});
+	// NOTE: Definitions of readable-file?, readable-nonempty-file?,
+	//	writable-file? are in module std.io in %YFramework.NPL.Dependency.
 	RegisterUnary<Strict, const string>(m, "open-input-file",
 		[](const string& path){
 		if(ifstream ifs{path, std::ios_base::in | std::ios_base::binary})
@@ -598,6 +570,53 @@ LoadFunctions(Interpreter& intp)
 		throw LoggedEvent(
 			ystdex::sfmt("Failed opening string '%s'.", str.c_str()));
 	});
+	RegisterStrict(m, "read-line", [](TermNode& term){
+		RetainN(term, 0);
+
+		string line(term.get_allocator());
+
+		getline(std::cin, line);
+		term.SetValue(line);
+	});
+	RegisterUnary(m, "write", trivial_swap, [&](TermNode& term){
+		WriteTermValue(global.GetOutputStreamRef(), term);
+		return ValueToken::Unspecified;
+	});
+	RegisterUnary(m, "display", trivial_swap, [&](TermNode& term){
+		DisplayTermValue(global.GetOutputStreamRef(), term);
+		return ValueToken::Unspecified;
+	});
+	// NOTE: Definitions of newline, put, puts are in module std.io in
+	//	%YFramework.NPL.Dependency.
+	RegisterUnary(m, "logd", [](TermNode& term){
+		LogTermValue(term, Notice);
+		return ValueToken::Unspecified;
+	});
+	RegisterStrict(m, "logv", trivial_swap,
+		ystdex::bind1(LogTermValue, Notice));
+	RegisterUnary<Strict, const string>(m, "echo", Echo);
+	// NOTE: Definitions of load is in module std.io in
+	//	%YFramework.NPL.Dependency.
+	if(global.IsAsynchronous())
+		RegisterStrict(m, "load-at-root", trivial_swap,
+			[&, rwenv](TermNode& term, ContextNode& ctx){
+			RetainN(term);
+			// NOTE: This does not support PTC.
+			RelaySwitched(ctx, A1::MoveKeptGuard(
+				EnvironmentGuard(ctx, ctx.SwitchEnvironment(rwenv.Lock()))));
+			return A1::RelayToLoadExternal(ctx, term);
+		});
+	else
+		RegisterStrict(m, "load-at-root", trivial_swap,
+			[&, rwenv](TermNode& term, ContextNode& ctx){
+			RetainN(term);
+
+			const EnvironmentGuard gd(ctx, ctx.SwitchEnvironment(rwenv.Lock()));
+
+			return A1::ReduceToLoadExternal(term, ctx);
+		});
+	// NOTE: Definitions of get-module is in module std.io in
+	//	%YFramework.NPL.Dependency.
 	RegisterUnary<Strict, std::ios_base>(m, "parse-stream", ParseStream);
 #if NPLC_Impl_TestTemporaryOrder
 	RegisterUnary<Strict, const string>(m, "mark-guard", [](string str){
