@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9193
+\version r9195
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-06-02 00:43 +0800
+	2023-06-05 04:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -776,7 +776,7 @@ PrintHelpMessage(const string& prog)
 		"\tThe source specified by SRCPATH shall have NPLA1 source tokens"
 		" encoded in a text stream with optional UTF-8 BOM (byte-order mark),"
 		" which are to be read and evaluated in the initial environment of the"
-		" interpreter. Otherwise, errors are raise to reject the source.\n\n");
+		" interpreter. Otherwise, errors are raised to reject the source.\n\n");
 		print_entry("OPTIONS ...");
 		os << '\n';
 		print_entry("OPTIONS ... -- [[SRCPATH] ARGS ...]");
@@ -816,7 +816,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.5+ b974+"
+#define NPLC_VER "V1.5+ b975+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
