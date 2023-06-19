@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9195
+\version r9196
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-06-05 04:09 +0800
+	2023-06-19 22:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -220,7 +220,7 @@ FetchListLength(TermNode& term) ynothrow
 
 
 //! \since YSLib build 945
-struct NoCopy : ystdex::noncopyable
+struct NoCopy final : ystdex::noncopyable
 {};
 
 
