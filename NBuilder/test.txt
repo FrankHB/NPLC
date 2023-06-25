@@ -399,14 +399,14 @@ $defl! test (&i)
 		$let ()
 		(
 			$defl! Y (f) ($lambda (&h) h h)
-				(wrap ($vau/e (() copy-environment) (x) #ignore f
-					(wrap ($vau/e (() copy-environment) z #ignore
-						(apply (x x) (idv z))))));
+				($lambda/e (() copy-environment) (x) f
+					($lambda/e (() copy-environment) z
+						(apply (x x) (idv z))));
 			$def! fact Y ($lambda (&f)
-				wrap ($vau/e (() copy-environment) (z) #ignore
+				($lambda/e (() copy-environment) (z)
 					$if (eqv? z 0) 1 (* z (f (- z 1)))));
 			$def! fib Y ($lambda (&f)
-				wrap ($vau/e (() copy-environment) (n) #ignore
+				($lambda/e (() copy-environment) (n)
 					$if (<? n 2) n (+ (f (- n 1)) (f (- n 2)))));
 			(list (fact 5) (fib 5))
 		)
@@ -465,9 +465,9 @@ $defl! test (&i)
 		subinfo "test for ref&, etc.";
 		$let* ((x "xx") (rx ref& x))
 		(
-			$def! $f1 wrap ($vau/e (() get-current-environment) () env
+			$defw/e! $f1 (() get-current-environment) () d
 				eval (list $sequence (puts x) (assign! x "yy") (puts x)
-					(string<- rx "ee") (puts rx)) env);
+					(string<- rx "ee") (puts rx)) d;
 			() $f1
 		)
 	))
@@ -524,9 +524,10 @@ $defl! test (&i)
 			$let ()
 			(
 				$def! $sequence
-					($lambda (&se) ($lambda #ignore $vau/e% se exprseq d
-						$if (null? exprseq) #inert
-							(eval% (cons% $aux exprseq) d))
+					($lambda (&se)
+						($lambda #ignore $vau/e% se exprseq d
+							$if (null? exprseq) #inert
+								(eval% (cons% $aux exprseq) d))
 						($set! se $aux
 							$vau/e% (weaken-environment se) (&head .&tail) d
 								$if (null? tail) (eval% head d)
@@ -540,7 +541,7 @@ $defl! test (&i)
 			$let ()
 			(
 				$def! $sequence
-					(wrap ($vau% (&$seq2) #ignore $seq2
+					($lambda% (&$seq2) $seq2
 						($def! $aux $vau/e% (make-environment
 							(() get-current-environment) (() __make-stdenv))
 							(&head .&tail) d
@@ -560,7 +561,7 @@ $defl! test (&i)
 			$let ()
 			(
 				$def! $sequence
-					(wrap ($vau% (&$seq2) #ignore $seq2
+					($lambda% (&$seq2) $seq2
 						($def! $aux $vau/e% (make-environment
 							(() get-current-environment) (() copy-environment))
 								(&head .&tail) d
@@ -581,7 +582,7 @@ $defl! test (&i)
 		$let ()
 		(
 			$def! $sequence
-				(wrap ($vau% (&$seq2) #ignore $seq2
+				($lambda% (&$seq2) $seq2
 					($def! $aux $vau/e% (() copy-environment)
 						(&head .&tail) d
 						($if (null? tail) (eval@ (forward! head) d)
@@ -640,8 +641,8 @@ $defl! test (&i)
 		(
 			$defl%! first-test (%l0)
 				($lambda% (fwd) forward-first%
-					(wrap ($vau% (&x) d
-						$sequence (eval ($quote l0) d) (forward! (forward! x))))
+					($wvau% (&x) d
+						$sequence (eval ($quote l0) d) (forward! (forward! x)))
 						(fwd l0))
 				($if (bound-lvalue? ($resolve-identifier l0)) id expire);
 			subinfo "forward-first% (previously forward-list-first%);"
