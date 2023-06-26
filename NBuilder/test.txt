@@ -409,7 +409,12 @@ $defl! test (&i)
 				($lambda/e (() copy-environment) (n)
 					$if (<? n 2) n (+ (f (- n 1)) (f (- n 2)))));
 			(list (fact 5) (fib 5))
-		)
+		);
+		subinfo "copy-environment with noncopyable objects" "fixed since b976";
+		$rem "The following shall fail on copy instead of crashing on"
+			" destruction of the copied environment.";
+		$let ((x () make-nocopy))
+			$rem $sequence (() copy-environment) 42
 	))
 	((eqv? i 7) (
 		info "combiner operations";
