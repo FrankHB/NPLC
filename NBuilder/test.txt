@@ -222,11 +222,11 @@ $defl! test (&i)
 		$check-not equal? (cons% q-a 2) (cons% q-a 3);
 		subinfo "equal? regular result;" " fixed native since b948";
 		$check equal? #t (equal? (list 1 2) (list 1 2));
-		subinfo "equal? + fwd?";
-		$let ((fwd? $lambda% (%v) bound-lvalue? ($resolve-identifier v)))
+		subinfo "condition of lvalues";
+		$let ((lv? $lambda% (%v) bound-lvalue? ($resolve-identifier v)))
 			$expect (list% #f #f #t #t #f)
-				list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
-					(fwd? (idv fwd?));
+				list% (lv? 1) (lv? ()) (lv? lv?) (lv? (id lv?))
+					(lv? (idv lv?));
 		subinfo "simple recursive thunks without thunk cleanup";
 		$expect 1 $let () ($defrec! a 1; a);
 		$expect 1 $let () ($defrec! (a a) list 1 1; a);
