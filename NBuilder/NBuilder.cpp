@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9196
+\version r9210
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-06-19 22:36 +0800
+	2023-07-08 14:36 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -816,7 +816,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.5+ b975+"
+#define NPLC_VER "V1.5+ b976+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
@@ -825,7 +825,19 @@ PrintHelpMessage(const string& prog)
 #	define NPLC_PLATFORM "[unspecified platform]"
 #endif
 yconstexpr auto title(NPLC_NAME" " NPLC_VER" @ (" __DATE__", " __TIME__") "
-	NPLC_PLATFORM);
+	NPLC_PLATFORM "[C++"
+#if __cplusplus > 202002L
+	"2b"
+#elif __cplusplus >= 202002L
+	"20"
+#elif __cplusplus >= 201703L
+	"17"
+#elif __cplusplus >= 201402L
+	"14"
+#else
+	"11"
+#endif
+	"] + YSLib");
 
 //! \since YSLib build 965
 template<typename _fCallable, typename... _tParams>
