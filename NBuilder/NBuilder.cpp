@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9210
+\version r9214
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-07-08 14:36 +0800
+	2023-08-18 18:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -519,10 +519,8 @@ LoadFunctions(Interpreter& intp)
 	RegisterUnary(m, "leafv?", IsLeaf);
 	// NOTE: Encapsulations library is in %YFramework.NPL.Dependency.
 	// NOTE: String library.
-	// NOTE: Definitions of ++, string-empty?, string<- are in
+	// NOTE: Definitions of ++, string-empty?, string<-, string=? are in
 	//	%YFramework.NPL.Dependency.
-	RegisterBinary<Strict, const string, const string>(m, "string=?",
-		ystdex::equal_to<>());
 	RegisterUnary<Strict, const string>(m, "string-length",
 		[&](const string& str) ynothrow{
 		return int(str.length());
@@ -816,7 +814,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.5+ b976+"
+#define NPLC_VER "V1.5+ b977+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
