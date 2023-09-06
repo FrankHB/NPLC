@@ -414,7 +414,20 @@ $defl! test (&i)
 		$rem "The following shall fail on copy instead of crashing on"
 			" destruction of the copied environment.";
 		$let ((x () make-nocopy))
-			$rem $sequence (() copy-environment) 42
+			$rem $sequence (() copy-environment) 42;
+		subinfo "eval-string and eval-unit";
+		$let ()
+		(
+			eval-string "1" (() get-current-environment);
+			eval-unit "1;"
+		);
+		subinfo "eval-string with function call;" " fixed since b970";
+		$let ()
+		(
+			$defw! xeval (str) d eval-string str d;
+			$def! val 42;
+			$def! f xeval "$lambda () val"
+		)
 	))
 	((eqv? i 7) (
 		info "combiner operations";
@@ -1555,22 +1568,7 @@ $defl! test (&i)
 		)
 	))
 	((eqv? i 19) (
-		info "std.system";
-		subinfo "eval-string and eval-unit";
-		$let ()
-		(
-			$import&! std.system eval-string eval-unit get-current-repl;
-			eval-string "1" (() get-current-environment);
-			eval-unit "1;"
-		);
-		subinfo "eval-string with function call;" " fixed since b970";
-		$let ()
-		(
-			$import&! std.system eval-string;
-			$defw! xeval (str) d eval-string str d;
-			$def! val 42;
-			$def! f xeval "$lambda () val"
-		)
+		info "std.system"
 	))
 	(#t "No case found.")
 );
