@@ -1568,7 +1568,16 @@ $defl! test (&i)
 		)
 	))
 	((eqv? i 19) (
-		info "std.system"
+		info "std.system";
+		subinfo "env-get";
+		$let ()
+		(
+			$import&! std.system env-get;
+
+			"XXX", "Not printing to prevent unstable results from a same",
+				" implementation environment."; 
+			env-get "PATH"
+		)
 	))
 	(#t "No case found.")
 );
