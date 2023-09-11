@@ -382,6 +382,10 @@ $defl! test (&i)
 			$def! f xeval (list $lambda () val);
 			$expect 42 () f
 		);
+		subinfo "make-environment and $lambda/e";
+		$expect 42
+			$let ((e () make-environment))
+				($set! e j 42; ($lambda/e (list% e) . j) "");
 		subinfo "freeze-environment!";
 		$let ((e0 make-environment (() get-current-environment)))
 		(
