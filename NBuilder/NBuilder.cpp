@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9225
+\version r9233
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-09-11 12:51 +0800
+	2023-09-12 04:55 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -26,9 +26,9 @@
 
 
 #include "NBuilder.h" // for NPL, A1, NPL::EmplaceLeaf, NPL::A1::LiteralHandler,
-//	default_allocator, std::ios_base, std::istream, trivial_swap, ContextState,
-//	A1::MoveKeptGuard, istringstream, FilterExceptions, EXIT_FAILURE,
-//	EXIT_SUCCESS;
+//	trivial_swap, default_allocator, std::ios_base, std::istream, ContextState,
+//	ystdex::invoke_value_or, A1::MoveKeptGuard, istringstream, FilterExceptions,
+//	EXIT_FAILURE, EXIT_SUCCESS;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <ystdex/string.hpp> // for getline, ystdex::write_literal,
 //	ystdex::sfmt;
@@ -504,11 +504,9 @@ LoadFunctions(Interpreter& intp)
 		return type_id<void>();
 	});
 	RegisterUnary<Strict, const ContextHandler>(m, "get-wrapping-count",
-		// FIXME: Unsigned count shall be used.
-		[](const ContextHandler& h) -> int{
-		if(const auto p = h.target<FormContextHandler>())
-			return int(p->GetWrappingCount());
-		return 0;
+		[](const ContextHandler& h){
+		return ystdex::invoke_value_or(&FormContextHandler::GetWrappingCount,
+			h.target<FormContextHandler>());
 	});
 	// NOTE: Derived functions with probable privmitive implementation.
 	// NOTE: Definitions of get-current-environment, lock-current-environment,
