@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9214
+\version r9225
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-08-18 18:09 +0800
+	2023-09-11 12:51 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -259,6 +259,12 @@ struct MarkGuard
 #define NBuilder_Default_Init_File "init.txt"
 //! \since YSLib build 962
 const char* init_file = NBuilder_Default_Init_File;
+
+#define RegisterForm A1::RegisterForm
+#define RegisterStrict A1::RegisterStrict
+#define RegisterUnary Forms::RegisterUnary
+#define RegisterBinary Forms::RegisterBinary
+#define RegisterLiteralSignal NBuilder::RegisterLiteralSignal
 
 //! \since YSLib build 885
 // XXX: 'YB_FLATTEN' is a bit efficient, but slow (more than 3x) in compilation.
@@ -638,6 +644,12 @@ LoadFunctions(Interpreter& intp)
 #endif
 }
 
+#undef RegisterLiteralSignal
+#undef RegisterBinary
+#undef RegisterUnary
+#undef RegisterStrict
+#undef RegisterForm
+
 //! \since YSLib build 926
 //!@{
 template<class _tString>
@@ -814,7 +826,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.5+ b977+"
+#define NPLC_VER "V1.5+ b978+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
