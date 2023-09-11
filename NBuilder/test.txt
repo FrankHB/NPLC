@@ -1544,6 +1544,27 @@ $defl! test (&i)
 			$expect "a" symbol->string ($quote a),
 			$expect "a" symbol->string (string->symbol "a")
 		);
+		subinfo "string search";
+		$let ()
+		(
+			$import&! std.strings string-contains? string-contains-ci?;
+
+			$defl! test-contains (contains?)
+			(
+				$def! nci (eqv? contains? string-contains?);
+
+				subinfo ($if nci "string-contains?" "string-contains-ci?");
+				$check contains? "" "";
+				$check contains? "x" "";
+				$check-not contains? "" "x";
+				$check contains? "abc" "b";
+				$check-not contains? "abc" "cd"
+			);
+			test-contains string-contains?;
+			test-contains string-contains-ci?;
+			$check-not string-contains? "abc" "B";
+			$check string-contains-ci? "abc" "B"
+		);
 		subinfo "string split";
 		$let ()
 		(
