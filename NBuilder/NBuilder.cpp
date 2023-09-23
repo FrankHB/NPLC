@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9233
+\version r9247
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-09-12 04:55 +0800
+	2023-09-23 08:46 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -39,10 +39,11 @@
 //	YSLib::to_std_string, std::stoi;
 #include <sstream> // for complete istringstream;
 #include <Helper/YModules.h>
-#include YFM_NPL_NPLA1Forms // for NPL::Forms function templates;
+#include YFM_NPL_NPLA1Forms // for RetainN, NPL::Forms function templates;
 #include YFM_NPL_NPLA1Root // for IsSymbol, NPL::Forms functions;
-#include YFM_YCLib_Host // for platform_ex::Terminal;
+#include YFM_NPL_NPLA1Extended // for NPL::Forms functions;
 #include YFM_NPL_Dependency // for EnvironmentGuard, A1::RelayToLoadExternal;
+#include YFM_YCLib_Host // for platform_ex::Terminal;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
 //	std::chrono::duration_cast;
 #include <ytest/timing.hpp> // for ytest::timing::once;
@@ -259,12 +260,6 @@ struct MarkGuard
 #define NBuilder_Default_Init_File "init.txt"
 //! \since YSLib build 962
 const char* init_file = NBuilder_Default_Init_File;
-
-#define RegisterForm A1::RegisterForm
-#define RegisterStrict A1::RegisterStrict
-#define RegisterUnary Forms::RegisterUnary
-#define RegisterBinary Forms::RegisterBinary
-#define RegisterLiteralSignal NBuilder::RegisterLiteralSignal
 
 //! \since YSLib build 885
 // XXX: 'YB_FLATTEN' is a bit efficient, but slow (more than 3x) in compilation.
@@ -615,7 +610,7 @@ LoadFunctions(Interpreter& intp)
 
 			const EnvironmentGuard gd(ctx, ctx.SwitchEnvironment(rwenv.Lock()));
 
-			return A1::ReduceToLoadExternal(term, ctx);
+			return Forms::ReduceToLoadExternal(term, ctx);
 		});
 	// NOTE: Definitions of get-module is in module std.io in
 	//	%YFramework.NPL.Dependency.
@@ -641,12 +636,6 @@ LoadFunctions(Interpreter& intp)
 	global.EvaluateLeaf.Add(DefaultLeafDebugAction, 255);
 #endif
 }
-
-#undef RegisterLiteralSignal
-#undef RegisterBinary
-#undef RegisterUnary
-#undef RegisterStrict
-#undef RegisterForm
 
 //! \since YSLib build 926
 //!@{
