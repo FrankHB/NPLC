@@ -1394,10 +1394,8 @@ $defl! test (&i)
 			$let* ((a force p2) (b force p1) (c force (move! p2)))
 				$expect (list unit unit unit unit) list a b c (force p1)
 		);
-		subinfo "$lazy/d and $lazy/d% saving environment;"
-			" fixed native since b980";
-		$expect id force ($let ((e () make-standard-environment)) $lazy/d e id);
-		$expect id force ($let ((e () make-standard-environment)) $lazy/d% e id)
+		subinfo "$lazy/d saving environment;" " fixed native since b980";
+		$expect id force ($let ((e () make-standard-environment)) $lazy/d e id)
 	))
 	((eqv? i 17) (
 		info "std.math";

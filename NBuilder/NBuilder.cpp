@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9247
+\version r9254
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-09-23 08:46 +0800
+	2023-10-01 23:27 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -813,7 +813,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.5+ b978+"
+#define NPLC_VER "V1.5+ b979+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
@@ -902,10 +902,8 @@ main(int argc, char* argv[])
 
 		if(xargc > 1)
 		{
-			vector<string> args;
-			bool opt_trans(true);
-			bool requires_eval = {};
-			vector<string> eval_strs;
+			bool opt_trans = true, requires_eval = {};
+			vector<string> args, eval_strs;
 
 			for(size_t i(1); i < xargc; ++i)
 			{
@@ -927,12 +925,12 @@ main(int argc, char* argv[])
 						PrintHelpMessage(xargv[0]);
 						return;
 					}
-					else if(arg == "-e")
+					if(arg == "-e")
 					{
 						requires_eval = true;
 						continue;
 					}
-					else if(arg == "-q" || arg == "--no-init-file")
+					if(arg == "-q" || arg == "--no-init-file")
 					{
 						init_file = {};
 						continue;
