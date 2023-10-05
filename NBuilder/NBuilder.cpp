@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9257
+\version r9259
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-05 15:13 +0800
+	2023-10-05 15:18 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -43,7 +43,7 @@
 //	NPL::Forms function templates;
 #include YFM_NPL_NPLA1Root // for IsSymbol, NPL::Forms functions;
 #include YFM_NPL_NPLA1Extended // for NPL::Forms functions;
-#include YFM_NPL_Dependency // for EnvironmentGuard, A1::RelayToLoadExternal;
+#include YFM_NPL_Dependency // for EnvironmentGuard;
 #include YFM_YCLib_Host // for platform_ex::Terminal;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
 //	std::chrono::duration_cast;
@@ -603,7 +603,7 @@ LoadFunctions(Interpreter& intp)
 			RelaySwitched(ctx, A1::MoveKeptGuard(
 				EnvironmentGuard(ctx, ctx.SwitchEnvironment(rwenv.Lock()))));
 			SetupTailContext(ctx, term);
-			return A1::RelayToLoadExternal(ctx, term);
+			return Forms::ReduceToLoadExternal(term, ctx);
 		});
 	else
 		RegisterStrict(m, "load-at-root", trivial_swap,
