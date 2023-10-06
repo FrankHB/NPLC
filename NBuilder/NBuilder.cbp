@@ -32,15 +32,15 @@
 					<Add option="-fomit-frame-pointer" />
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
-					<Add option="-flto=jobserver" />
 					<Add option="-fno-enforce-eh-specs" />
+					<Add option="-flto=jobserver" />
 					<Add option="-DNDEBUG" />
 					<Add option="-DYB_DLL" />
 					<Add option="-DYF_DLL" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add option="-flto" />
+					<Add option="-flto=jobserver" />
 					<Add option="-Wl,-allow-multiple-definition" />
 					<Add library="YFramework" />
 					<Add library="YBase" />
@@ -52,32 +52,41 @@
 			<Add option="-Wshadow" />
 			<Add option="-Wredundant-decls" />
 			<Add option="-Wcast-align" />
+			<Add option="-Wfloat-equal" />
 			<Add option="-Wmissing-declarations" />
-			<Add option="-Wmissing-include-dirs" />
-			<Add option="-Wzero-as-null-pointer-constant" />
 			<Add option="-pedantic-errors" />
 			<Add option="-Wextra" />
 			<Add option="-Wall" />
+			<Add option="-fnew-inheriting-ctors" />
+			<Add option="-fno-strong-eval-order" />
 			<Add option="-std=c++11" />
+			<Add option="-pipe" />
 			<Add option="-Wctor-dtor-privacy" />
-			<Add option="-Winvalid-pch" />
-			<Add option="-Wsign-promo" />
+			<Add option="-Wconditionally-supported" />
 			<Add option="-Wdeprecated" />
 			<Add option="-Wdeprecated-declarations" />
-			<Add option="-Wformat=2" />
-			<Add option="-Wmultichar" />
-			<Add option="-Wno-format-nonliteral" />
 			<Add option="-Wdouble-promotion" />
-			<Add option="-Wfloat-equal" />
+			<Add option="-Wformat=2" />
+			<Add option="-Wno-format-nonliteral" />
+			<Add option="-Winvalid-pch" />
 			<Add option="-Wlogical-op" />
-			<Add option="-Wsign-conversion" />
-			<Add option="-Wtrampolines" />
-			<Add option="-Wconditionally-supported" />
+			<Add option="-Wno-mismatched-tags" />
+			<Add option="-Wmissing-include-dirs" />
+			<Add option="-Wmultichar" />
 			<Add option="-Wno-noexcept-type" />
+			<Add option="-Woverloaded-virtual" />
 			<Add option="-Wpacked" />
+			<Add option="-Wsign-conversion" />
+			<Add option="-Wsign-promo" />
 			<Add option="-Wstrict-null-sentinel" />
-			<Add option="-fdata-sections" />
-			<Add option="-ffunction-sections" />
+			<Add option="-Wstringop-overflow=0" />
+			<Add option="-Wsuggest-attribute=const" />
+			<Add option="-Wsuggest-attribute=noreturn" />
+			<Add option="-Wsuggest-attribute=pure" />
+			<Add option="-Wsuggest-final-methods" />
+			<Add option="-Wsuggest-final-types" />
+			<Add option="-Wtrampolines" />
+			<Add option="-Wzero-as-null-pointer-constant" />
 			<Add option="-mthreads" />
 			<Add option="-U__GXX_TYPEINFO_EQUALITY_INLINE" />
 			<Add option="-U__GXX_MERGED_TYPEINFO_NAMES" />
@@ -85,8 +94,8 @@
 			<Add option="-D__GXX_MERGED_TYPEINFO_NAMES=0" />
 		</Compiler>
 		<Linker>
-			<Add option="-Wl,--gc-sections" />
 			<Add option="-pipe" />
+			<Add option="-Wl,--gc-sections" />
 		</Linker>
 		<Unit filename="Interpreter.cpp" />
 		<Unit filename="Interpreter.h" />
