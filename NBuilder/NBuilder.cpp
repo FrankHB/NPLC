@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9285
+\version r9302
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-06 11:56 +0800
+	2023-10-06 12:00 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -71,6 +71,21 @@ namespace NBuilder
 #endif
 
 /*!
+\def NPLC_Impl_TestParseStream
+\brief 测试解析流。
+\since YSLib build 980
+
+若定义为非零值，则启用测试解析流的相关特性。
+*/
+#ifndef NPLC_Impl_TestParseStream
+#	ifndef NDEBUG
+#		define NPLC_Impl_TestParseStream true
+#	else
+#		define NPLC_Impl_TestParseStream false
+#	endif
+#endif
+
+/*!
 \def NPLC_Impl_TestTemporaryOrder
 \brief 测试临时对象操作顺序。
 
@@ -111,6 +126,7 @@ template<class _tStream>
 using GPortHolder = YSLib::PolymorphicValueHolder<std::ios_base, _tStream>;
 #endif
 
+#if NPLC_Impl_TestParseStream
 void
 ParseStream(std::ios_base& sbase)
 {
@@ -139,6 +155,7 @@ ParseStream(std::ios_base& sbase)
 		is.seekg(0);
 	}
 }
+#endif
 //!@}
 
 
@@ -634,7 +651,9 @@ LoadFunctions(Interpreter& intp)
 		});
 	// NOTE: Definitions of get-module is in module std.io in
 	//	%YFramework.NPL.Dependency.
+#if NPLC_Impl_TestParseStream
 	RegisterUnary<Strict, std::ios_base>(m, "parse-stream", ParseStream);
+#endif
 #if NPLC_Impl_TestTemporaryOrder
 	RegisterUnary<Strict, const string>(m, "mark-guard", [](string str){
 		return MarkGuard(std::move(str));
