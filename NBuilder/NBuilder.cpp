@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9260
+\version r9262
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-06 10:51 +0800
+	2023-10-06 11:43 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -337,7 +337,6 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Literal expression forms.
 	RegisterForm(m, "$retain", Retain);
 	RegisterForm(m, "$retain1", trivial_swap, ystdex::bind1(RetainN, 1));
-#if true
 	// NOTE: Primitive features, listed as RnRK, except mentioned above. See
 	//	%YFramework.NPL.Dependency.
 	// NOTE: Definitions of eq?, eql?, eqr? and eqv? are in
@@ -397,7 +396,6 @@ LoadFunctions(Interpreter& intp)
 	// NOTE: Definitions of raise-error, raise-invalid-syntax-error,
 	//	raise-type-error, check-list-reference, check-pair-reference and
 	//	make-encapsulation-type are in %YFramework.NPL.Dependency.
-#endif
 	// NOTE: NPLA value transferring.
 	RegisterUnary(m, "vcopy", [](const TermNode& x){
 		return x.Value.MakeCopy();
