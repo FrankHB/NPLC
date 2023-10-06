@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9326
+\version r9329
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-06 14:49 +0800
+	2023-10-06 15:03 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -499,9 +499,7 @@ LoadFunctions(Interpreter& intp)
 		else if(cmd == "crash")
 			terminate();
 	});
-	RegisterForm(m, "$crash", []{
-		terminate();
-	});
+	RegisterForm(m, "$crash", terminate);
 	RegisterUnary<Strict, const string>(m, "trace", trivial_swap,
 		[&](const string& cmd){
 		const auto set_t_lv([&](const string& str) -> Logger::Level{
