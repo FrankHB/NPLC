@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9329
+\version r9343
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-06 15:03 +0800
+	2023-10-06 15:09 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -71,6 +71,20 @@ namespace NBuilder
 
 //! \since YSLib build 980
 //!@{
+/*!
+\def NPLC_Impl_TermInteroperations
+\brief 项互操作。
+
+若定义为非零值，则启用项互操作的相关特性。
+*/
+#ifndef NPLC_Impl_TermInteroperations
+#	ifndef NDEBUG
+#		define NPLC_Impl_TermInteroperations true
+#	else
+#		define NPLC_Impl_TermInteroperations false
+#	endif
+#endif
+
 /*!
 \def NPLC_Impl_TestLoadAtRoot
 \brief 测试根环境加载。
@@ -451,6 +465,7 @@ LoadFunctions(Interpreter& intp)
 	//	raise-type-error, check-list-reference, check-pair-reference and
 	//	make-encapsulation-type are in %YFramework.NPL.Dependency.
 	// NOTE: NPLA value transferring.
+#if NPLC_Impl_TermInteroperations
 	RegisterUnary(m, "vcopy", [](const TermNode& x){
 		return x.Value.MakeCopy();
 	});
@@ -488,6 +503,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterStrict(m, "tmovecopy", [](TermNode& term){
 		return TermCopyOrMove<const TermNode>(term, &ValueObject::MakeMoveCopy);
 	});
+#endif
 	// XXX: For test or debug only.
 #if NPLC_Impl_DebugAction
 	RegisterUnary(m, "tt", DefaultDebugAction);
