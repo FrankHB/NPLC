@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9302
+\version r9325
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-06 12:00 +0800
+	2023-10-06 14:42 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -54,11 +54,10 @@
 namespace NBuilder
 {
 
-//! \since YSLib build 878
-//!@{
 /*!
 \def NPLC_Impl_DebugAction
 \brief 实现调试动作。
+\since YSLib build 878
 
 若定义为非零值，则启用实现调试动作的相关特性。
 */
@@ -70,10 +69,25 @@ namespace NBuilder
 #	endif
 #endif
 
+//! \since YSLib build 980
+//!@{
+/*!
+\def NPLC_Impl_TestLoadAtRoot
+\brief 测试根环境加载。
+
+若定义为非零值，则启用测试根环境加载的相关特性。
+*/
+#ifndef NPLC_Impl_TestLoadAtRoot
+#	ifndef NDEBUG
+#		define NPLC_Impl_TestLoadAtRoot true
+#	else
+#		define NPLC_Impl_TestLoadAtRoot false
+#	endif
+#endif
+
 /*!
 \def NPLC_Impl_TestParseStream
 \brief 测试解析流。
-\since YSLib build 980
 
 若定义为非零值，则启用测试解析流的相关特性。
 */
@@ -84,10 +98,12 @@ namespace NBuilder
 #		define NPLC_Impl_TestParseStream false
 #	endif
 #endif
+//!@}
 
 /*!
 \def NPLC_Impl_TestTemporaryOrder
 \brief 测试临时对象操作顺序。
+\since YSLib build 878
 
 若定义为非零值，则启用测试临时对象操作顺序的相关特性。
 */
@@ -98,7 +114,6 @@ namespace NBuilder
 #		define NPLC_Impl_TestTemporaryOrder false
 #	endif
 #endif
-//!@}
 
 void
 RegisterLiteralSignal(BindingMap& m, const string& name, SSignal sig)
@@ -368,9 +383,11 @@ LoadFunctions(Interpreter& intp)
 	// XXX: Temporarily unfreeze the environment to allow the external
 	//	definitions in the ground environment.
 	renv.Unfreeze();
+#if NPLC_Impl_TestLoadAtRoot
 
 	const auto rwenv(cs.WeakenRecord());
 
+#endif
 	// NOTE: Literal expression forms.
 	RegisterForm(m, "$retain", Retain);
 	RegisterForm(m, "$retain1", trivial_swap, ystdex::bind1(RetainN, 1));
@@ -630,6 +647,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterUnary<Strict, const string>(m, "echo", Echo);
 	// NOTE: Definitions of load is in module std.io in
 	//	%YFramework.NPL.Dependency.
+#if NPLC_Impl_TestLoadAtRoot
 	if(global.IsAsynchronous())
 		RegisterStrict(m, "load-at-root", trivial_swap,
 			[&, rwenv](TermNode& term, ContextNode& ctx){
@@ -649,6 +667,7 @@ LoadFunctions(Interpreter& intp)
 
 			return Forms::ReduceToLoadExternal(term, ctx);
 		});
+#endif
 	// NOTE: Definitions of get-module is in module std.io in
 	//	%YFramework.NPL.Dependency.
 #if NPLC_Impl_TestParseStream
