@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9259
+\version r9260
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-05 15:18 +0800
+	2023-10-06 10:51 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -523,7 +523,7 @@ LoadFunctions(Interpreter& intp)
 	//	%YFramework.NPL.Dependency.
 	RegisterUnary<Strict, const string>(m, "string-length",
 		[&](const string& str) ynothrow{
-		return int(str.length());
+		return str.length();
 	});
 	// NOTE: Definitions of string-contains?, string-contains-ci?,
 	//	string->symbol, symbol->string, string->regex, regex-match? are in
