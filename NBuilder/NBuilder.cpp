@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9343
+\version r9448
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-06 15:09 +0800
+	2023-10-06 18:11 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -29,18 +29,20 @@
 //	trivial_swap, default_allocator, std::ios_base, std::istream, ContextState,
 //	ystdex::invoke_value_or, A1::MoveKeptGuard, istringstream, FilterExceptions,
 //	EXIT_FAILURE, EXIT_SUCCESS;
+#include YFM_NPL_NPLA1Forms // for NPL_A1Forms_API, TermNode, Retain, RetainN,
+//	NPL::ResolveRegular, ThrowInvalidSyntaxError, ContextNode,
+//	std::throw_with_nested, TypeError, ReductionStatus, Environment,
+//	NPL::Forms function templates, ContextHandler, ResolvedTermReferencePtr,
+//	A1::ReduceToLoadFile, NPL::Deref, SetupTailContext;
 #include <ystdex/base.h> // for ystdex::noncopyable;
-#include <ystdex/string.hpp> // for getline, ystdex::write_literal,
-//	ystdex::sfmt;
+#include <ystdex/string.hpp> // for ystdex::sfmt, getline,
+//	ystdex::write_literal;
 #include <iostream> // for std::clog, std::cout, std::endl,
 //	std::ios_base::unitbuf;
 #include YFM_YSLib_Core_YObject // for YSLib::PolymorphicAllocatorHolder,
 //	YSLib::PolymorphicValueHolder, type_index, to_string, make_string_view,
 //	YSLib::to_std_string, std::stoi;
 #include <sstream> // for complete istringstream;
-#include <Helper/YModules.h>
-#include YFM_NPL_NPLA1Forms // for RetainN, SetupTailContext,
-//	NPL::Forms function templates;
 #include YFM_NPL_NPLA1Root // for IsSymbol, NPL::Forms functions;
 #include YFM_NPL_NPLA1Extended // for NPL::Forms functions;
 #include YFM_NPL_Dependency // for EnvironmentGuard;
@@ -48,11 +50,8 @@
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
 //	std::chrono::duration_cast;
 #include <ytest/timing.hpp> // for ytest::timing::once;
+#include <Helper/YModules.h>
 #include YFM_Helper_Initialization // for YSLib::TraceForOutermost;
-
-//! \since YSLib build 957
-namespace NBuilder
-{
 
 /*!
 \def NPLC_Impl_DebugAction
@@ -113,6 +112,119 @@ namespace NBuilder
 #	endif
 #endif
 //!@}
+
+//! \since YSLib build 980
+//!@{
+#if __cplusplus >= 202002L
+#	define NPLC_Impl_IsEmpty(...) (true __VA_OPT__( && false))
+#else
+#	define NPLC_Impl_IsEmpty(...) true
+#endif
+
+// XXX: To simplify the implementation, only try detecting the empty value with
+//	ISO C++20 support.
+#if YCL_Win32 && defined(YF_DLL) && NPLC_Impl_IsEmpty(NPL_A1Forms_API)
+#	define NPLC_Impl_RestrictedForms true
+#else
+#	define NPLC_Impl_RestrictedForms false
+#endif
+
+#if NPLC_Impl_RestrictedForms
+namespace NPL
+{
+
+namespace A1
+{
+
+// NOTE: This implements functions not publicly exported from libYFramework by
+//	default.
+namespace Forms
+{
+
+namespace
+{
+
+YB_ATTR_nodiscard const TokenValue&
+UndefineId(TermNode& term)
+{
+	Retain(term);
+	if(term.size() == 2)
+		return NPL::ResolveRegular<const TokenValue>(*std::next(term.begin()));
+	ThrowInvalidSyntaxError("Expected exact one term as name to be undefined.");
+}
+
+YB_ATTR_nodiscard BindingMap&
+FetchUndefineMapRef(ContextNode& ctx)
+{
+	TryRet(ctx.GetRecordRef().GetMapCheckedRef())
+	CatchExpr(..., std::throw_with_nested(
+		TypeError("Cannot remove a variable in a frozen environment.")))
+}
+
+YB_NORETURN ReductionStatus
+ThrowForWrappingFailure(const type_info& ti)
+{
+	throw TypeError(ystdex::sfmt("Wrapping failed with type '%s'.", ti.name()));
+}
+
+} // unnamed namespace;
+
+void
+Undefine(TermNode& term, ContextNode& ctx)
+{
+	const auto& id(UndefineId(term));
+
+	term.Value = Environment::Remove(FetchUndefineMapRef(ctx), id);
+}
+
+void
+UndefineChecked(TermNode& term, ContextNode& ctx)
+{
+	const auto& id(UndefineId(term));
+
+	Environment::RemoveChecked(FetchUndefineMapRef(ctx), id);
+}
+
+ReductionStatus
+WrapOnce(TermNode& term)
+{
+	return Forms::CallRegularUnaryAs<ContextHandler>([&](ContextHandler& h,
+		ResolvedTermReferencePtr p_ref) -> ReductionStatus{
+		if(const auto p = h.target<FormContextHandler>())
+		{
+			auto& fch(*p);
+
+			if(fch.IsOperative())
+				return ReduceMakeForm(term, MakeValueOrMove(p_ref, [&]{
+					return fch.Handler;
+				}, [&]{
+					return std::move(fch.Handler);
+				}), 1);
+			ThrowForWrappingFailure(type_id<FormContextHandler>());
+		}
+		ThrowForWrappingFailure(h.target_type());
+	}, term);
+}
+#	if NPLC_Impl_TestLoadAtRoot
+ReductionStatus
+ReduceToLoadExternal(TermNode& term, ContextNode& ctx)
+{
+	return A1::ReduceToLoadFile(term, ctx, string(NPL::ResolveRegular<const
+		string>(NPL::Deref(std::next(term.begin()))), term.get_allocator()));
+}
+#	endif
+
+} // namespace Forms;
+
+} // namespace A1;
+
+} // namespace NPL;
+#endif
+//!@}
+
+//! \since YSLib build 957
+namespace NBuilder
+{
 
 /*!
 \def NPLC_Impl_TestTemporaryOrder
@@ -452,7 +564,9 @@ LoadFunctions(Interpreter& intp)
 	//	%YFramework.NPL.Dependency.
 	// NOTE: The applicatives 'wrap1' and 'wrap1%' do check before wrapping.
 	RegisterStrict(m, "wrap1", WrapOnce);
+#if !NPLC_Impl_RestrictedForms
 	RegisterStrict(m, "wrap1%", WrapOnceRef);
+#endif
 	// XXX: Use unsigned count.
 	RegisterBinary<Strict, const ContextHandler, const int>(m, "wrap-n",
 		[](const ContextHandler& h, int n) -> ContextHandler{
