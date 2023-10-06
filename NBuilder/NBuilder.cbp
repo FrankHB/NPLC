@@ -13,6 +13,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="-Wa,-mbig-obj" />
 					<Add option="-D_GLIBCXX_DEBUG_PEDANTIC" />
 					<Add option="-DYB_DLL" />
 					<Add option="-DYF_DLL" />
