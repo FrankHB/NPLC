@@ -78,9 +78,10 @@
 			<Add option="-fdata-sections" />
 			<Add option="-ffunction-sections" />
 			<Add option="-mthreads" />
-			<Add option="-pipe" />
+			<Add option="-U__GXX_TYPEINFO_EQUALITY_INLINE" />
 			<Add option="-U__GXX_MERGED_TYPEINFO_NAMES" />
-			<Add option="-D__GXX_MERGED_TYPEINFO_NAMES=1" />
+			<Add option="-D__GXX_TYPEINFO_EQUALITY_INLINE=1" />
+			<Add option="-D__GXX_MERGED_TYPEINFO_NAMES=0" />
 		</Compiler>
 		<Linker>
 			<Add option="-Wl,--gc-sections" />
