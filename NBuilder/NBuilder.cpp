@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9262
+\version r9285
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-06 11:43 +0800
+	2023-10-06 11:56 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -56,12 +56,32 @@ namespace NBuilder
 
 //! \since YSLib build 878
 //!@{
-#ifdef NDEBUG
-#	define NPLC_Impl_DebugAction false
-#	define NPLC_Impl_TestTemporaryOrder false
-#else
-#	define NPLC_Impl_DebugAction true
-#	define NPLC_Impl_TestTemporaryOrder true
+/*!
+\def NPLC_Impl_DebugAction
+\brief 实现调试动作。
+
+若定义为非零值，则启用实现调试动作的相关特性。
+*/
+#ifndef NPLC_Impl_DebugAction
+#	ifndef NDEBUG
+#		define NPLC_Impl_DebugAction true
+#	else
+#		define NPLC_Impl_DebugAction false
+#	endif
+#endif
+
+/*!
+\def NPLC_Impl_TestTemporaryOrder
+\brief 测试临时对象操作顺序。
+
+若定义为非零值，则启用测试临时对象操作顺序的相关特性。
+*/
+#ifndef NPLC_Impl_TestTemporaryOrder
+#	ifndef NDEBUG
+#		define NPLC_Impl_TestTemporaryOrder true
+#	else
+#		define NPLC_Impl_TestTemporaryOrder false
+#	endif
 #endif
 //!@}
 
