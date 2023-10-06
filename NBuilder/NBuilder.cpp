@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9325
+\version r9326
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-06 14:42 +0800
+	2023-10-06 14:49 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -499,7 +499,6 @@ LoadFunctions(Interpreter& intp)
 		else if(cmd == "crash")
 			terminate();
 	});
-#endif
 	RegisterForm(m, "$crash", []{
 		terminate();
 	});
@@ -522,6 +521,7 @@ LoadFunctions(Interpreter& intp)
 		else
 			throw std::invalid_argument("Invalid trace option found.");
 	});
+#endif
 	// NOTE: Object interoperation.
 	RegisterUnary<Strict, const type_index>(m, "nameof",
 		[](const type_index& ti){
