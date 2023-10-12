@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9458
+\version r9462
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-13 00:42 +0800
+	2023-10-13 01:10 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -27,8 +27,8 @@
 
 #include "NBuilder.h" // for NPL, A1, NPL::EmplaceLeaf, NPL::A1::LiteralHandler,
 //	trivial_swap, default_allocator, std::ios_base, std::istream, ContextState,
-//	ystdex::invoke_value_or, A1::MoveKeptGuard, istringstream, FilterExceptions,
-//	EXIT_FAILURE, EXIT_SUCCESS;
+//	terminate, DebugTrap, ystdex::invoke_value_or, istringstream,
+//	A1::MoveKeptGuard, FilterExceptions, EXIT_FAILURE, EXIT_SUCCESS;
 #include YFM_NPL_NPLA1Forms // for NPL_A1Forms_API, TermNode, Retain, RetainN,
 //	NPL::ResolveRegular, ThrowInvalidSyntaxError, ContextNode,
 //	std::throw_with_nested, TypeError, ReductionStatus, Environment,
@@ -630,6 +630,8 @@ LoadFunctions(Interpreter& intp)
 			use_debug = {};
 		else if(cmd == "crash")
 			terminate();
+		else if(cmd == "trap")
+			DebugTrap();
 	});
 	RegisterForm(m, "$crash", terminate);
 	RegisterUnary<Strict, const string>(m, "trace", trivial_swap,
