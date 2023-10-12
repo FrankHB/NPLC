@@ -11,13 +11,13 @@
 /*!	\file NBuilder.cpp
 \ingroup NBuilder
 \brief NPL 解释实现。
-\version r9449
+\version r9458
 \author FrankHB<frankhb1989@gmail.com>
 \since YSLib build 301
 \par 创建时间:
 	2011-07-02 07:26:21 +0800
 \par 修改时间:
-	2023-10-06 19:09 +0800
+	2023-10-13 00:42 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -34,18 +34,18 @@
 //	std::throw_with_nested, TypeError, ReductionStatus, Environment,
 //	NPL::Forms function templates, ContextHandler, ResolvedTermReferencePtr,
 //	A1::ReduceToLoadFile, NPL::Deref, SetupTailContext;
-#include <ystdex/base.h> // for ystdex::noncopyable;
 #include <ystdex/string.hpp> // for ystdex::sfmt, getline,
 //	ystdex::write_literal;
-#include <iostream> // for std::clog, std::cout, std::endl,
-//	std::ios_base::unitbuf;
 #include YFM_YSLib_Core_YObject // for YSLib::PolymorphicAllocatorHolder,
 //	YSLib::PolymorphicValueHolder, type_index, to_string, make_string_view,
 //	YSLib::to_std_string, std::stoi;
-#include <sstream> // for complete istringstream;
+#include <iostream> // for std::clog, std::cout, std::endl,
+//	std::ios_base::unitbuf;
+#include <ystdex/base.h> // for ystdex::noncopyable;
 #include YFM_NPL_NPLA1Root // for IsSymbol, NPL::Forms functions;
-#include YFM_NPL_NPLA1Extended // for NPL::Forms functions;
+#include <sstream> // for complete istringstream;
 #include YFM_NPL_Dependency // for EnvironmentGuard;
+#include YFM_NPL_NPLA1Extended // for Forms::ReduceToLoadExternal;
 #include YFM_YCLib_Host // for platform_ex::Terminal;
 #include YFM_YSLib_Core_YClock // for YSLib::Timers::HighResolutionClock,
 //	std::chrono::duration_cast;
@@ -303,6 +303,8 @@ ParseStream(std::ios_base& sbase)
 //! \since YSLib build 955
 observer_ptr<const GlobalState> p_global;
 
+// XXX: This may require disabling of %NPLC_Impl_FastAsyncReduce in
+//	Interpreter.cpp to work properly.
 #if NPLC_Impl_DebugAction
 //! \since YSLib build 785
 //!@{
@@ -999,7 +1001,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define NPLC_NAME "NPL console"
-#define NPLC_VER "V1.6 b980"
+#define NPLC_VER "V1.6 b980+"
 #if YCL_Win32
 #	define NPLC_PLATFORM "[MinGW32]"
 #elif YCL_Linux
