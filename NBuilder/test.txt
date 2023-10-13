@@ -1032,6 +1032,8 @@ $defl! test (&i)
 		$expect 5 $let ((&x 2) (&y 3)) + x y;
 		subinfo "$let*";
 		$expect 4 $let* ((&x 2) (&y x)) + x y;
+		subinfo "$let*% with non-empty bindings; fixed native since b981";
+		$check reference? ($let*% ((b 2)) q-a);
 		subinfo "$letrec";
 		$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
 		subinfo "$letrec%; fixed since b939";
