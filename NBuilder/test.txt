@@ -1304,6 +1304,8 @@ $defl! test (&i)
 			force (expire p1);
 			$expect-moved force ($lazy p1)
 		);
+		subinfo "$lazy% reference preserving;" " fixed derivation since b981";
+		$check reference? (force ($lazy% q-a));
 		subinfo "force idempotence";
 		$let ((a unit))
 		(
