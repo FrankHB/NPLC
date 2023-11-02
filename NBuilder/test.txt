@@ -227,6 +227,12 @@ $defl! test (&i)
 			$expect (list% #f #f #t #t #f)
 				list% (lv? 1) (lv? ()) (lv? lv?) (lv? (id lv?))
 					(lv? (idv lv?));
+		subinfo "delayed environment modification";
+		$expect 4 $let () ($def! f $lambda (x) + x y; $def! y 3; f 1);
+		subinfo "delayed environment modification with Scheme-like syntax";
+		$expect 4 $let
+			((let $let) (begin $sequence) (define $def!) (lambda $lambda))
+			(let () (begin (define f (lambda (x) (+ x y))) (define y 3) (f 1)));
 		subinfo "simple recursive thunks without thunk cleanup";
 		$expect 1 $let () ($defrec! a 1; a);
 		$expect 1 $let () ($defrec! (a a) list 1 1; a);
