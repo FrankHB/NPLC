@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r4111
+\version r4122
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-11-07 22:34 +0800
+	2023-11-07 22:46 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -704,8 +704,6 @@ GetMonotonicPoolRef()
 using Redirector = Environment::Redirector;
 
 // XXX: This is essentially same to %ContextNode::DefaultResolve.
-//! \since YSLib build 962
-//!@{
 //! \since YSLib build 963
 YB_ATTR_nodiscard bool
 ResolveRedirect(shared_ptr<Environment>& p_env, Redirector& cont)
@@ -729,13 +727,12 @@ ResolveRedirect(shared_ptr<Environment>& p_env, Redirector& cont)
 	return {};
 }
 
+//! \since YSLib build 981
 YB_ATTR_nodiscard NameResolution::first_type
-ResolveDefault(shared_ptr<Environment>& p_env, string_view id)
+ResolveDefaultRedirect(shared_ptr<Environment>& p_env, string_view id,
+	Redirector& cont)
 {
 	YAssertNonnull(p_env);
-
-	Redirector cont;
-
 	return ystdex::retry_on_cond(
 #if YB_IMPL_GNUCPP >= 120000
 		[&](NameResolution::first_type p)
@@ -748,7 +745,15 @@ ResolveDefault(shared_ptr<Environment>& p_env, string_view id)
 		return LookupName(p_env->GetMapUncheckedRef(), id);
 	});
 }
-//!@}
+
+//! \since YSLib build 962
+YB_ATTR_nodiscard NameResolution::first_type
+ResolveDefault(shared_ptr<Environment>& p_env, string_view id)
+{
+	Redirector cont;
+
+	return ResolveDefaultRedirect(p_env, id, cont);
+}
 
 // XXX: There are several fast asynchrnous reduction assumptions from NPLA1.
 //	1. For the leaf values other than value tokens, the next term is not relied
