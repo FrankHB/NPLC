@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r4097
+\version r4111
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-05-12 03:37 +0800
+	2023-11-07 22:34 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -832,10 +832,13 @@ ReduceFastSimple(TermNode& term, ContextState& cs, _fReducePair reduce_pair)
 {
 	return ReduceFastTmpl(term, cs,
 		[&](TermNode& bound, const shared_ptr<Environment>& p_env){
-		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref)
+		return ResolveTerm(
 		// XXX: Ditto.
-#if YB_IMPL_GNUCPP < 120000
-			YB_FLATTEN
+#if YB_IMPL_GNUCPP >= 120000
+			[&](TermNode& nd, ResolvedTermReferencePtr p_ref)
+#else
+			[&] YB_LAMBDA_ANNOTATE(
+				(TermNode& nd, ResolvedTermReferencePtr p_ref), , flatten)
 #endif
 		{
 			EvaluateFastNonListCore(term, p_env, bound, p_ref);
@@ -883,16 +886,20 @@ ReduceFastBranchNotNested(TermNode& term, ContextState& cs)
 			return ReduceCombinedBranch(term, cs);
 		}, [&](TermNode&, ContextNode& ctx){
 			// XXX: %trivial_swap is not used here to avoid worse inlining.
-			RelaySwitched(ctx, A1::NameTypedReducerHandler([&](ContextNode& c)
+			RelaySwitched(ctx, A1::NameTypedReducerHandler(
 #if YB_IMPL_GNUCPP >= 120000
-				YB_ATTR(noinline)
+				[&] YB_LAMBDA_ANNOTATE((ContextNode& c), , noinline)
+#else
+				[&](ContextNode& c)
 #endif
 			{
 				return A1::ReduceCombinedBranch(term, c);
 			}, "eval-combine-operands"));
-			return RelaySwitched(ctx, trivial_swap, [&](ContextNode& c)
+			return RelaySwitched(ctx, trivial_swap,
 #if YB_IMPL_GNUCPP >= 120000
-				YB_ATTR(noinline)
+				[&] YB_LAMBDA_ANNOTATE((ContextNode& c), , noinline)
+#else
+				[&](ContextNode& c)
 #endif
 			{
 				return ReduceFastBranch(sub, ContextState::Access(c));
