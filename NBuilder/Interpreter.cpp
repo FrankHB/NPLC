@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r4122
+\version r4123
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-11-07 22:46 +0800
+	2023-11-17 01:18 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -921,7 +921,7 @@ ReduceFastBranch(TermNode& term, ContextState& cs)
 	{
 		auto term_ref(ystdex::ref(term));
 
-		ystdex::retry_on_cond([&] YB_LAMBDA_ANNOTATE((), , pure){
+		ystdex::retry_on_cond([&] YB_LAMBDA_ANNOTATE((), ynothrow, pure){
 			return IsSingleElementList(term_ref);
 		}, [&]{
 			term_ref = AccessFirstSubterm(term_ref);
