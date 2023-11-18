@@ -11,13 +11,13 @@
 /*!	\file Interpreter.cpp
 \ingroup NBuilder
 \brief NPL 解释器。
-\version r4123
+\version r4136
 \author FrankHB <frankhb1989@gmail.com>
 \since YSLib build 403
 \par 创建时间:
 	2013-05-09 17:23:17 +0800
 \par 修改时间:
-	2023-11-17 01:18 +0800
+	2023-11-19 04:45 +0800
 \par 文本编码:
 	UTF-8
 \par 模块名称:
@@ -764,22 +764,26 @@ ResolveDefault(shared_ptr<Environment>& p_env, string_view id)
 //		context asnynchrnously.
 //	4. The 1st subterm of the combining term is not relied on in the context
 //		handler calls.
-//! \since YSLib build 945
-//!@{
-YB_FLATTEN void
+//! \since YSLib build 981
+YB_FLATTEN ReductionStatus
 EvaluateFastNonListCore(TermNode& term, const shared_ptr<Environment>& p_env,
 	TermNode& bound, ResolvedTermReferencePtr p_ref)
 {
 	// XXX: Some uses of allocator are different to YSLib for performance.
 	if(p_ref)
+	{
 		term.SetContent(bound.GetContainer(), ValueObject(in_place_type<
 			TermReference>, p_ref->GetTags() & ~TermTags::Unique, *p_ref));
-	else
-		term.SetValue(in_place_type<TermReference>,
-			NPL::Deref(p_env).MakeTermTags(bound) & ~TermTags::Unique, bound,
-			EnvironmentReference(p_env, NPL::Deref(p_env).GetAnchorPtr()));
+		return ReductionStatus::Neutral;
+	}
+	term.SetValue(in_place_type<TermReference>,
+		NPL::Deref(p_env).MakeTermTags(bound) & ~TermTags::Unique, bound,
+		EnvironmentReference(p_env, NPL::Deref(p_env).GetAnchorPtr()));
+	return ReductionStatus::Clean;
 }
 
+//! \since YSLib build 945
+//!@{
 template<typename _func, typename _func2, typename _fReducePair>
 // XXX: This is less efficient at least on x86_64-pc-linux G++ 12.1.
 #if YB_IMPL_GNUCPP < 120000
@@ -846,10 +850,11 @@ ReduceFastSimple(TermNode& term, ContextState& cs, _fReducePair reduce_pair)
 				(TermNode& nd, ResolvedTermReferencePtr p_ref), , flatten)
 #endif
 		{
-			EvaluateFastNonListCore(term, p_env, bound, p_ref);
+			const auto res(EvaluateFastNonListCore(term, p_env, bound, p_ref));
+
 			// XXX: This is safe, cf. assumption 3.
 			A1::EvaluateLiteralHandler(term, cs, nd);
-			return ReductionStatus::Neutral;
+			return res;
 		}, bound);
 	}, [] YB_LAMBDA_ANNOTATE((), ynothrow, const){
 		return ReductionStatus::Retained;
