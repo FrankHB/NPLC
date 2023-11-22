@@ -783,8 +783,13 @@ $defl! test (&i)
 		$check eq? (rest% (cons% 2 q-a)) q-a;
 		subinfo "rest& improper list access;" " fixed native since b953";
 		$let ((ca cons 1 2)) $expect 2 idv (rest& ca);
-		subinfo "subpair reference referent;" " fixed since b952";
-		$let* ((pr cons 1 2) ((#ignore .&xs) pr)) $check-not uncollapsed? xs;
+		$let* ((pr cons 1 2) ((#ignore .&xs) pr))
+		(
+			subinfo "subpair reference referent;" " fixed since b952";
+			$check-not uncollapsed? xs;
+			subinfo "subpair reference temporary;" " fixed since b981";
+			$check temporary? xs;
+		);
 		subinfo "list lambda binding";
 		apply ($lambda% (&x &y) x) (list% q-li q-li2);
 		subinfo "list modification";
