@@ -737,6 +737,8 @@ $defl! test (&i)
 			$check unique? (rest& (expire l2));
 			$check unique? (rest& (expire l3))
 		);
+		subinfo "restv xvalue assertion;" " fixed native since b981";
+		$expect () $let ((&l list 1)) restv (expire l);
 		subinfo "first forwarding;" " fixed derivation since b939";
 		$let ()
 		(
