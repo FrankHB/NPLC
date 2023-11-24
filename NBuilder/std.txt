@@ -103,13 +103,13 @@ $defl! typeid-match? (&x &id) eqv? (get-typeid id) (typeid x);
 $defl! bool? (&x) typeid-match? x "bool";
 $defl/e! basic-identifier? std.strings (&x)
 	$if (symbol? x) (symbol-string? (symbol->string x)) #f;
-$defl! environment? (&x) $or (typeid-match? x "environment")
-	(typeid-match? x "environment#owned");
+$defl! environment? (&x)
+	$or (typeid-match? x "environment") (typeid-match? x "environment#owned");
 $defl! combiner? (&x) typeid-match? x "combiner";
-$defl! operative? (&x) $and (combiner? x)
-	(eqv? (get-wrapping-count x) 0);
-$defl! applicative? (&x) $and (combiner? x)
-	(not? (eqv? (get-wrapping-count x) 0));
+$defl/e! operative? std.math (&x)
+	$and (combiner? x) (=? (get-wrapping-count x) 0);
+$defl/e! applicative? std.math (&x)
+	$and (combiner? x) (not? (=? (get-wrapping-count x) 0));
 $defl! int? (&x) typeid-match? x "int";
 
 "NOTE", "Numeric library.";
