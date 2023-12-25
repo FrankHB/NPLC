@@ -1,20 +1,15 @@
-﻿"#", "(C) 2017-2022 FrankHB.",
+﻿"#", "(C) 2017-2023 FrankHB.",
 "NPLC basic derivation extension modules.";
 
+"NOTE", "Some of deriveations are defined in %YFramework.NPL.Dependency.";
 $def! $rem $vau . #ignore "";
 $def! $redef! $def!;
 $defv%! $unspecified ((&x .)) d forward! (eval% x d);
 $defv! $defu! (&x .&xs) d eval (list $set! d x $unspecified xs) d;
 
 "NOTE", "Core library.";
-"NOTE", "Definitions of id, idv, list, list%, rlist, $quote, $defl!, first,",
-	" first&, restv, rest%, rest& are in %YFramework.NPL.Dependency.";
 $defl! xcons (&x &y) cons y x;
 $defl! xcons% (&x &y) cons% y x;
-"NOTE", "Definitions of $set!, $defv!, $lambda, $setrec!, $defl!,",
-	" apply, list*, $defw!, $lambda/e, $sequence, get-current-environment,",
-	" $cond, make-standard-environment, not?, $when, $unless are in",
-	" %YFramework.NPL.Dependency.";
 $defv%! $while (&test .&exprseq) d
 	$when (eval test d)
 		(eval% (list* () $sequence exprseq) d)
@@ -32,21 +27,15 @@ $defl%! or &x $sequence
 		($let% ((&c forward! (first% l)))
 			or-aux (forward! ($if c c h)) (forward! (rest% l))))
 	(or-aux #f (forward! x));
-"NOTE", "Definitions of $and, $or, first-null?, accl, accr are in",
-	" %YFramework.NPL.Dependency.";
 $defw%! foldl1 (&kons &knil &l) d
 	apply accl (list% (forward! l) null? (forward! knil) first rest% kons) d;
 $defw%! map1-reverse (&appv &l) d foldl1
 	($lambda (&x &xs) cons (apply appv (list% (forward! x)) d) xs) () l;
-"NOTE", "Definitions of foldr1, map1, list-concat are in",
-	" %YFramework.NPL.Dependency.";
 $defl! list-copy-strict (l) foldr1 cons () (forward! l);
 $defl! list-copy (x) $if (list? x) (list-copy-strict x) x;
-"NOTE", "Definitions of append is in %YFramework.NPL.Dependency.";
 $defl! reverse (&l) foldl1 cons () l;
 $defl! snoc (&x &r) (list-concat r (list x));
 $defl! snoc% (&x &r) (list-concat r (list% x));
-"NOTE", "Definitions of $let is in %YFramework.NPL.Dependency.";
 $defl! filter (&accept? &ls) apply append
 	(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
 $defl! reduce (&ls &bin &id) $cond
@@ -54,11 +43,9 @@ $defl! reduce (&ls &bin &id) $cond
 	((null? (rest& ls)) first% (forward! ls))
 	(#t bin (first% (forward ls))
 		(reduce (rest% (forward ls)) bin (forward! id)));
-"NOTE", "Definition of assv is in %YFramework.NPL.Dependency.";
 $defl! memv? (&x &ls) apply or (map1 ($lambda (&y) eqv? x y) ls);
 $defl! memq? (&x &ls) apply or (map1 ($lambda (&y) eq? x y) ls);
 "TODO", "Provide 'eq%?' and 'equal%?'.";
-"NOTE", "Definitions of $let*, $letrec are in %YFramework.NPL.Dependency.";
 $defv%! $letrec* (&bindings .&body) d
 	eval% ($if (null? bindings) (list*% $letrec bindings body)
 		(list $letrec (list% (first bindings))
@@ -71,9 +58,6 @@ $defv! $let-safe (&bindings .&body) d
 	eval% (list* () $let/e (() make-standard-environment) bindings body) d;
 $defv! $let-safe% (&bindings .&body) d
 	eval% (list* () $let/e% (() make-standard-environment) bindings body) d;
-"NOTE", "Definitions of $bindings/p->environment, $bindings->environment,",
-	" $provide!, $import!, nonfoldable?, list-extract-first,",
-	" list-extract-rest%, list-push-front! are in %YFramework.NPL.Dependency.";
 $defl! list-push-back! (&l &x) $if (modifiable? (check-list-reference l))
 	(assign! l (list-concat (idv l) (list% (forward! x))))
 	(raise-type-error "Modifiable object expected.");
@@ -86,12 +70,8 @@ $defw%! map (&appv .&ls) d
 		list-extract-rest%
 		($lambda (&x &xs) cons% (apply appv (forward! x) d) (forward! xs));
 $defw! for-each-rtl &ls env $sequence (apply map ls env) #inert;
-"NOTE", "Definitions of map-reverse, for-each-ltr are in",
-	" %YFramework.NPL.Dependency.";
 
 "NOTE", "Environments library.";
-"NOTE", "Definitions of lock-current-environment, $binds1? is in",
-	" %YFramework.NPL.Dependency.";
 "NOTE", "Only '$binds?' is like in Kernel.";
 $defw! environment-bound? (&e &str) d eval (list bound? str) (eval e d);
 $defv! $binds? (&e .&ss) d $let ((&senv eval e d))
